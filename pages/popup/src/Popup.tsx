@@ -78,6 +78,13 @@ const Popup = () => {
     setSelectedSnippetContent(snippetContent);
   };
 
+  const handleSnippetInsert = (content: string) => {
+    // Logic to send the content to the active input field in the current tab
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      chrome.tabs.sendMessage(tabs[0].id!, { action: 'insertSnippet', content });
+    });
+  };
+
   return (
     <div className="flex h-[500px]">
       {/* Header */}
