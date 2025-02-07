@@ -1,115 +1,164 @@
-// import { toggleTheme } from '@src/toggleTheme';
+// import dialog css file
+import './dialog.css';
+// Types for snippets and positions
+interface Snippet {
+  shortcut: string;
+  content: string;
+}
 
-console.log('content script loaded');
+interface CursorInfo {
+  start: number;
+  end: number;
+  textBeforeCursor: string;
+  textAfterCursor: string;
+}
 
-//void toggleTheme();
-
-const snippets = [
-  { shortcut: '/er', content: 'Example content for /er HII' },
+// Sample snippets
+const snippets: Snippet[] = [
+  { shortcut: '/er', content: 'Example content for /er' },
   { shortcut: '/do', content: 'Example content for /do' },
-  // 添加更多 snippets
 ];
 
-// document.addEventListener('input', (event) => {
-//   console.log('input event');
-//   const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-//   if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-//     const value = target.value;
-//     const snippet = snippets.find(s => value.endsWith(s.shortcut));
-//     if (snippet) {
-//       // 顯示 dialog
-//       showDialog(snippet, target);
+// Get cursor position and surrounding text
+// function getCursorInfo(element: HTMLElement): CursorInfo {
+//   let start = 0, end = 0, textBeforeCursor = '', textAfterCursor = '';
+
+//   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+//     start = element.selectionStart ?? 0;
+//     end = element.selectionEnd ?? 0;
+//     textBeforeCursor = element.value.substring(0, start);
+//     textAfterCursor = element.value.substring(end);
+//   } else if (element.isContentEditable) {
+//     const selection = window.getSelection();
+//     if (selection && selection.rangeCount > 0) {
+//       const range = selection.getRangeAt(0);
+//       const preRange = range.cloneRange();
+//       preRange.selectNodeContents(element);
+//       preRange.setEnd(range.startContainer, range.startOffset);
+//       start = preRange.toString().length;
+//       end = start + range.toString().length;
+
+//       // Get text before and after cursor
+//       const fullText = element.innerText;
+//       textBeforeCursor = fullText.substring(0, start);
+//       textAfterCursor = fullText.substring(end);
 //     }
 //   }
-// });
 
-// document.addEventListener('keyup', (event) => {
-//   console.log(event)
-//   const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-//   console.log('ddd', target)
+//   return { start, end, textBeforeCursor, textAfterCursor };
+// }
 
-//   // 檢查當前焦點是否在輸入框或文本區域
-//   if (target) {
-//     console.log('Current active element:', target);
-//     const textInput = target.innerText || target.textContent || '';
+function getCursorInfo(element: HTMLElement): CursorInfo {
+  let start = 0,
+    end = 0,
+    textBeforeCursor = '',
+    textAfterCursor = '';
 
-//     // 日誌輸出以檢查事件是否被觸發
-//     console.log('Keydown event triggered');
-//     console.log('Current input value:', textInput);
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    start = element.selectionStart ?? 0;
+    end = element.selectionEnd ?? 0;
+    textBeforeCursor = element.value.substring(0, start);
+    textAfterCursor = element.value.substring(end);
+  } else if (element.isContentEditable) {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(element);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      start = preRange.toString().length;
+      end = start + range.toString().length;
 
-//     // 檢查是否有符合的 snippet
-//     const snippet = snippets.find(s => textInput.endsWith(s.shortcut));
-//     if (snippet) {
-//       console.log('Found snippet:', snippet);
-//       showDialog(snippet, target);
-//     }
-//   }
-// });
+      // 解決換行問題：處理內部HTML結構，避免換行問題
+      const fullText = element.textContent || '';
+      textBeforeCursor = fullText.substring(0, start);
+      textAfterCursor = fullText.substring(end);
+    }
+  }
 
-// document.addEventListener('input', (event) => {
-//   const target = event.target as HTMLElement;
-//   console.log('target listenner', target)
-//   if (isEditableElement(target)) {
-//     const textInput = getTextInput(target);
-//     console.log('textInput', textInput)
-//     const snippet = snippets.find(s => textInput.endsWith(s.shortcut));
-//     console.log('snippet find', snippet)
-//     if (snippet) {
-//       // if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-//       console.log('show dialog')
-//       showDialog(snippet, target as HTMLInputElement | HTMLTextAreaElement);
-//     }
-//     // }
-//   }
-// });
+  return { start, end, textBeforeCursor, textAfterCursor };
+}
 
-document.addEventListener('input', inputEventListener);
+// Find shortcut near cursor position
+function findShortcutNearCursor(cursorInfo: CursorInfo): Snippet | null {
+  // Look for shortcuts in text before cursor
+  const textToCheck = cursorInfo.textBeforeCursor;
 
-function inputEventListener(event: Event) {
-  const target = event.target as HTMLElement;
-  if (isEditableElement(target)) {
-    const textInput = getTextInput(target);
-    const snippet = snippets.find(s => textInput.endsWith(s.shortcut));
-    if (snippet) {
-      showDialog(snippet, target as HTMLInputElement | HTMLTextAreaElement);
+  for (const snippet of snippets) {
+    // Check if text ends with shortcut
+    if (textToCheck.endsWith(snippet.shortcut)) {
+      return snippet;
+    }
+
+    // Optional: Check if shortcut is within last N characters
+    // const lastNChars = textToCheck.slice(-20); // Adjust window size as needed
+    // if (lastNChars.includes(snippet.shortcut)) {
+    //   return snippet;
+    // }
+  }
+
+  return null;
+}
+
+// Insert content and update cursor position
+function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: CursorInfo) {
+  const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(snippet.shortcut);
+  if (shortcutStart === -1) return;
+
+  const textBeforeShortcut = cursorInfo.textBeforeCursor.substring(0, shortcutStart);
+  const newText = textBeforeShortcut + snippet.content + cursorInfo.textAfterCursor;
+
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    element.value = newText;
+    const newCursorPos = shortcutStart + snippet.content.length;
+    element.setSelectionRange(newCursorPos, newCursorPos);
+  } else if (element.isContentEditable) {
+    const selection = window.getSelection();
+    if (selection) {
+      const range = selection.getRangeAt(0);
+
+      // 刪除快捷方式的文字
+      const preRange = document.createRange();
+      preRange.setStart(range.startContainer, range.startOffset - snippet.shortcut.length);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      preRange.deleteContents();
+
+      // 插入新的內容
+      const textNode = document.createTextNode(snippet.content);
+      range.insertNode(textNode);
+
+      // 將游標移動到新插入內容的結尾
+      range.setStartAfter(textNode);
+      range.setEndAfter(textNode);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
   }
 }
 
+// Main input event handler
+function handleInput(event: Event) {
+  const target = event.target as HTMLElement;
+  if (!isEditableElement(target)) return;
+
+  const cursorInfo = getCursorInfo(target);
+  const snippet = findShortcutNearCursor(cursorInfo);
+
+  if (snippet) {
+    showDialog(snippet, target, cursorInfo);
+  }
+}
+
+// Same helper functions as before
 function isEditableElement(target: EventTarget): target is HTMLElement {
-  // 偵測瀏覽器輸入框、文本區域、可編輯元素
   return (
     target instanceof HTMLElement &&
     (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
   );
 }
 
-function getTextInput(target: HTMLElement): string {
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-    return (target as HTMLInputElement | HTMLTextAreaElement).value;
-  } else if (target.isContentEditable) {
-    return target.innerText || target.textContent || '';
-  }
-  return '';
-}
-
-//加入樣式，以及對話框
-const style = document.createElement('style');
-style.innerHTML = `
-  .dialog-content {
-    color: black !important; /* 使用 !important 確保這條規則生效 */
-    font-family: Arial, sans-serif;
-    background: white;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-`;
-document.head.appendChild(style);
-
-function showDialog(snippet: { shortcut: string; content: string }, target: HTMLInputElement | HTMLTextAreaElement) {
-  console.log('show dialog', snippet, target);
+// Modified dialog to include cursor info
+function showDialog(snippet: Snippet, target: HTMLElement, cursorInfo: CursorInfo) {
   const dialog = document.createElement('div');
   dialog.style.position = 'fixed';
   dialog.style.top = '50%';
@@ -117,7 +166,24 @@ function showDialog(snippet: { shortcut: string; content: string }, target: HTML
   dialog.style.transform = 'translate(-50%, -50%)';
   dialog.style.zIndex = '10000';
 
-  dialog.innerHTML = `
+  const shadowRoot = dialog.attachShadow({ mode: 'open' });
+
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .dialog-content {
+      color: black !important;
+      font-family: Arial, sans-serif;
+      background: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+  `;
+
+  shadowRoot.appendChild(styleElement);
+
+  shadowRoot.innerHTML += `
     <div class="dialog-content">
       <p>${snippet.content}</p>
       <button id="insert-button" style="margin-right: 10px;">Insert</button>
@@ -127,84 +193,15 @@ function showDialog(snippet: { shortcut: string; content: string }, target: HTML
 
   document.body.appendChild(dialog);
 
-  // 插入和取消按鈕事件
-  document.getElementById('insert-button')!.addEventListener('click', () => {
-    console.log('insert button iii', snippet.content);
-    insertContent(snippet.shortcut, target);
+  shadowRoot.getElementById('insert-button')?.addEventListener('click', () => {
+    insertContent(target, snippet, cursorInfo);
     document.body.removeChild(dialog);
   });
 
-  document.getElementById('cancel-button')!.addEventListener('click', () => {
+  shadowRoot.getElementById('cancel-button')?.addEventListener('click', () => {
     document.body.removeChild(dialog);
   });
 }
 
-// function insertContent(content: string, target: HTMLInputElement | HTMLTextAreaElement) {
-//   const value = target.value;
-//   const snippet = snippets.find(s => value.endsWith(s.shortcut))!;
-//   target.value = value.replace(snippet.shortcut, content);
-// }
-
-function insertContent(shortcut: string, target: HTMLElement) {
-  let value: string = '';
-  // 判斷目標是輸入框、文本區域或 contentEditable 元素
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-    value = target.value;
-  } else if (target.isContentEditable) {
-    value = target.innerText || target.textContent || '';
-  }
-
-  console.log('insert short', value);
-
-  // 確保 value 是有效的字符串
-  if (typeof value !== 'string' || !value) {
-    console.warn('Invalid input value:', value);
-    return;
-  }
-
-  // 找到對應的 snippet
-  const snippet = snippets.find(s => value.endsWith(s.shortcut));
-
-  if (snippet) {
-    document.removeEventListener('input', inputEventListener);
-
-    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-      // 處理輸入框和文本區域
-      const cursorPosition = target.selectionStart ?? value.length;
-      const beforeShortcut = value.substring(0, cursorPosition - shortcut.length);
-      const afterShortcut = value.substring(cursorPosition);
-      // 將 shortcut 替換為 content
-      console.log('beforeShortcut', beforeShortcut);
-      target.value = beforeShortcut + snippet.content + afterShortcut;
-
-      // 移動光標到插入內容的結尾
-      const newCursorPosition = beforeShortcut.length + snippet.content.length;
-      target.setSelectionRange(newCursorPosition, newCursorPosition);
-      console.log('inserted content', target.value);
-    } else if (target.isContentEditable) {
-      // 處理 contentEditable 元素
-      insertContentToEditableElement(snippet.content, target);
-    }
-    document.addEventListener('input', inputEventListener);
-  } else {
-    console.warn('No matching snippet found for shortcut:', shortcut);
-  }
-}
-
-// 有插入。但沒有去除原本的快捷鍵
-function insertContentToEditableElement(content: string, target: HTMLElement) {
-  const selection = window.getSelection();
-  console.log('selection', selection);
-  if (selection && selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    console;
-    range.deleteContents(); // 刪除選中的文字
-    const textNode = document.createTextNode(content);
-    range.insertNode(textNode);
-    range.setStartAfter(textNode); // 將光標移動到插入內容的末尾
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    target.focus(); // 使用 target 使其獲得焦點
-  }
-}
+// Add event listener
+document.addEventListener('input', handleInput);
