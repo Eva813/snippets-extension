@@ -47,8 +47,7 @@ const manifest = withSidePanel({
     type: 'module',
   },
   action: {
-    default_popup: 'popup/index.html',
-    default_icon: 'icon-34.png',
+    default_title: 'Click to open side panel',
   },
   // chrome_url_overrides: {
   //   newtab: 'new-tab/index.html',
