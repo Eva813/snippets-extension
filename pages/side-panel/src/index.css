@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.firework-animation {
+  pointer-events: none;
+  animation: fadeOut 2s ease-out;
+  transform: translate(10px, 0); /* 往右移動 10px */
+}
+
+.sparkle {
+  display: inline-block;
+  font-size: 1.5rem;
+  animation: pop 2s ease-out;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}

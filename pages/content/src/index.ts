@@ -1,5 +1,6 @@
 // import dialog css file
 import './dialog.css';
+import { insertTextAtCursor } from './insertSnippet';
 // Types for snippets and positions
 interface Snippet {
   shortcut: string;
@@ -205,3 +206,16 @@ function showDialog(snippet: Snippet, target: HTMLElement, cursorInfo: CursorInf
 
 // Add event listener
 document.addEventListener('input', handleInput);
+
+// insertSnippet.ts
+// 訊息處理
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.action === 'insertPrompt') {
+    console.log('Received insertPrompt message:', message);
+    insertTextAtCursor(message.prompt)
+      .then(success => sendResponse({ success }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+  return false;
+});

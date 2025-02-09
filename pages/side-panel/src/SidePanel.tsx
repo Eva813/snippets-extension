@@ -9,6 +9,8 @@ const SidePanel = () => {
   //const [activeFolderMenu, setActiveFolderMenu] = useState<string | null>(null);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
+  // 新增動畫觸發的 snippet id 狀態
+  const [activeAnimationId, setActiveAnimationId] = useState<string | null>(null);
 
   const toggleCollapse = (folderId: string) => {
     const newCollapsed = new Set(collapsedFolders);
@@ -74,6 +76,25 @@ const SidePanel = () => {
     },
   ];
 
+  const insertPrompt = (id: string) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      if (!tabs || !tabs[0].id) {
+        console.warn('No active tab found.');
+        return;
+      }
+      const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
+      if (snippet) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: snippet.content }, response => {
+          console.log('Insertion response:', response);
+          // 插入成功後啟動動畫
+          setActiveAnimationId(id);
+        });
+      } else {
+        console.warn('Snippet not found.');
+      }
+    });
+  };
+
   // const handleSnippetInsert = (content: string) => {
   //   // Logic to send the content to the active input field in the current tab
   //   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
@@ -122,13 +143,22 @@ const SidePanel = () => {
                           className={`flex w-full items-center justify-between rounded px-2 py-1 hover:bg-gray-100 dark:hover:text-black`}>
                           <span className="flex items-center">{snippet.name}</span>
                           {/* Button: 只有 hover 時顯示，並使用 invisible 保持對齊 */}
-                          <button
-                            className={`ml-4 mr-auto  transition-opacity duration-200 ${
-                              hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
-                            }`}
-                            onClick={() => console.log(`Button clicked for ${snippet.name}`)}>
-                            <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />
-                          </button>
+                          <div className="relative ml-4 mr-auto inline-block">
+                            <button
+                              className={`transition-opacity duration-200 ${
+                                hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
+                              }`}
+                              onClick={() => insertPrompt(snippet.id)}>
+                              <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />
+                            </button>
+                            {activeAnimationId === snippet.id && (
+                              <div
+                                className="firework-animation absolute inset-0 flex items-center justify-center"
+                                onAnimationEnd={() => setActiveAnimationId(null)}>
+                                <span className="sparkle">✨</span>
+                              </div>
+                            )}
+                          </div>
                           <span className="inline-flex h-6 items-center rounded-full border border-blue-300 px-3 py-1 text-sm  font-medium">
                             {snippet.shortcut}
                           </span>
