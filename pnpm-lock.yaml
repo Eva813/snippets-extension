@@ -484,6 +484,9 @@ importers:
       '@extension/storage':
         specifier: workspace:*
         version: link:../../packages/storage
+      react-icons:
+        specifier: ^5.4.0
+        version: 5.4.0(react@18.3.1)
     devDependencies:
       '@extension/tailwindcss-config':
         specifier: workspace:*

@@ -47,8 +47,7 @@ const manifest = withSidePanel({
     type: 'module',
   },
   action: {
-    default_popup: 'popup/index.html',
-    default_icon: 'icon-34.png',
+    default_title: 'Click to open side panel',
   },
   // chrome_url_overrides: {
   //   newtab: 'new-tab/index.html',
@@ -67,7 +66,7 @@ const manifest = withSidePanel({
     },
     {
       matches: ['http://*/*', 'https://*/*', '<all_urls>'],
-      css: ['content.css'], // public folder
+      css: ['content.css'], // public folders
     },
   ],
   devtools_page: 'devtools/index.html',
