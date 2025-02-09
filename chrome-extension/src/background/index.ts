@@ -4,4 +4,3 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
 });
 console.log('background loaded');
-console.log("Edit 'chrome-extension/src/background/index.ts' and save to reload.");
