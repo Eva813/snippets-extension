@@ -25,12 +25,12 @@ const SidePanel = () => {
     {
       id: 'HplOMyf2mDqvVMdphJbt',
       name: 'My Sample Snippets',
-      description: 'This is a sample folder',
+      description: '<p>This is a sample folder</p>',
       snippets: [
         {
           id: '5mJw031VPo2WxNIQyeXN',
           name: 'Demo - Plain text',
-          content: 'be a software engineer',
+          content: '<p>be a software engineer</p>',
           shortcut: '/do',
         },
         {
