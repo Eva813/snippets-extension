@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Snippet Form</title>
+  <style>
+    /* 與你提供的範本類似的 CSS，確保 iframe 裡的內容不會超出範圍 */
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    #root {
+      padding: 20px;
+    }
+
+    input,
+    select,
+    button {
+      padding: 5px;
+      margin: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root">
+    <h2>建立 Snippet</h2>
+    <form id="snippetForm">
+      <label>
+        內容：
+        <input type="text" id="snippetText" placeholder="請輸入文字">
+      </label>
+      <br>
+      <button type="submit">Insert</button>
+      <button type="button" id="cancelButton">Cancel</button>
+    </form>
+  </div>
+
+  <script>
+    // 點擊 Cancel 時，通知父頁面關閉 iframe
+    document.getElementById('cancelButton').addEventListener('click', () => {
+      window.parent.postMessage({ action: "closeForm" }, "*");
+    });
+
+    // 當使用者提交表單時，通知父頁面插入 snippet
+    document.getElementById('snippetForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = document.getElementById('snippetText').value;
+      window.parent.postMessage({ action: "insertSnippet", text: text }, "*");
+    });
+  </script>
+</body>
+
+</html>

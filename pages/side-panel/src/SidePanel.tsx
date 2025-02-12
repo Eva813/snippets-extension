@@ -101,6 +101,17 @@ const SidePanel = () => {
   //     chrome.tabs.sendMessage(tabs[0].id!, { action: 'insertSnippet', content });
   //   });
   // };
+  const openFormButton = document.getElementById('openForm');
+  openFormButton?.addEventListener('click', async () => {
+    // 取得目前活動分頁資訊
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // 傳送訊息到 content script，告知「開啟表單」
+    if (tab.id !== undefined) {
+      chrome.tabs.sendMessage(tab.id, { action: 'openForm' });
+    } else {
+      console.warn('Tab ID is undefined.');
+    }
+  });
 
   return (
     <div className="flex h-[500px]">
@@ -109,6 +120,7 @@ const SidePanel = () => {
       {/* snippets List*/}
       <div className="size-full overflow-y-auto bg-white p-2 pt-[70px]">
         <h2 className="mb-2 text-lg font-semibold">Snippets</h2>
+        <button id="openForm">開啟表單</button>
         <ul className="dark:text-gray-200">
           {folders.map(folder => (
             <li key={folder.id} className="mb-2">
