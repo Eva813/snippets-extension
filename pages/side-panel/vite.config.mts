@@ -13,5 +13,12 @@ export default withPageConfig({
   publicDir: resolve(rootDir, 'public'),
   build: {
     outDir: resolve(rootDir, '..', '..', 'dist', 'side-panel'),
+    rollupOptions: {
+      // 多入口設定，指定每個 HTML 為一個 entry point
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        form: resolve(__dirname, 'formLoader.html')
+      }
+    }
   },
 });

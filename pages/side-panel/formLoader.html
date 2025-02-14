@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Form Loader side panel-2</title>
+  <style>
+    html,
+    body,
+    #root {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="form-root"></div>
+  <!-- 這裡引用入口檔案，Vite 會將它替換為 build output 的正確路徑 -->
+  <!-- 這將被替換為正確的打包輸出路徑 -->
+  <script type="module" src="/src/formRoot.tsx"></script>
+</body>
+
+</html>

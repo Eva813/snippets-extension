@@ -84,34 +84,31 @@ const SidePanel = () => {
       }
       const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
       if (snippet) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: snippet.content }, response => {
-          console.log('Insertion response:', response);
-          // 插入成功後啟動動畫
-          setActiveAnimationId(id);
-        });
+        // 檢查 snippet.content 是否包含 'data-type="formtext"'
+        const hasFormField = snippet.content.includes('data-type="formtext"');
+        if (!hasFormField) {
+          // 沒有表單欄位，直接發送訊息給 content script進行插入
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: snippet.content }, response => {
+            console.log('first Side panel,  Insertion response:', response);
+            setActiveAnimationId(id);
+          });
+        } else {
+          // 有表單欄位，傳送訊息給 background，由 background 負責打開 popup
+          // chrome.runtime.sendMessage({ action: 'createWindow', prompt: snippet.content }, response => {
+          //   console.log('Window creation response:', response);
+          // });
+          // 有表單欄位，先轉換模板
+          const { convertedHtml, initialData } = convertTemplate(snippet.content);
+          // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
+          chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData }, response => {
+            console.log('Window creation response:', response);
+          });
+        }
       } else {
         console.warn('Snippet not found.');
       }
     });
   };
-
-  // const handleSnippetInsert = (content: string) => {
-  //   // Logic to send the content to the active input field in the current tab
-  //   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-  //     chrome.tabs.sendMessage(tabs[0].id!, { action: 'insertSnippet', content });
-  //   });
-  // };
-  const openFormButton = document.getElementById('openForm');
-  openFormButton?.addEventListener('click', async () => {
-    // 取得目前活動分頁資訊
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    // 傳送訊息到 content script，告知「開啟表單」
-    if (tab.id !== undefined) {
-      chrome.tabs.sendMessage(tab.id, { action: 'openForm' });
-    } else {
-      console.warn('Tab ID is undefined.');
-    }
-  });
 
   return (
     <div className="flex h-[500px]">
@@ -120,7 +117,6 @@ const SidePanel = () => {
       {/* snippets List*/}
       <div className="size-full overflow-y-auto bg-white p-2 pt-[70px]">
         <h2 className="mb-2 text-lg font-semibold">Snippets</h2>
-        <button id="openForm">開啟表單</button>
         <ul className="dark:text-gray-200">
           {folders.map(folder => (
             <li key={folder.id} className="mb-2">
@@ -186,6 +182,32 @@ const SidePanel = () => {
       </div>
     </div>
   );
+};
+
+// SidePanel.tsx 內的模板轉換方法
+const convertTemplate = (template: string): { convertedHtml: string; initialData: Record<string, string> } => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(template, 'text/html');
+  const initialData: Record<string, string> = {};
+  // 找到所有帶有 data-type="formtext" 的元素
+  const fields = doc.querySelectorAll('[data-type="formtext"]');
+  fields.forEach((elem, index) => {
+    // 使用 label 屬性作為欄位 key，如果沒有，則用 index 補充
+    const key = elem.getAttribute('label') || `field_${index}`;
+    const defaultValue = elem.getAttribute('defaultvalue') || '';
+    initialData[key] = defaultValue;
+    // 建立 input 元件
+    const input = doc.createElement('input');
+    input.type = 'text';
+    input.placeholder = key;
+    input.value = defaultValue;
+    input.name = key;
+    // 可加入 onChange 事件，但這邊我們會在 popup 裡統一綁定
+    // 將原先的 span 替換掉
+    elem.parentNode?.replaceChild(input, elem);
+  });
+  // 回傳轉換後的 innerHTML 與初始資料
+  return { convertedHtml: doc.body.innerHTML, initialData };
 };
 
 export default withErrorBoundary(withSuspense(SidePanel, <div> Loading ... </div>), <div> Error Occur </div>);
