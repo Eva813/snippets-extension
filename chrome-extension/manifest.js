@@ -21,7 +21,7 @@ function withSidePanel(manifest) {
     side_panel: {
       default_path: 'side-panel/index.html',
     },
-    permissions: ['sidePanel', 'windows', 'storage', 'scripting', 'tabs'],
+    permissions: ['sidePanel'],
   });
 }
 
@@ -40,7 +40,7 @@ const manifest = withSidePanel({
   version: packageJson.version,
   description: '__MSG_extensionDescription__',
   host_permissions: ['<all_urls>'],
-  permissions: ['storage', 'scripting', 'tabs', 'notifications', 'windows'],
+  permissions: ['storage', 'scripting', 'tabs', 'notifications', 'windows', 'activeTab'],
   options_page: 'options/index.html',
   background: {
     service_worker: 'background.iife.js',
