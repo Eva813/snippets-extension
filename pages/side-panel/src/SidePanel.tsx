@@ -86,9 +86,10 @@ const SidePanel = () => {
       if (snippet) {
         // 檢查 snippet.content 是否包含 'data-type="formtext"'
         const hasFormField = snippet.content.includes('data-type="formtext"');
+        const title = `${snippet.shortcut} - ${snippet.name}`; // 組合標題
         if (!hasFormField) {
           // 沒有表單欄位，直接發送訊息給 content script進行插入
-          chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: snippet.content }, response => {
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: snippet.content, title }, response => {
             console.log('first Side panel,  Insertion response:', response);
             setActiveAnimationId(id);
           });
@@ -100,7 +101,7 @@ const SidePanel = () => {
           // 有表單欄位，先轉換模板
           const { convertedHtml, initialData } = convertTemplate(snippet.content);
           // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
-          chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData }, response => {
+          chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData, title }, response => {
             console.log('Window creation response:', response);
           });
         }
@@ -199,6 +200,7 @@ const convertTemplate = (template: string): { convertedHtml: string; initialData
     // 建立 input 元件
     const input = doc.createElement('input');
     input.type = 'text';
+    // 用 label 屬性作為 placeholder
     input.placeholder = key;
     input.value = defaultValue;
     input.name = key;
@@ -206,6 +208,7 @@ const convertTemplate = (template: string): { convertedHtml: string; initialData
     // 將原先的 span 替換掉
     elem.parentNode?.replaceChild(input, elem);
   });
+  console.log(' doc.body.innerHTML data:', doc.body.innerHTML);
   // 回傳轉換後的 innerHTML 與初始資料
   return { convertedHtml: doc.body.innerHTML, initialData };
 };
