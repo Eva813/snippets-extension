@@ -1,81 +1,5 @@
 // // formRoot.tsx
-// import React, { useEffect, useState } from 'react';
-// import { createRoot } from 'react-dom/client';
-
-// interface PopupData {
-//   convertedHtml: string;
-//   initialData: Record<string, string>;
-// }
-
-// const FormApp: React.FC = () => {
-//   const [popupData, setPopupData] = useState<PopupData | null>(null);
-//   const [formData, setFormData] = useState<Record<string, string>>({});
-
-//   useEffect(() => {
-//     // 向背景索取先前暫存的資料
-//     chrome.runtime.sendMessage({ action: 'getPopupData' }, (response: { data?: PopupData }) => {
-//       if (response?.data) {
-//         setPopupData(response.data);
-//         setFormData(response.data.initialData);
-//       } else {
-//         console.error('No popup data received.');
-//       }
-//     });
-//   }, []);
-
-//   if (!popupData) {
-//     return <div>Loading...</div>;
-//   }
-
-//   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const { name, value } = e.target;
-//     setFormData(prev => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleSubmit = (e: React.FormEvent) => {
-//     e.preventDefault();
-//     // 提交表單資料給背景，由背景處理後續（例如插入到當前頁面）
-//     chrome.runtime.sendMessage({ action: 'submitForm', formData }, response => {
-//       console.log('Form submitted, response:', response);
-//       // 選擇性：提交後關閉 popup
-//       window.close();
-//     });
-//   };
-
-//   return (
-//     <div style={{ padding: '20px' }}>
-//       <h1>Fill in the Form</h1>
-//       <form onSubmit={handleSubmit}>
-//         {Object.keys(formData).map(key => (
-//           <div key={key} style={{ marginBottom: '10px' }}>
-//             <label htmlFor={key} style={{ marginRight: '10px' }}>{key}</label>
-//             <input
-//               id={key}
-//               type="text"
-//               name={key}
-//               value={formData[key]}
-//               placeholder={key}
-//               onChange={handleInputChange}
-//               style={{ padding: '5px' }}
-//             />
-//           </div>
-//         ))}
-//         <button type="submit" style={{ padding: '8px 16px' }}>Insert</button>
-//       </form>
-//       <div style={{ marginTop: '20px' }}>
-//         <h2>Preview (Converted HTML)</h2>
-//         <div dangerouslySetInnerHTML={{ __html: popupData.convertedHtml }} />
-//       </div>
-//     </div>
-//   );
-// };
-
-// const container = document.getElementById('root');
-// if (container) {
-//   const root = createRoot(container);
-//   root.render(<FormApp />);
-// }
-
+import '@src/formRoot.css';
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import type { HTMLReactParserOptions } from 'html-react-parser';
@@ -84,6 +8,7 @@ import parse, { Element } from 'html-react-parser';
 interface PopupData {
   convertedHtml: string;
   initialData: Record<string, string>;
+  title: string;
 }
 
 const FormRoot = () => {
@@ -96,6 +21,8 @@ const FormRoot = () => {
       if (response?.data) {
         setPopupData(response.data);
         setFormData(response.data.initialData);
+        // 設置 windows 頁面標題
+        document.title = response.data.title || 'Default Title';
       } else {
         console.error('No popup data received.');
       }
@@ -115,20 +42,22 @@ const FormRoot = () => {
     // 建立一個臨時的容器
     const container = document.createElement('div');
     container.innerHTML = htmlString;
+    console.log('Container:', container, 'container.innerHTML:', container.innerHTML);
+
     // 遍歷所有 input 節點
     const inputs = container.querySelectorAll('input');
     inputs.forEach(input => {
       const name = input.getAttribute('name');
       if (name) {
         const value = formData[name] || '';
-        // 建立一個文字節點
-        const textNode = document.createTextNode(value);
-        // 將 input 替換成文字節點
+        // 在替換文字前後加入空白，確保和其他文字不會直接連接
+        const textNode = document.createTextNode(' ' + value + ' ');
         input.replaceWith(textNode);
       }
     });
-    // 回傳整個容器的文字內容
-    return container.textContent || '';
+
+    // 取得容器的文字內容，並利用正則把多餘的空白整理成單一空格，同時去除頭尾空白
+    return container.textContent?.replace(/\s+/g, ' ').trim() || '';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -148,24 +77,46 @@ const FormRoot = () => {
     replace: domNode => {
       if (domNode instanceof Element && domNode.name === 'input') {
         const attribs = domNode.attribs;
-        return <input {...attribs} value={formData[attribs.name] || ''} onChange={handleInputChange} />;
+        return (
+          <input
+            {...attribs}
+            value={formData[attribs.name] || ''}
+            onChange={handleInputChange}
+            className="input-style"
+          />
+        );
       }
     },
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Fill in the Form</h1>
-      <form onSubmit={handleSubmit}>
-        {/* 將解析後的內容渲染出來 */}
-        {parse(popupData.convertedHtml, options)}
-
-        <button type="submit" style={{ padding: '8px 16px' }}>
-          Insert
-        </button>
-      </form>
-      {popupData.convertedHtml}
-    </div>
+    <>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          maxHeight: '100vh',
+          justifyContent: 'space-between',
+        }}>
+        {/* onSubmit={handleSubmit} */}
+        <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }} className="m-4">
+          <div className="flex">
+            {/* 將解析後的內容渲染出來 */}
+            {parse(popupData.convertedHtml, options)}
+          </div>
+        </div>
+        {popupData.convertedHtml}
+        <div className="bottom-controls">
+          <div className="right-content">
+            <button className="cancel-button">Cancel</button>
+            <button className="insert-button" onClick={handleSubmit}>
+              Insert
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
 
