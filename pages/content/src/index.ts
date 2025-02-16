@@ -1,5 +1,6 @@
 // import dialog css file
 import './dialog.css';
+import './messageHandler';
 // Types for snippets and positions
 interface Snippet {
   shortcut: string;
@@ -18,7 +19,7 @@ const snippets: Snippet[] = [
   { shortcut: '/er', content: 'Example content for /er' },
   { shortcut: '/do', content: 'Example content for /do' },
 ];
-
+console.log('Content script loaded');
 // Get cursor position and surrounding text
 // function getCursorInfo(element: HTMLElement): CursorInfo {
 //   let start = 0, end = 0, textBeforeCursor = '', textAfterCursor = '';
@@ -205,3 +206,33 @@ function showDialog(snippet: Snippet, target: HTMLElement, cursorInfo: CursorInf
 
 // Add event listener
 document.addEventListener('input', handleInput);
+
+// insertSnippet.ts
+// 訊息處理
+
+// 去除 HTML 標籤
+// const stripHtml = (html: string) => {
+//   const temp = document.createElement('div');
+//   temp.innerHTML = html;
+//   return temp.textContent || temp.innerText || '';
+// };
+
+// chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+//   if (message.action === 'insertPrompt') {
+//     console.log('Received insertPrompt message:', message);
+
+//     if (!message.prompt) {
+//       sendResponse({ success: false, error: 'Invalid prompt data' });
+//       return false;
+//     }
+//       message.prompt = stripHtml(message.prompt);
+//       insertTextAtCursor(message.prompt)
+//         .then(success => sendResponse({ success }))
+//         .catch(error => {
+//           console.error('Error inserting text:', error);
+//           sendResponse({ success: false, error: error.message });
+//         });
+//       return true;
+//   }
+//   return false;
+// });
