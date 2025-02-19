@@ -72,6 +72,16 @@ const FormRoot = () => {
     });
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e);
+    }
+  };
+
+  const handleCancel = () => {
+    window.close();
+  };
+
   // 轉換 HTML 時將 <input> 元素替換成綁定了事件的 React 元素
   const options: HTMLReactParserOptions = {
     replace: domNode => {
@@ -91,15 +101,7 @@ const FormRoot = () => {
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          maxHeight: '100vh',
-          justifyContent: 'space-between',
-        }}>
-        {/* onSubmit={handleSubmit} */}
+      <div className="form-root-container" onKeyDown={handleKeyDown} role="presentation" aria-label="表單區域">
         <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }} className="m-4">
           <div className="flex">
             {/* 將解析後的內容渲染出來 */}
@@ -109,7 +111,9 @@ const FormRoot = () => {
         {popupData.convertedHtml}
         <div className="bottom-controls">
           <div className="right-content">
-            <button className="cancel-button">Cancel</button>
+            <button className="cancel-button" onClick={handleCancel}>
+              Cancel
+            </button>
             <button className="insert-button" onClick={handleSubmit}>
               Insert
             </button>
