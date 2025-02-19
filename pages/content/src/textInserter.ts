@@ -47,7 +47,7 @@ export function getDeepActiveElement(): Element | null {
 /**
  * 將指定文字插入目前聚焦的輸入框中，並移動 cursor 至插入文字之後
  */
-export async function insertTextAtCursor(text: string): Promise<boolean> {
+export async function insertTextAtCursor(text: string) {
   const element = getDeepActiveElement();
   if (!element) return false;
 

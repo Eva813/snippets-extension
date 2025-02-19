@@ -111,6 +111,19 @@ const SidePanel = () => {
     });
   };
 
+  // 接收取得 snippetByShortcut
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 新增除錯日誌
+    console.log('收到訊息:', message);
+    console.log('current folders:', folders);
+    if (message.action === 'getSnippetByShortcut') {
+      console.log('shortcuts 觸發:', message.shortcut);
+      const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.shortcut === message.shortcut);
+      console.log('找到的 snippet:', snippet);
+      sendResponse({ snippet });
+    }
+  });
+
   return (
     <div className="flex h-[500px]">
       {/* Header */}
