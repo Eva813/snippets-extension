@@ -1,6 +1,6 @@
 import '@src/SidePanel.css';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FaCaretDown, FaCaretRight, FaArrowAltCircleDown } from 'react-icons/fa';
 import Header from './components/Header';
 
@@ -21,60 +21,76 @@ const SidePanel = () => {
     }
     setCollapsedFolders(newCollapsed);
   };
-  const folders = [
-    {
-      id: 'HplOMyf2mDqvVMdphJbt',
-      name: 'My Sample Snippets',
-      description: '<p>This is a sample folder</p>',
-      snippets: [
-        {
-          id: '5mJw031VPo2WxNIQyeXN',
-          name: 'Demo - Plain text',
-          content: '<p>be a software engineer</p>',
-          shortcut: '/do',
-        },
-        {
-          id: '6mJw031VPo2WxNIQyeYN',
-          name: 'Demo - Styled Text',
-          content:
-            '<p>be a translate expert, I will give you a sentence and help me translate to english<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="www" defaultvalue="">name: www</span></p><p><span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lan" defaultvalue="en">name: lan, default: en</span></p>',
-          shortcut: '/ih',
-        },
-        {
-          id: 'snippet-1736573580906',
-          name: 'HHHH',
-          content:
-            '<p>New snippet contentHHHHH, 3扮演前端工程師，專業於<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="front" defaultvalue="">name: front</span>，具有語言能力<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lang" defaultvalue="">name: lang</span></p>',
-          shortcut: '/pro',
-        },
-        {
-          id: 'snippet-1736574349364',
-          name: 'EEE',
-          content:
-            '<p>MMMYM<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="peter" defaultvalue="">name: peter</span></p>',
-          shortcut: '/add',
-        },
-        {
-          id: 'snippet-1736657362715',
-          name: 'New snippet',
-          content: 'New snippet content',
-          shortcut: '/dott',
-        },
-        {
-          id: 'snippet-1736658054583',
-          name: 'New snippet',
-          content: 'New snippet content',
-          shortcut: '/er',
-        },
-      ],
-    },
-    {
-      id: 'folder-1736949636952',
-      name: 'New folder',
-      description: '',
-      snippets: [],
-    },
-  ];
+  const folders = useMemo(
+    () => [
+      {
+        id: 'HplOMyf2mDqvVMdphJbt',
+        name: 'My Sample Snippets',
+        description: '<p>This is a sample folder</p>',
+        snippets: [
+          {
+            id: '5mJw031VPo2WxNIQyeXN',
+            name: 'Demo - Plain text',
+            content: '<p>be a software engineer</p>',
+            shortcut: '/do',
+          },
+          {
+            id: '6mJw031VPo2WxNIQyeYN',
+            name: 'Demo - Styled Text',
+            content:
+              '<p>be a translate expert, I will give you a sentence and help me translate to english<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="www" defaultvalue="">name: www</span></p><p><span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lan" defaultvalue="en">name: lan, default: en</span></p>',
+            shortcut: '/ih',
+          },
+          {
+            id: 'snippet-1736573580906',
+            name: 'HHHH',
+            content:
+              '<p>New snippet contentHHHHH, 3扮演前端工程師，專業於<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="front" defaultvalue="">name: front</span>，具有語言能力<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lang" defaultvalue="">name: lang</span></p>',
+            shortcut: '/pro',
+          },
+          {
+            id: 'snippet-1736574349364',
+            name: 'EEE',
+            content:
+              '<p>MMMYM<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="peter" defaultvalue="">name: peter</span></p>',
+            shortcut: '/add',
+          },
+          {
+            id: 'snippet-1736657362715',
+            name: 'New snippet',
+            content: 'New snippet content',
+            shortcut: '/dott',
+          },
+          {
+            id: 'snippet-1736658054583',
+            name: 'New snippet',
+            content: 'New snippet content',
+            shortcut: '/er',
+          },
+        ],
+      },
+      {
+        id: 'folder-1736949636952',
+        name: 'New folder',
+        description: '',
+        snippets: [],
+      },
+    ],
+    [],
+  );
+  // 將 snippet 存到 storage
+  useEffect(() => {
+    const snippetsMap = folders.reduce<Record<string, (typeof folders)[0]['snippets'][0]>>((acc, folder) => {
+      folder.snippets.forEach(snippet => {
+        acc[snippet.shortcut] = snippet;
+      });
+      return acc;
+    }, {});
+
+    chrome.storage.local.set({ snippets: snippetsMap }, () => {
+      console.log('Snippets saved to storage:', snippetsMap);
+    });
+  }, [folders]);
 
   const insertPrompt = (id: string) => {
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
@@ -95,9 +111,6 @@ const SidePanel = () => {
           });
         } else {
           // 有表單欄位，傳送訊息給 background，由 background 負責打開 popup
-          // chrome.runtime.sendMessage({ action: 'createWindow', prompt: snippet.content }, response => {
-          //   console.log('Window creation response:', response);
-          // });
           // 有表單欄位，先轉換模板
           const { convertedHtml, initialData } = convertTemplate(snippet.content);
           // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
