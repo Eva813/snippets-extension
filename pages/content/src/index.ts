@@ -24,6 +24,27 @@ interface CursorInfo {
 //   { shortcut: '/do', content: 'Example content for /do' },
 // ];
 console.log('Content script loaded');
+
+interface SnippetCache {
+  [key: string]: Snippet;
+}
+
+let snippetsCache: SnippetCache = {};
+
+// Initialize cache when content script loads
+async function initializeSnippetsCache() {
+  const result = await chrome.storage.local.get('snippets');
+  console.log('取得快捷方式:', result.snippets);
+  snippetsCache = result.snippets || {};
+}
+
+// Listen for storage changes
+chrome.storage.onChanged.addListener(changes => {
+  if (changes.snippets) {
+    snippetsCache = changes.snippets.newValue;
+  }
+});
+
 // Get cursor position and surrounding text
 function getCursorInfo(element: HTMLElement): CursorInfo {
   let start = 0,
@@ -76,15 +97,51 @@ function getCursorInfo(element: HTMLElement): CursorInfo {
 //   return null;
 // }
 
+// async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
+//   const textToCheck = cursorInfo.textBeforeCursor;
+
+//   // 取得輸入框最後一段文字
+//   const lastWord = textToCheck.trim().split(/\s+/).pop() || '';
+//   console.log('檢查輸入:', lastWord);
+
+//   try {
+//     // 使用 chrome.runtime.sendMessage Promise 版本
+//     const response = await chrome.runtime.sendMessage({
+//       action: 'getSnippetByShortcut',
+//       shortcut: lastWord,
+//     });
+
+//     console.log('取得 snippet 回應:', response);
+
+//     if (response?.snippet) {
+//       return {
+//         shortcut: lastWord,
+//         content: response.snippet.content,
+//         name: response.snippet.name,
+//       };
+//     }
+//   } catch (error) {
+//     console.error('取得 snippet 失敗:', error);
+//   }
+
+//   return null;
+// }
 async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
   const textToCheck = cursorInfo.textBeforeCursor;
-
-  // 取得輸入框最後一段文字
   const lastWord = textToCheck.trim().split(/\s+/).pop() || '';
   console.log('檢查輸入:', lastWord);
 
+  // First check local cache
+  if (snippetsCache[lastWord]) {
+    return {
+      shortcut: lastWord,
+      content: snippetsCache[lastWord].content,
+      name: snippetsCache[lastWord].name,
+    };
+  }
+
   try {
-    // 使用 chrome.runtime.sendMessage Promise 版本
+    // Fallback to messaging if not in cache
     const response = await chrome.runtime.sendMessage({
       action: 'getSnippetByShortcut',
       shortcut: lastWord,
@@ -105,6 +162,8 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet |
 
   return null;
 }
+// Initialize cache when script loads
+initializeSnippetsCache();
 
 // Insert content and update cursor position
 function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: CursorInfo) {
@@ -160,27 +219,30 @@ async function handleInput(event: Event) {
   if (!isEditableElement(target)) return;
 
   const cursorInfo = getCursorInfo(target);
-  // const snippet = findShortcutNearCursor(cursorInfo);
-  // console.log('snippet', snippet)
   const snippet = await findShortcutNearCursor(cursorInfo);
   console.log('snippet data', snippet);
   if (snippet) {
-    // 发送消息请求对应的 snippet 内容
-    // chrome.runtime.sendMessage({ action: 'getSnippetByShortcut', shortcut: snippet.shortcut }, (response) => {
-    // if (response.snippet) {
-
     // 這邊要檢查
     // 檢查 snippet.content 是否包含 'data-type="formtext"'
     const hasFormField = snippet.content.includes('data-type="formtext"');
     if (!hasFormField) {
-      console.log('sdfsf', snippet);
+      console.log('立馬插入', snippet);
       const insertData = {
         ...snippet,
         content: stripHtml(snippet.content),
       };
       insertContent(target, insertData, cursorInfo);
     } else {
-      // 呼叫 backgroun
+      // Store cursor position info in storage for later use
+      const shortcutInfo = {
+        shortcut: snippet.shortcut,
+        position: {
+          start: cursorInfo.start - snippet.shortcut.length,
+          end: cursorInfo.start,
+        },
+      };
+      await chrome.storage.local.set({ shortcutInfo });
+      // 呼叫 background
       console.log('snippet convert', snippet);
       const { convertedHtml, initialData } = convertTemplate(snippet.content);
       const title = `${snippet.shortcut} - ${snippet.name}`;
@@ -188,11 +250,8 @@ async function handleInput(event: Event) {
       chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData, title }, response => {
         console.log('Window creation response:', response);
       });
-      insertContent(target, snippet, cursorInfo);
+      //insertContent(target, snippet, cursorInfo);
     }
-    // insertContent(target, response.snippet, cursorInfo);
-    // }
-    // });
   }
 }
 
