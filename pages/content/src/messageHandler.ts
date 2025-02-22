@@ -2,27 +2,6 @@
 import { insertTextAtCursor, getDeepActiveElement } from './textInserter';
 import { stripHtml } from './utils';
 
-// chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-//   if (message.action === 'insertPrompt') {
-//     console.log('Received insertPrompt message:', message);
-
-//     if (!message.prompt) {
-//       sendResponse({ success: false, error: 'Invalid prompt data' });
-//       return false;
-//     }
-//     const cleanPrompt = stripHtml(message.prompt);
-//     console.log('Cleaned prompt 插入最後 prompt:', cleanPrompt);
-//     insertTextAtCursor(cleanPrompt)
-//       .then(success => sendResponse({ success }))
-//       .catch(error => {
-//         console.error('Error inserting text:', error);
-//         sendResponse({ success: false, error: error.message });
-//       });
-//     return true;
-//   }
-//   return false;
-// });
-
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === 'insertPrompt') {
     if (!message.prompt) {
@@ -78,4 +57,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     });
     return true;
   }
+  sendResponse({ success: false, error: 'Unknown action' });
+  return false;
 });
