@@ -1,5 +1,3 @@
-// import dialog css file
-import './dialog.css';
 import './messageHandler';
 import { stripHtml, convertTemplate } from './utils';
 import { getDeepActiveElement } from './textInserter';
