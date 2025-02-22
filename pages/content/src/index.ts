@@ -2,6 +2,7 @@
 import './dialog.css';
 import './messageHandler';
 import { stripHtml, convertTemplate } from './utils';
+import { getDeepActiveElement } from './textInserter';
 // Types for snippets and positions
 interface Snippet {
   shortcut: string;
@@ -216,9 +217,24 @@ function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: Curso
 // New
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
-  if (!isEditableElement(target)) return;
+  console.log('handleInput event.target:', target);
+  const element = getDeepActiveElement();
+  console.log('handleInput getDeepActiveElement:', element);
+
+  if (
+    !element ||
+    !(
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLTextAreaElement ||
+      (element as HTMLElement).isContentEditable
+    )
+  ) {
+    console.log('不是可編輯元素，返回');
+    return;
+  }
 
   const cursorInfo = getCursorInfo(target);
+  console.log('取得游標資訊:', cursorInfo);
   const snippet = await findShortcutNearCursor(cursorInfo);
   console.log('snippet data', snippet);
   if (snippet) {
@@ -262,52 +278,6 @@ function isEditableElement(target: EventTarget): target is HTMLElement {
     (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
   );
 }
-
-// Modified dialog to include cursor info
-// function showDialog(snippet: Snippet, target: HTMLElement, cursorInfo: CursorInfo) {
-//   const dialog = document.createElement('div');
-//   dialog.style.position = 'fixed';
-//   dialog.style.top = '50%';
-//   dialog.style.left = '50%';
-//   dialog.style.transform = 'translate(-50%, -50%)';
-//   dialog.style.zIndex = '10000';
-
-//   const shadowRoot = dialog.attachShadow({ mode: 'open' });
-
-//   const styleElement = document.createElement('style');
-//   styleElement.textContent = `
-//     .dialog-content {
-//       color: black !important;
-//       font-family: Arial, sans-serif;
-//       background: white;
-//       padding: 20px;
-//       border: 1px solid #ccc;
-//       border-radius: 8px;
-//       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-//     }
-//   `;
-
-//   shadowRoot.appendChild(styleElement);
-
-//   shadowRoot.innerHTML += `
-//     <div class="dialog-content">
-//       <p>${snippet.content}</p>
-//       <button id="insert-button" style="margin-right: 10px;">Insert</button>
-//       <button id="cancel-button">Cancel</button>
-//     </div>
-//   `;
-
-//   document.body.appendChild(dialog);
-
-//   shadowRoot.getElementById('insert-button')?.addEventListener('click', () => {
-//     insertContent(target, snippet, cursorInfo);
-//     document.body.removeChild(dialog);
-//   });
-
-//   shadowRoot.getElementById('cancel-button')?.addEventListener('click', () => {
-//     document.body.removeChild(dialog);
-//   });
-// }
 
 // Add event listener
 document.addEventListener('input', handleInput);
