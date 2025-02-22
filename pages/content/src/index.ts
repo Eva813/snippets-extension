@@ -16,15 +16,6 @@ interface CursorInfo {
   textBeforeCursor: string;
   textAfterCursor: string;
 }
-///
-
-///
-// Sample snippets
-// const snippets: Snippet[] = [
-//   { shortcut: '/er', content: 'Example content for /er' },
-//   { shortcut: '/do', content: 'Example content for /do' },
-// ];
-console.log('Content script loaded');
 
 interface SnippetCache {
   [key: string]: Snippet;
@@ -79,54 +70,6 @@ function getCursorInfo(element: HTMLElement): CursorInfo {
 }
 
 // Find shortcut near cursor position
-// New 找位置
-// function findShortcutNearCursor(cursorInfo: CursorInfo): Snippet | null {
-//   const textToCheck = cursorInfo.textBeforeCursor;
-
-//   // 檢查文字是否以 '/' 開頭的快捷方式結尾
-//   const shortcutMatch = textToCheck.match(/\/[^\s]+$/);
-//   if (shortcutMatch) {
-//     const shortcut = shortcutMatch[0];
-//     // 返回一個基本的 Snippet 物件，實際內容會透過 chrome.runtime.sendMessage 取得
-//     return {
-//       shortcut: shortcut,
-//       content: '', // 內容會在 handleInput 中透過訊息機制填入
-//       name: ''
-//     };
-//   }
-
-//   return null;
-// }
-
-// async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
-//   const textToCheck = cursorInfo.textBeforeCursor;
-
-//   // 取得輸入框最後一段文字
-//   const lastWord = textToCheck.trim().split(/\s+/).pop() || '';
-//   console.log('檢查輸入:', lastWord);
-
-//   try {
-//     // 使用 chrome.runtime.sendMessage Promise 版本
-//     const response = await chrome.runtime.sendMessage({
-//       action: 'getSnippetByShortcut',
-//       shortcut: lastWord,
-//     });
-
-//     console.log('取得 snippet 回應:', response);
-
-//     if (response?.snippet) {
-//       return {
-//         shortcut: lastWord,
-//         content: response.snippet.content,
-//         name: response.snippet.name,
-//       };
-//     }
-//   } catch (error) {
-//     console.error('取得 snippet 失敗:', error);
-//   }
-
-//   return null;
-// }
 async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
   const textToCheck = cursorInfo.textBeforeCursor;
   const lastWord = textToCheck.trim().split(/\s+/).pop() || '';
@@ -203,18 +146,6 @@ function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: Curso
 }
 
 // Main input event handler
-// function handleInput(event: Event) {
-//   const target = event.target as HTMLElement;
-//   if (!isEditableElement(target)) return;
-
-//   const cursorInfo = getCursorInfo(target);
-//   const snippet = findShortcutNearCursor(cursorInfo);
-
-//   if (snippet) {
-//     showDialog(snippet, target, cursorInfo);
-//   }
-// }
-// New
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
   console.log('handleInput event.target:', target);
@@ -269,14 +200,6 @@ async function handleInput(event: Event) {
       //insertContent(target, snippet, cursorInfo);
     }
   }
-}
-
-// Same helper functions as before
-function isEditableElement(target: EventTarget): target is HTMLElement {
-  return (
-    target instanceof HTMLElement &&
-    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-  );
 }
 
 // Add event listener
