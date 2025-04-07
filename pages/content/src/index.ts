@@ -1,5 +1,5 @@
 import './messageHandler';
-import { stripHtml, convertTemplate } from './utils';
+import { stripHtml } from './utils';
 import { getDeepActiveElement } from './textInserter';
 // Types for snippets and positions
 interface Snippet {
@@ -143,7 +143,7 @@ function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: Curso
   }
 }
 
-// Main input event handler
+// Main input event handler 在這裡處理輸入事件
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
   console.log('handleInput event.target:', target);
@@ -188,11 +188,10 @@ async function handleInput(event: Event) {
       };
       await chrome.storage.local.set({ shortcutInfo });
       // 呼叫 background
-      console.log('snippet convert', snippet);
-      const { convertedHtml, initialData } = convertTemplate(snippet.content);
       const title = `${snippet.shortcut} - ${snippet.name}`;
       // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
-      chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData, title }, response => {
+      const content = snippet.content; // Initialize 'content' variable
+      chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
         console.log('Window creation response:', response);
       });
       //insertContent(target, snippet, cursorInfo);

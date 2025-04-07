@@ -26,54 +26,35 @@ const SidePanel = () => {
       {
         id: 'HplOMyf2mDqvVMdphJbt',
         name: 'My Sample Snippets',
-        description: '<p>This is a sample folder</p>',
+        description: 'This is a sample folder',
         snippets: [
           {
             id: '5mJw031VPo2WxNIQyeXN',
             name: 'Demo - Plain text',
-            content: '<p>be a software engineer</p>',
+            content:
+              '<p>be a software engineer, familliar with</p><p><span data-type="formtext" data-snippet="{&quot;type&quot;:&quot;formtext&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;}}},&quot;commandName&quot;:&quot;formtext&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;frontEnd&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;vue&quot;}]}"></span></p><p></p><p></p>',
             shortcut: '/do',
           },
           {
             id: '6mJw031VPo2WxNIQyeYN',
             name: 'Demo - Styled Text',
-            content:
-              '<p>be a translate expert, I will give you a sentence and help me translate to english<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="www" defaultvalue="">name: www</span></p><p><span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lan" defaultvalue="en">name: lan, default: en</span></p>',
+            content: 'be a translate expert, I will give you a sentence and help me translate to english',
             shortcut: '/ih',
-          },
-          {
-            id: 'snippet-1736573580906',
-            name: 'HHHH',
-            content:
-              '<p>New snippet contentHHHHH, 3扮演前端工程師，專業於<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="front" defaultvalue="">name: front</span>，具有語言能力<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lang" defaultvalue="">name: lang</span></p>',
-            shortcut: '/pro',
-          },
-          {
-            id: 'snippet-1736574349364',
-            name: 'EEE',
-            content:
-              '<p>MMMYM<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="peter" defaultvalue="">name: peter</span></p>',
-            shortcut: '/add',
-          },
-          {
-            id: 'snippet-1736657362715',
-            name: 'New snippet',
-            content: 'New snippet content',
-            shortcut: '/dott',
-          },
-          {
-            id: 'snippet-1736658054583',
-            name: 'New snippet',
-            content: 'New snippet content',
-            shortcut: '/er',
           },
         ],
       },
       {
-        id: 'folder-1736949636952',
-        name: 'New folder',
-        description: '',
-        snippets: [],
+        id: 'folder-1741057188488',
+        name: 'Test',
+        description: 'test',
+        snippets: [
+          {
+            id: 'snippet-1741057206823',
+            name: 'test',
+            content: '<p>New snippet content Test</p>',
+            shortcut: '/test',
+          },
+        ],
       },
     ],
     [],
@@ -92,7 +73,9 @@ const SidePanel = () => {
     });
   }, [folders]);
 
-  const insertPrompt = (id: string) => {
+  const insertPrompt = (id: string, event: React.MouseEvent) => {
+    // Prevent default button behavior
+    event.preventDefault();
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
       if (!tabs || !tabs[0].id) {
         console.warn('No active tab found.');
@@ -111,10 +94,9 @@ const SidePanel = () => {
           });
         } else {
           // 有表單欄位，傳送訊息給 background，由 background 負責打開 popup
-          // 有表單欄位，先轉換模板
-          const { convertedHtml, initialData } = convertTemplate(snippet.content);
           // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
-          chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData, title }, response => {
+          const content = snippet.content;
+          chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
             console.log('Window creation response:', response);
           });
         }
@@ -139,6 +121,7 @@ const SidePanel = () => {
 
   return (
     <div className="flex h-[500px]">
+      {/* onMouseDown={(e) =>  e.preventDefault()} */}
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
       {/* snippets List*/}
@@ -183,7 +166,10 @@ const SidePanel = () => {
                               className={`transition-opacity duration-200 ${
                                 hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
                               }`}
-                              onClick={() => insertPrompt(snippet.id)}>
+                              onMouseDown={e => {
+                                e.preventDefault(); // Prevent focus change
+                                insertPrompt(snippet.id, e);
+                              }}>
                               <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />
                             </button>
                             {activeAnimationId === snippet.id && (
@@ -209,34 +195,6 @@ const SidePanel = () => {
       </div>
     </div>
   );
-};
-
-// SidePanel.tsx 內的模板轉換方法
-const convertTemplate = (template: string): { convertedHtml: string; initialData: Record<string, string> } => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(template, 'text/html');
-  const initialData: Record<string, string> = {};
-  // 找到所有帶有 data-type="formtext" 的元素
-  const fields = doc.querySelectorAll('[data-type="formtext"]');
-  fields.forEach((elem, index) => {
-    // 使用 label 屬性作為欄位 key，如果沒有，則用 index 補充
-    const key = elem.getAttribute('label') || `field_${index}`;
-    const defaultValue = elem.getAttribute('defaultvalue') || '';
-    initialData[key] = defaultValue;
-    // 建立 input 元件
-    const input = doc.createElement('input');
-    input.type = 'text';
-    // 用 label 屬性作為 placeholder
-    input.placeholder = key;
-    input.value = defaultValue;
-    input.name = key;
-    // 可加入 onChange 事件，但這邊我們會在 popup 裡統一綁定
-    // 將原先的 span 替換掉
-    elem.parentNode?.replaceChild(input, elem);
-  });
-  console.log(' doc.body.innerHTML data:', doc.body.innerHTML);
-  // 回傳轉換後的 innerHTML 與初始資料
-  return { convertedHtml: doc.body.innerHTML, initialData };
 };
 
 export default withErrorBoundary(withSuspense(SidePanel, <div> Loading ... </div>), <div> Error Occur </div>);

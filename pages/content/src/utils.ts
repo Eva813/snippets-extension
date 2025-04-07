@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 // utils.ts
 export function stripHtml(html: string): string {
   const temp = document.createElement('div');
@@ -6,6 +7,7 @@ export function stripHtml(html: string): string {
 }
 
 export function convertTemplate(template: string): { convertedHtml: string; initialData: Record<string, string> } {
+  console.log('convertedHtml:', template);
   const parser = new DOMParser();
   const doc = parser.parseFromString(template, 'text/html');
   const initialData: Record<string, string> = {};
@@ -30,4 +32,11 @@ export function convertTemplate(template: string): { convertedHtml: string; init
   console.log(' doc.body.innerHTML data:', doc.body.innerHTML);
   // 回傳轉換後的 innerHTML 與初始資料
   return { convertedHtml: doc.body.innerHTML, initialData };
+}
+
+export function parseHtml(content: string): HTMLElement | null {
+  const cleanHTML = DOMPurify.sanitize(`<div>${content}</div>`);
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(cleanHTML, 'text/html');
+  return doc.body.firstElementChild as HTMLElement | null;
 }
