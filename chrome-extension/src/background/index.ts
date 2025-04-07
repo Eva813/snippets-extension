@@ -6,16 +6,17 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
 });
 
-let popupData: { convertedHtml: any; initialData: any; title: string } | null = null;
+let popupData: { title: string; content: any } | null = null;
 let targetTabId: number | null | undefined = null; // 用來儲存原本有 content script 注入的 tab id
 // 創建 popup 前儲存原本的目標頁籤 ID，並在提交表單時使用該 ID 發送訊息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Side-panel 傳送過來建立 popup 的訊息
   if (message.action === 'createWindow') {
     popupData = {
-      convertedHtml: message.convertedHtml,
-      initialData: message.initialData,
+      // convertedHtml: message.convertedHtml,
+      // initialData: message.initialData,
       title: message.title,
+      content: message.content,
     };
     // 在建立 popup 之前先儲存當前活動 tab 的 id
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
@@ -55,6 +56,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           console.log('Insertion response:', response);
         }
+        console.log('Sending response to popup:', response);
         sendResponse({ success: true, response });
       });
     } else {
