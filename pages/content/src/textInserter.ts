@@ -107,6 +107,7 @@ export function getDeepActiveElement(): Element | null {
 //   return false;
 // }
 
+// 點擊側邊欄的按鈕時，會將文字插入到當前聚焦的輸入框中
 export async function insertTextAtCursor(text: string) {
   console.log('Beginning text insertion:', { text });
   const element = getDeepActiveElement();
@@ -151,7 +152,7 @@ export async function insertTextAtCursor(text: string) {
       const selection = window.getSelection();
       const originalRange = selection?.getRangeAt(0).cloneRange();
 
-      // Try using execCommand first
+      // Try using execCommand first。
       const success = document.execCommand('insertText', false, text);
 
       if (!success) {

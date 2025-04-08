@@ -13,8 +13,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Side-panel 傳送過來建立 popup 的訊息
   if (message.action === 'createWindow') {
     popupData = {
-      // convertedHtml: message.convertedHtml,
-      // initialData: message.initialData,
       title: message.title,
       content: message.content,
     };
