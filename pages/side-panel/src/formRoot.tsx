@@ -32,15 +32,24 @@ const FormRoot = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // 向背景索取先前暫存的資料
-    chrome.runtime.sendMessage({ action: 'getPopupData' }, (response: { data?: PopupData }) => {
-      if (response?.data) {
-        setPopupData(response.data);
-        // 設置 windows 頁面標題
-        document.title = response.data.title || 'Default Title';
-      } else {
-        console.error('No popup data received.');
-      }
+    const fetchPopupData = async () => {
+      chrome.runtime.sendMessage({ action: 'getPopupData' }, (response: { data?: PopupData }) => {
+        if (response?.data) {
+          setPopupData(response.data);
+          document.title = response.data.title || 'Default Title';
+        } else {
+          console.error('未收到 popup 資料');
+        }
+      });
+    };
+
+    fetchPopupData();
+  }, []);
+
+  const initFormData = useCallback((id: string, value: string) => {
+    setFormData(prev => {
+      if (prev[id]) return prev;
+      return { ...prev, [id]: value };
     });
   }, []);
 
@@ -61,15 +70,8 @@ const FormRoot = () => {
         const el = node as HTMLElement;
         const tagName = el.tagName.toLowerCase();
 
+        // 特殊自訂元件
         if (el.tagName === 'SPAN' && el.hasAttribute('data-type')) {
-          // 增加一個初始化表單值的回調函式
-          const initFormData = (id: string, value: string) => {
-            setFormData(prev => {
-              // 如果該 id 已經有值，就不覆蓋
-              if (prev[id]) return prev;
-              return { ...prev, [id]: value };
-            });
-          };
           return renderCustomElement(el, key, handleInputChange, initFormData);
         }
 
@@ -84,7 +86,6 @@ const FormRoot = () => {
         // 建立 style object，加入樣式
         const styleObj: React.CSSProperties = {};
         const style = el.style;
-
         for (let i = 0; i < style.length; i++) {
           const prop = style.item(i);
           if (!prop) continue;
@@ -109,7 +110,7 @@ const FormRoot = () => {
 
       return null;
     },
-    [handleInputChange],
+    [handleInputChange, initFormData],
   );
 
   // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹
@@ -127,52 +128,36 @@ const FormRoot = () => {
 
   // 這個函數用來根據 react preview 與 formData 產生最終輸出的文字
   const generateFinalText = (reactNode: React.ReactNode, formData: Record<string, string>): string => {
-    const processNode = (node: React.ReactNode): string | string[] => {
-      console.log('Processing node:', node);
-      if (React.isValidElement(node)) {
-        // 如果是 <input> 元素，替換為文字節點
-        if (node.type === 'input') {
-          const id = node.props.id;
-          const value = formData[id] || '';
-          return ` ${value} `; // 返回 input 的值
-        }
+    const renderNodeToText = (node: React.ReactNode): string => {
+      if (typeof node === 'string') return node;
 
-        // 如果是 <p> 元素，保留分段
-        if (node.type === 'p') {
-          const children = React.Children.map(node.props.children, processNode) || [];
-          return `<p>${children.join('')}</p>`; // 用 <br/> 分隔段落
-        }
+      if (!React.isValidElement(node)) return '';
 
-        // 遞迴處理其他元素的子節點
-        // 處理其他元素：如果有子節點，直接處理
-        const children = React.Children.map(node.props.children, processNode) || [];
-        return children.join('');
+      const { type, props } = node;
+
+      // 處理 <input>：轉成對應的 formData 值
+      if (type === 'input') {
+        const value = formData[props.id] ?? '';
+        return ` ${value} `;
       }
 
-      // 如果是文字節點，直接返回內容
-      if (typeof node === 'string') {
-        return node;
+      // 處理 <p>：保留段落格式
+      if (type === 'p') {
+        const content = React.Children.map(props.children, renderNodeToText)?.join('') ?? '';
+        return `<p>${content}</p>`;
       }
 
-      // 如果是其他類型，返回空字串
-      return '';
+      // 處理其他元素：遞迴處理子元素
+      const children = React.Children.map(props.children, renderNodeToText)?.join('') ?? '';
+      return children;
     };
 
-    // 如果輸入是陣列，處理每個元素，並保留分段
+    // 處理陣列或單一節點
     if (Array.isArray(reactNode)) {
-      return (
-        reactNode
-          .map(node => {
-            const result = processNode(node);
-            return Array.isArray(result) ? result.join('') : result;
-          })
-          // .filter(Boolean) // 過濾掉空段落
-          .join('\n')
-      ); // 用換行符號分隔段落
+      return reactNode.map(node => renderNodeToText(node)).join('\n'); // 使用換行符號分隔段落
     }
 
-    const result = processNode(reactNode);
-    return Array.isArray(result) ? result.join('') : result;
+    return renderNodeToText(reactNode);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -200,11 +185,10 @@ const FormRoot = () => {
   return (
     <>
       <div className="form-root-container" onKeyDown={handleKeyDown} role="presentation" aria-label="表單區域">
-        <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }} className="m-4">
+        <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }}>
           {/* 預覽區塊 */}
-          <div className="mt-4 flex-1 overflow-y-auto border-2 border-dashed p-4">{parsedHtmlTree}</div>
+          <div className="flex-1 overflow-y-auto">{parsedHtmlTree}</div>
         </div>
-        {JSON.stringify(formData)}
         <div className="bottom-controls">
           <div className="right-content">
             <button className="cancel-button" onClick={handleCancel}>
