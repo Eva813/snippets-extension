@@ -136,7 +136,6 @@ const FormRoot = () => {
       const { type, props } = node;
       console.log('Node type:', type, 'Props:', props);
 
-      // 處理 <input>：轉成對應的 formData 值
       // 處理 <input> 和 <select>：轉成對應的表單資料值
       if (type === 'input' || type === 'select') {
         const value = formData[props.id] ?? '';
@@ -151,6 +150,7 @@ const FormRoot = () => {
 
       // 處理其他元素：遞迴處理子元素
       const children = React.Children.map(props.children, renderNodeToText)?.join('') ?? '';
+      console.log('Children:', children);
       return children;
     };
 
