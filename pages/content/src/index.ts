@@ -163,11 +163,10 @@ async function handleInput(event: Event) {
   }
 
   const cursorInfo = getCursorInfo(target);
-  console.log('取得游標資訊:', cursorInfo);
   const snippet = await findShortcutNearCursor(cursorInfo);
-  console.log('snippet data', snippet);
+  console.log('取得游標資訊:', cursorInfo, snippet);
+
   if (snippet) {
-    // 這邊要檢查
     // 檢查 snippet.content 是否包含 'data-type="formtext"'
     const hasFormField = snippet.content.includes('data-type="formtext"');
     if (!hasFormField) {
@@ -178,6 +177,7 @@ async function handleInput(event: Event) {
       };
       insertContent(target, insertData, cursorInfo);
     } else {
+      console.log('有表單欄位，開啟 popup');
       // Store cursor position info in storage for later use
       const shortcutInfo = {
         shortcut: snippet.shortcut,
