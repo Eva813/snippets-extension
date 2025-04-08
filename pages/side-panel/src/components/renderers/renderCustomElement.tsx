@@ -4,10 +4,18 @@ import { renderFormMenu } from './types/formMenu';
 
 const typeToRenderer: Record<
   string,
-  (attrs: Record<string, string>, key: string, onChange?: React.ChangeEventHandler<HTMLInputElement>) => React.ReactNode
+  (attrs: Record<string, string>, key: string, onChange?: React.ChangeEventHandler<HTMLElement>) => React.ReactNode
 > = {
-  formtext: renderFormText,
-  formmenu: renderFormMenu,
+  formtext: renderFormText as (
+    attrs: Record<string, string>,
+    key: string,
+    onChange?: React.ChangeEventHandler<HTMLElement>,
+  ) => React.ReactNode,
+  formmenu: renderFormMenu as (
+    attrs: Record<string, string>,
+    key: string,
+    onChange?: React.ChangeEventHandler<HTMLElement>,
+  ) => React.ReactNode,
 };
 
 type SnippetAttribute = {
@@ -22,7 +30,7 @@ type Snippet = {
 export function renderCustomElement(
   el: HTMLElement,
   key: string,
-  onChange?: React.ChangeEventHandler<HTMLInputElement>,
+  onChange?: React.ChangeEventHandler<HTMLElement>,
   initFormData?: (id: string, value: string) => void,
 ): React.ReactNode {
   const type = el.getAttribute('data-type')?.toLowerCase();

@@ -134,9 +134,11 @@ const FormRoot = () => {
       if (!React.isValidElement(node)) return '';
 
       const { type, props } = node;
+      console.log('Node type:', type, 'Props:', props);
 
       // 處理 <input>：轉成對應的 formData 值
-      if (type === 'input') {
+      // 處理 <input> 和 <select>：轉成對應的表單資料值
+      if (type === 'input' || type === 'select') {
         const value = formData[props.id] ?? '';
         return ` ${value} `;
       }
@@ -189,6 +191,8 @@ const FormRoot = () => {
           {/* 預覽區塊 */}
           <div className="flex-1 overflow-y-auto">{parsedHtmlTree}</div>
         </div>
+        {/* 顯示表單資料的偵錯資訊 */}
+        <div>{JSON.stringify(formData)}</div>
         <div className="bottom-controls">
           <div className="right-content">
             <button className="cancel-button" onClick={handleCancel}>
