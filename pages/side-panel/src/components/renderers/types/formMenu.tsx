@@ -20,23 +20,51 @@ export function renderFormMenu(
       ? attrs.options.split(',').map(v => v.trim())
       : [];
 
-  // const isMultiple = ["true", "yes", "1"].includes((attrs.multiple || "").toLowerCase());
-  // const isMultiple = Boolean(multipleAttr) || multipleAttr === "true" || multipleAttr === "yes";
   const isMultiple =
     typeof attrs.multiple === 'string'
       ? ['true', 'yes', '1'].includes(attrs.multiple.toLowerCase())
       : Boolean(attrs.multiple);
 
   if (isMultiple) {
+    // 建立一個適配器將 onChange 事件處理函式轉換為 FormMenuMultiSelect 期望的格式
+    const handleMultiSelectChange = onChange
+      ? (id: string, value: string[]) => {
+          const syntheticEvent = {
+            target: {
+              id,
+              value: value.join(','),
+            },
+          } as unknown as React.ChangeEvent<HTMLSelectElement>;
+          onChange(syntheticEvent);
+        }
+      : undefined;
+
     return (
-      <FormMenuMultiSelect
-        key={key}
-        customKey={key}
-        name={name}
-        defaultValue={defaultValue}
-        options={options}
-        id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
-      />
+      <>
+        <FormMenuMultiSelect
+          key={key}
+          customKey={key}
+          name={name}
+          defaultValue={defaultValue}
+          options={options}
+          onChange={handleMultiSelectChange}
+          id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+        />
+        {/* 隱藏的 <select multiple> ，讓 generateFinalText  在 p  根據 type === 'select' 正確渲染 */}
+        <select
+          key={`${key}-hidden`}
+          id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+          multiple
+          defaultValue={defaultValue}
+          onChange={onChange}
+          style={{ display: 'none' }}>
+          {options.map((opt, i) => (
+            <option key={`${opt}-${i}`} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </>
     );
   }
 

@@ -10,15 +10,23 @@ interface FormMenuMultiSelectProps {
   name?: string;
   customKey: string;
   id?: string;
+  onChange?: (id: string, value: string[]) => void;
 }
 
-const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({ options, defaultValue, name, customKey, id }) => {
+const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({
+  options,
+  defaultValue,
+  name,
+  customKey,
+  id,
+  onChange,
+}) => {
   const [selected, setSelected] = useState<string[]>(defaultValue);
   const [open, setOpen] = useState<boolean>(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const dropdownId = `field_renderer_${name ?? 'auto'}_${customKey}`;
+  const dropdownId = id || `field_renderer_${name ?? 'auto'}_${customKey}`;
 
   // 定位 dropdown
   useEffect(() => {
@@ -56,7 +64,13 @@ const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({ options, defa
   }, [open]);
 
   const toggleOption = (opt: string) => {
-    setSelected(prev => (prev.includes(opt) ? prev.filter(v => v !== opt) : [...prev, opt]));
+    setSelected(prev => {
+      const newSelection = prev.includes(opt) ? prev.filter(v => v !== opt) : [...prev, opt];
+      if (onChange) {
+        onChange(dropdownId, newSelection);
+      }
+      return newSelection;
+    });
   };
 
   return (
