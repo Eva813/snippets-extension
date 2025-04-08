@@ -1,6 +1,8 @@
 import './messageHandler';
-import { stripHtml } from './utils';
+import { stripHtml } from './utils/utils';
 import { getDeepActiveElement } from './textInserter';
+import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
+import { insertIntoRange } from '@src/utils/insertIntoRange';
 // Types for snippets and positions
 interface Snippet {
   shortcut: string;
@@ -21,47 +23,47 @@ interface SnippetCache {
 
 let snippetsCache: SnippetCache = {};
 
-// Initialize cache when content script loads
-async function initializeSnippetsCache() {
+async function setupSnippetCache(): Promise<void> {
+  // 初始化快取
   const result = await chrome.storage.local.get('snippets');
-  console.log('取得快捷方式:', result.snippets);
   snippetsCache = result.snippets || {};
+  console.log('初始化 snippets 快取:', snippetsCache);
+
+  chrome.storage.onChanged.addListener(changes => {
+    if (changes.snippets) {
+      snippetsCache = changes.snippets.newValue;
+      console.log('快取 snippets 已更新:', snippetsCache);
+    }
+  });
 }
 
-// Listen for storage changes
-chrome.storage.onChanged.addListener(changes => {
-  if (changes.snippets) {
-    snippetsCache = changes.snippets.newValue;
-  }
-});
-
-// Get cursor position and surrounding text
+// 獲取游標資訊
 function getCursorInfo(element: HTMLElement): CursorInfo {
   let start = 0,
-    end = 0,
-    textBeforeCursor = '',
+    end = 0;
+  let textBeforeCursor = '',
     textAfterCursor = '';
 
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
     start = element.selectionStart ?? 0;
     end = element.selectionEnd ?? 0;
-    textBeforeCursor = element.value.substring(0, start);
-    textAfterCursor = element.value.substring(end);
+    textBeforeCursor = element.value.slice(0, start);
+    textAfterCursor = element.value.slice(end);
   } else if (element.isContentEditable) {
     const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const preRange = range.cloneRange();
-      preRange.selectNodeContents(element);
-      preRange.setEnd(range.startContainer, range.startOffset);
-      start = preRange.toString().length;
-      end = start + range.toString().length;
+    if (!selection || selection.rangeCount === 0) return { start, end, textBeforeCursor, textAfterCursor };
 
-      // 解決換行問題：處理內部HTML結構，避免換行問題
-      const fullText = element.textContent || '';
-      textBeforeCursor = fullText.substring(0, start);
-      textAfterCursor = fullText.substring(end);
-    }
+    const range = selection.getRangeAt(0);
+    const preRange = range.cloneRange();
+    preRange.selectNodeContents(element);
+    preRange.setEnd(range.startContainer, range.startOffset);
+
+    start = preRange.toString().length;
+    end = start + range.toString().length;
+
+    const fullText = element.textContent || '';
+    textBeforeCursor = fullText.slice(0, start);
+    textAfterCursor = fullText.slice(end);
   }
 
   return { start, end, textBeforeCursor, textAfterCursor };
@@ -104,49 +106,50 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet |
 
   return null;
 }
-// Initialize cache when script loads
-initializeSnippetsCache();
 
 // Insert content and update cursor position
 function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: CursorInfo) {
   const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(snippet.shortcut);
   if (shortcutStart === -1) return;
 
-  const textBeforeShortcut = cursorInfo.textBeforeCursor.substring(0, shortcutStart);
-  const newText = textBeforeShortcut + snippet.content + cursorInfo.textAfterCursor;
+  const beforeShortcut = cursorInfo.textBeforeCursor.slice(0, shortcutStart);
+  const combinedText = beforeShortcut + snippet.content + cursorInfo.textAfterCursor;
 
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-    element.value = newText;
-    const newCursorPos = shortcutStart + snippet.content.length;
-    element.setSelectionRange(newCursorPos, newCursorPos);
+    element.value = combinedText;
+    const cursorPos = beforeShortcut.length + snippet.content.length;
+    element.setSelectionRange(cursorPos, cursorPos);
   } else if (element.isContentEditable) {
-    const selection = window.getSelection();
-    if (selection) {
-      const range = selection.getRangeAt(0);
-
-      // 刪除快捷方式的文字
-      const preRange = document.createRange();
-      preRange.setStart(range.startContainer, range.startOffset - snippet.shortcut.length);
-      preRange.setEnd(range.startContainer, range.startOffset);
-      preRange.deleteContents();
-
-      // 插入新的內容
-      const textNode = document.createTextNode(snippet.content);
-      range.insertNode(textNode);
-
-      // 將游標移動到新插入內容的結尾
-      range.setStartAfter(textNode);
-      range.setEndAfter(textNode);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
+    insertContentToContentEditable(element, snippet.content, cursorInfo, snippet.shortcut.length);
   }
 }
 
-// Main input event handler 在這裡處理在瀏覽器直接輸入 shortcut 的情況
+function insertContentToContentEditable(
+  element: HTMLElement,
+  content: string,
+  cursorInfo: CursorInfo,
+  shortcutLength: number,
+) {
+  const { startNode, endNode, startOffset, endOffset } = findTextRangeNodes(
+    element,
+    cursorInfo.start - shortcutLength,
+    cursorInfo.start,
+  );
+
+  if (!startNode || !endNode) {
+    console.warn('無法找到範圍，取消插入');
+    return;
+  }
+
+  const range = document.createRange();
+  range.setStart(startNode, startOffset);
+  range.setEnd(endNode, endOffset);
+  insertIntoRange(range, content);
+}
+
+// input event handler 在這裡處理在瀏覽器直接輸入 shortcut 的情況
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
-  console.log('handleInput event.target:', target);
   const element = getDeepActiveElement();
   console.log('handleInput getDeepActiveElement:', element);
 
@@ -167,37 +170,50 @@ async function handleInput(event: Event) {
   console.log('取得游標資訊:', cursorInfo, snippet);
 
   if (snippet) {
-    // 檢查 snippet.content 是否包含 'data-type="formtext"'
-    const hasFormField = snippet.content.includes('data-type="formtext"');
-    if (!hasFormField) {
-      console.log('只有純文字，立馬插入', snippet);
-      const insertData = {
-        ...snippet,
-        content: stripHtml(snippet.content),
-      };
-      insertContent(target, insertData, cursorInfo);
-    } else {
-      console.log('有表單欄位，開啟 popup');
-      // Store cursor position info in storage for later use
-      const shortcutInfo = {
-        shortcut: snippet.shortcut,
-        position: {
-          start: cursorInfo.start - snippet.shortcut.length,
-          end: cursorInfo.start,
-        },
-      };
-      await chrome.storage.local.set({ shortcutInfo });
-      // 呼叫 background
-      const title = `${snippet.shortcut} - ${snippet.name}`;
-      // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
-      const content = snippet.content;
-      chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
-        console.log('Window creation response:', response);
-      });
-      //insertContent(target, snippet, cursorInfo);
-    }
+    await processSnippetInsertion(snippet, element as HTMLElement, cursorInfo);
   }
 }
 
+async function processSnippetInsertion(snippet: Snippet, element: HTMLElement, cursorInfo: CursorInfo) {
+  const hasFormField = snippet.content.includes('data-type="formtext"');
+
+  if (!hasFormField) {
+    console.log('只有純文字，立馬插入', snippet);
+
+    const insertData: Snippet = {
+      ...snippet,
+      content: stripHtml(snippet.content),
+    };
+
+    insertContent(element, insertData, cursorInfo);
+    return;
+  }
+
+  console.log('有表單欄位，開啟 popup');
+
+  const shortcutInfo = {
+    shortcut: snippet.shortcut,
+    position: {
+      start: cursorInfo.start - snippet.shortcut.length,
+      end: cursorInfo.start,
+    },
+  };
+
+  await chrome.storage.local.set({ shortcutInfo });
+
+  const title = `${snippet.shortcut} - ${snippet.name}`;
+  const content = snippet.content;
+
+  chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
+    console.log('Window creation response:', response);
+  });
+}
+
+initialize();
 // Add event listener
-document.addEventListener('input', handleInput);
+async function initialize() {
+  await setupSnippetCache();
+
+  console.log('Snippet 快取完成，開始監聽輸入事件');
+  document.addEventListener('input', handleInput);
+}
