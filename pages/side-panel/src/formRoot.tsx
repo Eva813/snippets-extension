@@ -183,7 +183,7 @@ const FormRoot = () => {
     chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, response => {
       console.log('Form submitted, response:', response);
       // 選擇性：提交後關閉 popup
-      // window.close();
+      window.close();
     });
   };
 
