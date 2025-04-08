@@ -1,7 +1,11 @@
 import React from 'react';
 import FormMenuMultiSelect from '@src/components/renderers/FormMenuMultiSelect';
 
-export function renderFormMenu(attrs: Record<string, string>, key: string) {
+export function renderFormMenu(
+  attrs: Record<string, string>,
+  key: string,
+  onChange?: React.ChangeEventHandler<HTMLSelectElement>,
+) {
   const name = attrs.name;
   const defaultValue = Array.isArray(attrs.default)
     ? attrs.default
@@ -24,14 +28,24 @@ export function renderFormMenu(attrs: Record<string, string>, key: string) {
       : Boolean(attrs.multiple);
 
   if (isMultiple) {
-    return <FormMenuMultiSelect key={key} customKey={key} name={name} defaultValue={defaultValue} options={options} />;
+    return (
+      <FormMenuMultiSelect
+        key={key}
+        customKey={key}
+        name={name}
+        defaultValue={defaultValue}
+        options={options}
+        id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+      />
+    );
   }
 
   return (
     <select
       key={key}
-      id={name ? `field_renderer_${name}` : undefined}
+      id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
       defaultValue={defaultValue[0] || ''}
+      onChange={onChange}
       className="border border-gray-400 bg-light px-2 py-1 rounded">
       {options.map((opt, i) => (
         <option key={`${opt}-${i}`} value={opt}>

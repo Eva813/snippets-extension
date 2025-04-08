@@ -9,9 +9,10 @@ interface FormMenuMultiSelectProps {
   defaultValue: string[];
   name?: string;
   customKey: string;
+  id?: string;
 }
 
-const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({ options, defaultValue, name, customKey }) => {
+const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({ options, defaultValue, name, customKey, id }) => {
   const [selected, setSelected] = useState<string[]>(defaultValue);
   const [open, setOpen] = useState<boolean>(false);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
@@ -79,6 +80,7 @@ const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({ options, defa
           <div
             ref={dropdownRef}
             style={dropdownStyle}
+            id={id}
             className="bg-white border shadow-md rounded p-2 max-h-60 overflow-auto">
             {options.map((opt, i) => (
               <label

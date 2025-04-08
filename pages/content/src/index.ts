@@ -175,7 +175,8 @@ async function handleInput(event: Event) {
 }
 
 async function processSnippetInsertion(snippet: Snippet, element: HTMLElement, cursorInfo: CursorInfo) {
-  const hasFormField = snippet.content.includes('data-type="formtext"');
+  console.log('處理 snippet 插入:', snippet.content);
+  const hasFormField = snippet.content.includes('data-snippet');
 
   if (!hasFormField) {
     console.log('只有純文字，立馬插入', snippet);
