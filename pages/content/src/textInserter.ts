@@ -1,5 +1,5 @@
 // textInserter.ts
-
+import { insertIntoRange } from '@src/utils/insertIntoRange';
 /**
  * 取得深層的 active element，並嘗試捕捉因點擊容器而非輸入框導致未聚焦正確元素的情況
  */
@@ -143,8 +143,7 @@ export async function insertTextAtCursor(text: string) {
     }
   }
   // 策略 2: 處理 contenteditable 元素
-  else if (element instanceof HTMLElement && element.isContentEditable) {
-    console.log('Handling contenteditable insertion');
+  if (element instanceof HTMLElement && element.isContentEditable) {
     element.focus();
 
     try {
@@ -155,22 +154,11 @@ export async function insertTextAtCursor(text: string) {
       // Try using execCommand first。
       const success = document.execCommand('insertText', false, text);
 
-      if (!success) {
-        console.log('ExecCommand failed, using fallback method');
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          const textNode = document.createTextNode(text);
+      if (!success && selection && selection.rangeCount > 0) {
+        console.warn('execCommand failed, fallback to insertIntoRange');
 
-          // Insert the text
-          range.deleteContents();
-          range.insertNode(textNode);
-
-          // Set cursor position after inserted text
-          range.setStartAfter(textNode);
-          range.setEndAfter(textNode);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
+        const fallbackRange = selection.getRangeAt(0);
+        insertIntoRange(fallbackRange, text); // 使用共用工具函式
       }
 
       // Ensure focus is maintained
