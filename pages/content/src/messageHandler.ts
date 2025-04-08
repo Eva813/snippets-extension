@@ -149,6 +149,7 @@ import { stripHtml } from './utils';
 //   return false;
 // });
 
+// 當 popup 提交表單時，background 會發送訊息給 content script 進行插入
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === 'insertPrompt') {
     if (!message.prompt) {
@@ -158,7 +159,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     // Get stored shortcut info
     chrome.storage.local.get('shortcutInfo', async result => {
-      // const cleanPrompt = stripHtml(message.prompt);
       const element = getDeepActiveElement();
       // 為純文字欄位使用 stripHtml
       const cleanPrompt = stripHtml(message.prompt);
@@ -169,7 +169,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         console.log('Shortcut info:', result.shortcutInfo);
         // Remove the shortcut text first
         if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-          console.log('執行 input/textarea 的插入');
+          console.log('輸入 shortcut 執行 input/textarea 的插入');
           const currentValue = element.value;
           const { start, end } = result.shortcutInfo.position;
           // Remove shortcut and insert new content
@@ -235,8 +235,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
               // 如果找到正確的節點，設定範圍並刪除
               if (startNode && endNode) {
-                console.log('找到 shortcut 位置:', startNode, startOffset, endNode, endOffset);
-
                 // 設定範圍
                 const newRange = document.createRange();
                 newRange.setStart(startNode, startOffset);
@@ -284,6 +282,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: true });
       } else {
         // Fallback to normal insertion if no shortcut info
+        console.log('沒有 shortcut 資訊，使用 sidepanel 的插入');
         const success = await insertTextAtCursor(cleanPrompt);
         sendResponse({ success });
       }
