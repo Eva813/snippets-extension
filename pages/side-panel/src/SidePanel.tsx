@@ -1,6 +1,6 @@
 import '@src/SidePanel.css';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FaCaretDown, FaCaretRight, FaArrowAltCircleDown } from 'react-icons/fa';
 import Header from './components/Header';
 
@@ -21,62 +21,75 @@ const SidePanel = () => {
     }
     setCollapsedFolders(newCollapsed);
   };
-  const folders = [
-    {
-      id: 'HplOMyf2mDqvVMdphJbt',
-      name: 'My Sample Snippets',
-      description: '<p>This is a sample folder</p>',
-      snippets: [
-        {
-          id: '5mJw031VPo2WxNIQyeXN',
-          name: 'Demo - Plain text',
-          content: '<p>be a software engineer</p>',
-          shortcut: '/do',
-        },
-        {
-          id: '6mJw031VPo2WxNIQyeYN',
-          name: 'Demo - Styled Text',
-          content:
-            '<p>be a translate expert, I will give you a sentence and help me translate to english<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="www" defaultvalue="">name: www</span></p><p><span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lan" defaultvalue="en">name: lan, default: en</span></p>',
-          shortcut: '/ih',
-        },
-        {
-          id: 'snippet-1736573580906',
-          name: 'HHHH',
-          content:
-            '<p>New snippet contentHHHHH, 3扮演前端工程師，專業於<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="front" defaultvalue="">name: front</span>，具有語言能力<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="lang" defaultvalue="">name: lang</span></p>',
-          shortcut: '/pro',
-        },
-        {
-          id: 'snippet-1736574349364',
-          name: 'EEE',
-          content:
-            '<p>MMMYM<span data-type="formtext" class="form-text-field" contenteditable="false" role="button" label="peter" defaultvalue="">name: peter</span></p>',
-          shortcut: '/add',
-        },
-        {
-          id: 'snippet-1736657362715',
-          name: 'New snippet',
-          content: 'New snippet content',
-          shortcut: '/dott',
-        },
-        {
-          id: 'snippet-1736658054583',
-          name: 'New snippet',
-          content: 'New snippet content',
-          shortcut: '/er',
-        },
-      ],
-    },
-    {
-      id: 'folder-1736949636952',
-      name: 'New folder',
-      description: '',
-      snippets: [],
-    },
-  ];
+  const folders = useMemo(
+    () => [
+      {
+        id: 'HplOMyf2mDqvVMdphJbt',
+        name: 'My Sample Snippets',
+        description: 'This is a sample folder',
+        snippets: [
+          {
+            id: '5mJw031VPo2WxNIQyeXN',
+            name: 'Demo - Plain text',
+            content:
+              '<p>be a software engineer, familliar with</p><p><span data-type="formtext" data-snippet="{&quot;type&quot;:&quot;formtext&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;}}},&quot;commandName&quot;:&quot;formtext&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;frontEnd&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;vue&quot;}]}"></span></p><p><span data-type="formtext" data-snippet="{&quot;type&quot;:&quot;formtext&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;}}},&quot;commandName&quot;:&quot;formtext&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;english&quot;}]}"></span></p><p></p><p></p>',
+            shortcut: '/do',
+          },
+          {
+            id: '9mJw031VPo2WxNIQyeRT',
+            name: 'Demo - Plain text-2',
+            content:
+              '<p>be a software engineer, familliar with</p><p><span data-type="formtext" data-snippet="{&quot;type&quot;:&quot;formtext&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;}}},&quot;commandName&quot;:&quot;formtext&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:null},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;vue&quot;}]}"></span></p><p><span data-type="formtext" data-snippet="{&quot;type&quot;:&quot;formtext&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;}}},&quot;commandName&quot;:&quot;formtext&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;same&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;english&quot;}]}"></span></p><p><span data-type="formtext" data-snippet="{&quot;type&quot;:&quot;formtext&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;}}},&quot;commandName&quot;:&quot;formtext&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;same&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;testNoName&quot;}]}"></span></p><p></p><p></p>',
+            shortcut: '/2do',
+          },
+          {
+            id: '6mJw031VPo2WxNIQyeYN',
+            name: 'Demo - Styled Text',
+            content: 'be a translate expert, I will give you a sentence and help me translate to english',
+            shortcut: '/ih',
+          },
+          {
+            name: 'New bb',
+            content:
+              '<p>test</p><p><span data-type="formmenu" data-snippet="{&quot;type&quot;:&quot;formmenu&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;options&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;list&quot;:&quot;positional&quot;,&quot;priority&quot;:-1,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The menu options&quot;},&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;},&quot;multiple&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;constant&quot;:true,&quot;priority&quot;:1.4,&quot;placeholder&quot;:&quot;yes&quot;,&quot;description&quot;:&quot;Whether the user can select multiple items&quot;}}},&quot;commandName&quot;:&quot;formmenu&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;options&quot;,&quot;value&quot;:[&quot;Choice 1&quot;,&quot;Choice 2&quot;,&quot;test&quot;]},{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;testOption&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:&quot;Choice 2&quot;},{&quot;name&quot;:&quot;multiple&quot;,&quot;value&quot;:false}]}"></span></p><p><span data-type="formmenu" data-snippet="{&quot;type&quot;:&quot;formmenu&quot;,&quot;spec&quot;:{&quot;positional&quot;:[0,0],&quot;named&quot;:{&quot;options&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;list&quot;:&quot;positional&quot;,&quot;priority&quot;:-1,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The menu options&quot;},&quot;name&quot;:{&quot;priority&quot;:2,&quot;description&quot;:&quot;Name of the form field&quot;,&quot;placeholder&quot;:&quot;Label&quot;,&quot;type&quot;:&quot;string&quot;,&quot;static&quot;:true},&quot;default&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;constant&quot;:true,&quot;priority&quot;:2,&quot;placeholder&quot;:&quot;Placeholder&quot;,&quot;description&quot;:&quot;The default value for the field&quot;},&quot;multiple&quot;:{&quot;type&quot;:&quot;boolean&quot;,&quot;constant&quot;:true,&quot;priority&quot;:1.4,&quot;placeholder&quot;:&quot;yes&quot;,&quot;description&quot;:&quot;Whether the user can select multiple items&quot;}}},&quot;commandName&quot;:&quot;formmenu&quot;,&quot;addon_id&quot;:null,&quot;icon_url&quot;:null,&quot;hasMatchingTokens&quot;:false,&quot;attributes&quot;:[{&quot;name&quot;:&quot;options&quot;,&quot;value&quot;:[&quot;mul&quot;,&quot;tttt&quot;,&quot;Choice 3&quot;]},{&quot;name&quot;:&quot;name&quot;,&quot;value&quot;:&quot;&quot;},{&quot;name&quot;:&quot;default&quot;,&quot;value&quot;:[&quot;Choice 3&quot;,&quot;tttt&quot;]},{&quot;name&quot;:&quot;multiple&quot;,&quot;value&quot;:true}]}"></span></p>',
+            shortcut: '/bt',
+            id: 'snippet-1744093758762',
+          },
+        ],
+      },
+      {
+        id: 'folder-1741057188488',
+        name: 'Test',
+        description: 'test',
+        snippets: [
+          {
+            id: 'snippet-1741057206823',
+            name: 'test',
+            content: '<p>New snippet content Test</p>',
+            shortcut: '/test',
+          },
+        ],
+      },
+    ],
+    [],
+  );
+  // 將 snippet 存到 storage
+  useEffect(() => {
+    const snippetsMap = folders.reduce<Record<string, (typeof folders)[0]['snippets'][0]>>((acc, folder) => {
+      folder.snippets.forEach(snippet => {
+        acc[snippet.shortcut] = snippet;
+      });
+      return acc;
+    }, {});
 
-  const insertPrompt = (id: string) => {
+    chrome.storage.local.set({ snippets: snippetsMap }, () => {
+      console.log('Snippets saved to storage:', snippetsMap);
+    });
+  }, [folders]);
+
+  const insertPrompt = (id: string, event: React.MouseEvent) => {
+    // Prevent default button behavior
+    event.preventDefault();
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
       if (!tabs || !tabs[0].id) {
         console.warn('No active tab found.');
@@ -84,8 +97,8 @@ const SidePanel = () => {
       }
       const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
       if (snippet) {
-        // 檢查 snippet.content 是否包含 'data-type="formtext"'
-        const hasFormField = snippet.content.includes('data-type="formtext"');
+        // 檢查 snippet.content 是否包含 'data-snippet'
+        const hasFormField = snippet.content.includes('data-snippet');
         const title = `${snippet.shortcut} - ${snippet.name}`; // 組合標題
         if (!hasFormField) {
           // 沒有表單欄位，直接發送訊息給 content script進行插入
@@ -95,13 +108,9 @@ const SidePanel = () => {
           });
         } else {
           // 有表單欄位，傳送訊息給 background，由 background 負責打開 popup
-          // chrome.runtime.sendMessage({ action: 'createWindow', prompt: snippet.content }, response => {
-          //   console.log('Window creation response:', response);
-          // });
-          // 有表單欄位，先轉換模板
-          const { convertedHtml, initialData } = convertTemplate(snippet.content);
           // 發送訊息給 background，讓它暫存轉換後的資料，並建立 popup
-          chrome.runtime.sendMessage({ action: 'createWindow', convertedHtml, initialData, title }, response => {
+          const content = snippet.content;
+          chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
             console.log('Window creation response:', response);
           });
         }
@@ -111,8 +120,20 @@ const SidePanel = () => {
     });
   };
 
+  // 接收取得 snippetByShortcut
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 新增除錯日誌
+    console.log('收到訊息:', message);
+    if (message.action === 'getSnippetByShortcut') {
+      console.log('shortcuts 觸發:', message.shortcut);
+      const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.shortcut === message.shortcut);
+      sendResponse({ snippet });
+    }
+  });
+
   return (
     <div className="flex h-[500px]">
+      {/* onMouseDown={(e) =>  e.preventDefault()} */}
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
       {/* snippets List*/}
@@ -157,7 +178,10 @@ const SidePanel = () => {
                               className={`transition-opacity duration-200 ${
                                 hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
                               }`}
-                              onClick={() => insertPrompt(snippet.id)}>
+                              onMouseDown={e => {
+                                e.preventDefault(); // Prevent focus change
+                                insertPrompt(snippet.id, e);
+                              }}>
                               <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />
                             </button>
                             {activeAnimationId === snippet.id && (
@@ -183,34 +207,6 @@ const SidePanel = () => {
       </div>
     </div>
   );
-};
-
-// SidePanel.tsx 內的模板轉換方法
-const convertTemplate = (template: string): { convertedHtml: string; initialData: Record<string, string> } => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(template, 'text/html');
-  const initialData: Record<string, string> = {};
-  // 找到所有帶有 data-type="formtext" 的元素
-  const fields = doc.querySelectorAll('[data-type="formtext"]');
-  fields.forEach((elem, index) => {
-    // 使用 label 屬性作為欄位 key，如果沒有，則用 index 補充
-    const key = elem.getAttribute('label') || `field_${index}`;
-    const defaultValue = elem.getAttribute('defaultvalue') || '';
-    initialData[key] = defaultValue;
-    // 建立 input 元件
-    const input = doc.createElement('input');
-    input.type = 'text';
-    // 用 label 屬性作為 placeholder
-    input.placeholder = key;
-    input.value = defaultValue;
-    input.name = key;
-    // 可加入 onChange 事件，但這邊我們會在 popup 裡統一綁定
-    // 將原先的 span 替換掉
-    elem.parentNode?.replaceChild(input, elem);
-  });
-  console.log(' doc.body.innerHTML data:', doc.body.innerHTML);
-  // 回傳轉換後的 innerHTML 與初始資料
-  return { convertedHtml: doc.body.innerHTML, initialData };
 };
 
 export default withErrorBoundary(withSuspense(SidePanel, <div> Loading ... </div>), <div> Error Occur </div>);

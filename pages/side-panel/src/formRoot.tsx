@@ -1,69 +1,171 @@
 // // formRoot.tsx
 import '@src/formRoot.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
-import type { HTMLReactParserOptions } from 'html-react-parser';
-import parse, { Element } from 'html-react-parser';
-
+// import type { HTMLReactParserOptions } from 'html-react-parser';
+// import parse, { Element } from 'html-react-parser';
+import { renderCustomElement } from '@src/components/renderers/renderCustomElement';
+import { parseHtml } from '@src/lib/utils';
 interface PopupData {
-  convertedHtml: string;
-  initialData: Record<string, string>;
   title: string;
+  content: string;
 }
+
+const VOID_TAGS = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'source',
+  'track',
+  'wbr',
+]);
 
 const FormRoot = () => {
   const [popupData, setPopupData] = useState<PopupData | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // 向背景索取先前暫存的資料
-    chrome.runtime.sendMessage({ action: 'getPopupData' }, (response: { data?: PopupData }) => {
-      if (response?.data) {
-        setPopupData(response.data);
-        setFormData(response.data.initialData);
-        // 設置 windows 頁面標題
-        document.title = response.data.title || 'Default Title';
-      } else {
-        console.error('No popup data received.');
-      }
+    const fetchPopupData = async () => {
+      chrome.runtime.sendMessage({ action: 'getPopupData' }, (response: { data?: PopupData }) => {
+        if (response?.data) {
+          setPopupData(response.data);
+          document.title = response.data.title || 'Default Title';
+        } else {
+          console.error('未收到 popup 資料');
+        }
+      });
+    };
+
+    fetchPopupData();
+  }, []);
+
+  const initFormData = useCallback((id: string, value: string) => {
+    setFormData(prev => {
+      if (prev[id]) return prev;
+      return { ...prev, [id]: value };
     });
   }, []);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Input changed:', e.target);
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  }, []);
+
+  // 遞迴渲染 DOM ➝ React 元素
+  const renderNode = useCallback(
+    (node: ChildNode, key: string): React.ReactNode => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent;
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const tagName = el.tagName.toLowerCase();
+
+        // 特殊自訂元件
+        if (el.tagName === 'SPAN' && el.hasAttribute('data-type')) {
+          return renderCustomElement(el, key, handleInputChange, initFormData);
+        }
+
+        // 遞迴子節點
+        const children = Array.from(el.childNodes).map((child, i) => renderNode(child, `${key}-${i}`));
+
+        // void tag，不含 children
+        if (VOID_TAGS.has(tagName)) {
+          return React.createElement(tagName, { key });
+        }
+
+        // 建立 style object，加入樣式
+        const styleObj: React.CSSProperties = {};
+        const style = el.style;
+        for (let i = 0; i < style.length; i++) {
+          const prop = style.item(i);
+          if (!prop) continue;
+          const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) as keyof React.CSSProperties;
+          const value = style.getPropertyValue(prop);
+          if (value) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            styleObj[camelProp] = value as any;
+          }
+        }
+
+        return React.createElement(
+          tagName,
+          {
+            key,
+            className: 'my-1',
+            style: styleObj,
+          },
+          children,
+        );
+      }
+
+      return null;
+    },
+    [handleInputChange, initFormData],
+  );
+
+  // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹
+  const parsedHtmlTree = useMemo(() => {
+    if (!popupData) return null;
+    console.log('popupData:', popupData);
+    const root = parseHtml(popupData.content);
+    if (!root) return null;
+    return Array.from(root.childNodes).map((child, i) => renderNode(child, `root-${i}`));
+  }, [popupData, renderNode]);
 
   if (!popupData) {
     return <div>Loading...</div>;
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-  // 這個函數用來根據原始 HTML 與 formData 產生最終輸出的文字
-  const generateFinalText = (htmlString: string, formData: Record<string, string>): string => {
-    // 建立一個臨時的容器
-    const container = document.createElement('div');
-    container.innerHTML = htmlString;
-    console.log('Container:', container, 'container.innerHTML:', container.innerHTML);
+  // 這個函數用來根據 react preview 與 formData 產生最終輸出的文字
+  const generateFinalText = (reactNode: React.ReactNode, formData: Record<string, string>): string => {
+    const renderNodeToText = (node: React.ReactNode): string => {
+      if (typeof node === 'string') return node;
 
-    // 遍歷所有 input 節點
-    const inputs = container.querySelectorAll('input');
-    inputs.forEach(input => {
-      const name = input.getAttribute('name');
-      if (name) {
-        const value = formData[name] || '';
-        // 在替換文字前後加入空白，確保和其他文字不會直接連接
-        const textNode = document.createTextNode(' ' + value + ' ');
-        input.replaceWith(textNode);
+      if (!React.isValidElement(node)) return '';
+
+      const { type, props } = node;
+      console.log('Node type:', type, 'Props:', props);
+
+      // 處理 <input> 和 <select>：轉成對應的表單資料值
+      if (type === 'input' || type === 'select') {
+        const value = formData[props.id] ?? '';
+        return ` ${value} `;
       }
-    });
 
-    // 取得容器的文字內容，並利用正則把多餘的空白整理成單一空格，同時去除頭尾空白
-    return container.textContent?.replace(/\s+/g, ' ').trim() || '';
+      // 處理 <p>：保留段落格式
+      if (type === 'p') {
+        const content = React.Children.map(props.children, renderNodeToText)?.join('') ?? '';
+        return `<p>${content}</p>`;
+      }
+
+      // 處理其他元素：遞迴處理子元素
+      const children = React.Children.map(props.children, renderNodeToText)?.join('') ?? '';
+      console.log('Children:', children);
+      return children;
+    };
+
+    // 處理陣列或單一節點
+    if (Array.isArray(reactNode)) {
+      return reactNode.map(node => renderNodeToText(node)).join('\n'); // 使用換行符號分隔段落
+    }
+
+    return renderNodeToText(reactNode);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // 使用 generateFinalText 產生最終的文字內容
-    const finalOutput = generateFinalText(popupData.convertedHtml, formData);
+    const finalOutput = generateFinalText(parsedHtmlTree, formData);
     console.log('Final output:', finalOutput);
     chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, response => {
       console.log('Form submitted, response:', response);
@@ -72,44 +174,30 @@ const FormRoot = () => {
     });
   };
 
-  // 轉換 HTML 時將 <input> 元素替換成綁定了事件的 React 元素
-  const options: HTMLReactParserOptions = {
-    replace: domNode => {
-      if (domNode instanceof Element && domNode.name === 'input') {
-        const attribs = domNode.attribs;
-        return (
-          <input
-            {...attribs}
-            value={formData[attribs.name] || ''}
-            onChange={handleInputChange}
-            className="input-style"
-          />
-        );
-      }
-    },
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e);
+    }
+  };
+
+  const handleCancel = () => {
+    window.close();
   };
 
   return (
     <>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          maxHeight: '100vh',
-          justifyContent: 'space-between',
-        }}>
-        {/* onSubmit={handleSubmit} */}
-        <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }} className="m-4">
-          <div className="flex">
-            {/* 將解析後的內容渲染出來 */}
-            {parse(popupData.convertedHtml, options)}
-          </div>
+      <div className="form-root-container" onKeyDown={handleKeyDown} role="presentation" aria-label="表單區域">
+        <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }}>
+          {/* 預覽區塊 */}
+          <div className="flex-1 overflow-y-auto">{parsedHtmlTree}</div>
         </div>
-        {popupData.convertedHtml}
+        {/* 顯示表單資料的偵錯資訊 */}
+        <div>{JSON.stringify(formData)}</div>
         <div className="bottom-controls">
           <div className="right-content">
-            <button className="cancel-button">Cancel</button>
+            <button className="cancel-button" onClick={handleCancel}>
+              Cancel
+            </button>
             <button className="insert-button" onClick={handleSubmit}>
               Insert
             </button>
