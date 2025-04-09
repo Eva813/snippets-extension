@@ -48,12 +48,12 @@ export function renderFormMenu(
           defaultValue={defaultValue}
           options={options}
           onChange={handleMultiSelectChange}
-          id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+          id={attrs.name ? `field_renderer_${attrs.name}_${key}` : `field_renderer_${key}`}
         />
         {/* 隱藏的 <select multiple> ，讓 generateFinalText  在 p  根據 type === 'select' 正確渲染 */}
         <select
           key={`${key}-hidden`}
-          id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+          id={attrs.name ? `field_renderer_${attrs.name}_${key}` : `field_renderer_${key}`}
           multiple
           defaultValue={defaultValue}
           onChange={onChange}
@@ -71,7 +71,7 @@ export function renderFormMenu(
   return (
     <select
       key={key}
-      id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+      id={attrs.name ? `field_renderer_${attrs.name}_${key}` : `field_renderer_${key}`}
       defaultValue={defaultValue[0] || ''}
       onChange={onChange}
       className="border border-gray-400 bg-light px-2 py-1 rounded">
