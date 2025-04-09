@@ -43,21 +43,22 @@ export function renderCustomElement(
       acc[attr.name] = attr.value;
       return acc;
     }, {});
-
+    const fieldId = attrs.name ? `field_renderer_${attrs.name}_${key}` : `field_renderer_${key}`;
     // 如果 id 屬性不存在，生成唯一的 id
-    if (!attrs.id) {
-      attrs.id = `field_renderer_${key}`;
-    }
+    attrs.id = attrs.id || fieldId;
 
     // 如果有預設值且提供了 initFormData 函式，則初始化表單資料
-    if (attrs.default && initFormData) {
-      const fieldId = `field_renderer_${attrs.name}` || `field_renderer_${key}`;
-      initFormData(fieldId, attrs.default);
+    if (attrs['default'] && initFormData) {
+      initFormData(fieldId, attrs['default']);
     }
 
     const renderer = typeToRenderer[type];
     return renderer ? renderer(attrs, key, onChange) : <span key={key}>[Unknown type: {type}]</span>;
   } catch (err) {
-    return <span key={key}>[Invalid snippet: {(err as Error).message}]</span>;
+    return (
+      <span key={key} style={{ color: 'red' }}>
+        [Rendering failed: Data format error]
+      </span>
+    );
   }
 }

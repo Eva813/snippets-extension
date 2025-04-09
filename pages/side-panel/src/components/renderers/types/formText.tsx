@@ -8,7 +8,7 @@ export function renderFormText(
   return (
     <input
       key={key}
-      id={`field_renderer_${attrs.name}` || `field_renderer_${key}`}
+      id={attrs.name ? `field_renderer_${attrs.name}_${key}` : `field_renderer_${key}`}
       placeholder={attrs.name || 'Label'}
       defaultValue={attrs.default || ''}
       className="bg-light rounded border border-gray-400 px-2 py-1"
