@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@extension/ui';
-import { useStorage } from '@extension/shared';
-import { exampleThemeStorage } from '@extension/storage';
+// import { Button } from '@extension/ui';
+// import { useStorage } from '@extension/shared';
+// import { exampleThemeStorage } from '@extension/storage';
+import SidePanel from './sidePanel';
 
 export default function App() {
-  const theme = useStorage(exampleThemeStorage);
+  // const theme = useStorage(exampleThemeStorage);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -31,12 +32,13 @@ export default function App() {
 
   return (
     <div className={`slide-panel ${isVisible ? 'visible' : ''}`}>
-      <div className="flex gap-1 text-blue-500">
+      {/* <div className="flex gap-1 text-blue-500">
         Edit <strong className="text-blue-700">pages/content-ui/src/app.tsx</strong> and save to reload.
       </div>
       <Button theme={theme} onClick={exampleThemeStorage.toggle}>
         Toggle Theme
-      </Button>
+      </Button> */}
+      <SidePanel />
     </div>
   );
 }

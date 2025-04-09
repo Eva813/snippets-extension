@@ -8,10 +8,16 @@ import 'webextension-polyfill';
 
 // 監聽 extension icon 點擊事件（Chrome manifest v3 使用 chrome.action）
 chrome.action.onClicked.addListener(tab => {
+  console.log('Extension icon clicked:', tab);
   if (tab.id !== undefined) {
     chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
   }
 });
+
+// chrome.action.onClicked.addListener(() => {
+//   // 使用 runtime.sendMessage 發送訊息給所有有註冊接收者的 extension 頁面
+//   chrome.runtime.sendMessage({ action: 'toggleSlidePanel' });
+// });
 
 let popupData: { title: string; content: any } | null = null;
 let targetTabId: number | null | undefined = null; // 用來儲存原本有 content script 注入的 tab id
@@ -31,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       chrome.windows.create(
         {
-          url: chrome.runtime.getURL('side-panel/formLoader.html'),
+          url: chrome.runtime.getURL('content-ui/formLoader.html'),
           type: 'popup',
           width: 500,
           height: 400,
