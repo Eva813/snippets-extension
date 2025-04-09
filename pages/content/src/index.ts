@@ -3,6 +3,23 @@ import { stripHtml } from './utils/utils';
 import { getDeepActiveElement } from './textInserter';
 import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
 import { insertIntoRange } from '@src/utils/insertIntoRange';
+
+// const panel = document.createElement('div');
+// panel.style.position = 'fixed';
+// panel.style.top = '0';
+// panel.style.right = '-300px';
+// panel.style.width = '300px';
+// panel.style.height = '100%';
+// panel.style.backgroundColor = '#fff';
+// panel.style.boxShadow = '-2px 0px 10px rgba(0,0,0,0.3)';
+// panel.style.transition = 'right 0.3s ease-in-out';
+// document.body.appendChild(panel);
+
+// // 滑入面板
+// setTimeout(() => {
+//   panel.style.right = '0';
+// }, 100);
+
 // Types for snippets and positions
 interface Snippet {
   shortcut: string;

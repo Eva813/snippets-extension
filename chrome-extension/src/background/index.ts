@@ -1,9 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'webextension-polyfill';
 
-chrome.runtime.onInstalled.addListener(() => {
-  // 設定當點擊擴充功能圖示時自動開啟側邊欄
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
+// chrome.runtime.onInstalled.addListener(() => {
+//   // 設定當點擊擴充功能圖示時自動開啟側邊欄
+//   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
+// });
+
+// 監聽 extension icon 點擊事件（Chrome manifest v3 使用 chrome.action）
+chrome.action.onClicked.addListener(tab => {
+  if (tab.id !== undefined) {
+    chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
+  }
 });
 
 let popupData: { title: string; content: any } | null = null;
