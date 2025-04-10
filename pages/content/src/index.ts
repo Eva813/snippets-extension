@@ -219,6 +219,81 @@ async function initialize() {
 
   console.log('Snippet 快取完成，開始監聽輸入事件');
   document.addEventListener('input', handleInput);
+  document.addEventListener('click', handleElementClick);
   chrome.storage.local.set({ shortcutInfo: { position: { start: 0, end: 0 } } });
 }
 // chrome.storage.local.set({ shortcutInfo: { position: { start, end } } });
+
+// 處理點擊事件，更新游標位置
+function handleElementClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+
+  if (!target) return;
+
+  // 針對可輸入元素
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable) {
+    // 等待瀏覽器處理完點擊事件後，再獲取準確的游標位置
+    setTimeout(() => {
+      updateCursorPositionInfo(target);
+    }, 0);
+  }
+}
+
+// 更新游標位置資訊
+function updateCursorPositionInfo(element: HTMLElement) {
+  let start = 0,
+    end = 0;
+
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    start = element.selectionStart ?? 0;
+    end = element.selectionEnd ?? start;
+  } else if (element.isContentEditable) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const preRange = document.createRange();
+    preRange.selectNodeContents(element);
+    preRange.setEnd(range.startContainer, range.startOffset);
+
+    start = preRange.toString().length;
+    end = start + range.toString().length;
+  }
+
+  chrome.storage.local.set({
+    cursorPosition: {
+      start,
+      end,
+      elementPath: generateElementPath(element),
+    },
+  });
+
+  console.log('點擊更新游標位置:', { start, end, element });
+}
+
+function generateElementPath(element: Element): string {
+  const path: string[] = [];
+  let current: Element | null = element;
+
+  while (current && current !== document.body && current !== document.documentElement) {
+    let selector = current.tagName.toLowerCase();
+
+    if (current.id) {
+      selector += `#${current.id}`;
+    } else if (current.classList.length > 0) {
+      selector += `.${Array.from(current.classList).join('.')}`;
+    }
+
+    const parent = current.parentElement;
+    if (parent) {
+      const siblings = Array.from(parent.children);
+      const index = siblings.indexOf(current);
+      selector += `:nth-child(${index + 1})`;
+    }
+
+    path.unshift(selector);
+    current = current.parentElement;
+  }
+
+  return path.join(' > ');
+}
