@@ -151,6 +151,7 @@ function insertContentToContentEditable(
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
   const element = getDeepActiveElement();
+  // 在第二次點擊
   console.log('handleInput getDeepActiveElement:', element);
 
   if (
@@ -170,6 +171,7 @@ async function handleInput(event: Event) {
   console.log('取得游標資訊:', cursorInfo, snippet);
 
   if (snippet) {
+    console.log('找到對應的 snippet??:', snippet);
     await processSnippetInsertion(snippet, element as HTMLElement, cursorInfo);
   }
 }
@@ -217,4 +219,6 @@ async function initialize() {
 
   console.log('Snippet 快取完成，開始監聽輸入事件');
   document.addEventListener('input', handleInput);
+  chrome.storage.local.set({ shortcutInfo: { position: { start: 0, end: 0 } } });
 }
+// chrome.storage.local.set({ shortcutInfo: { position: { start, end } } });

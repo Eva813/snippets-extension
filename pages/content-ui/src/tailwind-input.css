@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.slide-panel {
+    position: fixed;
+    top: 0;
+    right: -300px; /* 初始在畫面右側外面 */
+    width: 300px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+    z-index: 9999;
+  }
+  
+  .slide-panel.visible {
+    right: 0; /* 加上 visible 後拉入畫面 */
+  }
+  
