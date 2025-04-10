@@ -6,6 +6,7 @@ import { insertIntoRange } from '@src/utils/insertIntoRange';
 
 // 當 popup 提交表單時，background 會發送訊息給 content script 進行插入
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  console.log('收到訊息 插入:', message);
   if (message.action !== 'insertPrompt') {
     sendResponse({ success: false, error: 'Unknown action' });
     return false;
@@ -49,7 +50,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       activeElement.dispatchEvent(changeEvent);
 
       // 清除 shortcut 資訊
-      chrome.storage.local.remove('shortcutInfo');
+      // chrome.storage.local.remove('shortcutInfo');
 
       sendResponse({ success: true });
       return;
@@ -75,7 +76,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           insertIntoRange(range, cleanPrompt, originalPrompt);
         } else {
           console.warn('找不到對應範圍，改用 insertTextAtCursor');
-          await insertTextAtCursor(cleanPrompt);
+          const positionInfo = shortcutInfo?.position || null;
+          await insertTextAtCursor(cleanPrompt, positionInfo);
         }
       } catch (error) {
         console.error('處理 contenteditable 插入失敗：', error);
@@ -89,7 +91,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     // 若無 shortcut info 或不支援元素
     console.log('沒有 shortcut 資訊或元素類型不符，使用 sidepanel 插入');
-    const success = await insertTextAtCursor(cleanPrompt);
+    // const success = await insertTextAtCursor(cleanPrompt);
+    const positionInfo = shortcutInfo?.position || null;
+    const success = await insertTextAtCursor(cleanPrompt, positionInfo);
     sendResponse({ success });
   });
 

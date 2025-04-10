@@ -1,5 +1,6 @@
 // textInserter.ts
 import { insertIntoRange } from '@src/utils/insertIntoRange';
+import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
 /**
  * 取得深層的 active element，並嘗試捕捉因點擊容器而非輸入框導致未聚焦正確元素的情況
  */
@@ -108,24 +109,107 @@ export function getDeepActiveElement(): Element | null {
 // }
 
 // 點擊側邊欄的按鈕時，會將文字插入到當前聚焦的輸入框中
-export async function insertTextAtCursor(text: string) {
-  console.log('Beginning text insertion:', { text });
+// export async function insertTextAtCursor(text: string) {
+//   console.log('Beginning text insertion:', { text });
+//   const element = getDeepActiveElement();
+//   console.log('Active element:', element);
+
+//   if (!element) {
+//     console.warn('No active element found');
+//     return false;
+//   }
+//   // Store the original focus state
+//   const wasActive = document.activeElement === element;
+
+//   // 策略 1: 處理 <input> 或 <textarea>
+//   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+//     console.log('Handling input/textarea insertion');
+//     element.focus();
+//     const start = element.selectionStart ?? 0;
+//     const end = element.selectionEnd ?? start;
+
+//     try {
+//       // 使用 setRangeText 而不是直接修改 value
+//       element.setRangeText(text, start, end, 'end');
+
+//       // 觸發事件
+//       element.dispatchEvent(new Event('input', { bubbles: true }));
+//       element.dispatchEvent(new Event('change', { bubbles: true }));
+
+//       console.log('Text inserted successfully in input/textarea');
+//       return true;
+//     } catch (error) {
+//       console.error('Error inserting text:', error);
+//       return false;
+//     }
+//   }
+//   // 策略 2: 處理 contenteditable 元素
+//   if (element instanceof HTMLElement && element.isContentEditable) {
+//     element.focus();
+
+//     try {
+//       // Store selection state
+//       const selection = window.getSelection();
+//       const originalRange = selection?.getRangeAt(0).cloneRange();
+
+//       // Try using execCommand first。
+//       const success = document.execCommand('insertText', false, text);
+
+//       if (!success && selection && selection.rangeCount > 0) {
+//         console.warn('execCommand failed, fallback to insertIntoRange');
+
+//         const fallbackRange = selection.getRangeAt(0);
+//         insertIntoRange(fallbackRange, text); // 使用共用工具函式
+//       }
+
+//       // Ensure focus is maintained
+//       requestAnimationFrame(() => {
+//         element.focus();
+//         if (originalRange) {
+//           const newSelection = window.getSelection();
+//           if (newSelection) {
+//             newSelection.removeAllRanges();
+//             newSelection.addRange(originalRange);
+//           }
+//         }
+//       });
+
+//       return true;
+//     } catch (error) {
+//       console.error('Error inserting text:', error);
+
+//       // Attempt to restore focus on error
+//       if (wasActive) {
+//         element.focus();
+//       }
+//     }
+//   }
+
+//   console.warn('No suitable insertion method found');
+//   return false;
+// }
+
+// 點擊側邊欄的按鈕時，會將文字插入到當前聚焦的輸入框中
+export async function insertTextAtCursor(text: string, positionInfo?: { start: number; end: number }) {
+  console.log('執行 insertTextAtCursor:', { text, positionInfo });
   const element = getDeepActiveElement();
   console.log('Active element:', element);
 
   if (!element) {
-    console.warn('No active element found');
+    console.warn('無法找到活動元素');
     return false;
   }
-  // Store the original focus state
+  // 儲存原始焦點狀態
   const wasActive = document.activeElement === element;
 
   // 策略 1: 處理 <input> 或 <textarea>
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-    console.log('Handling input/textarea insertion');
+    console.log('處理 input/textarea 插入');
     element.focus();
-    const start = element.selectionStart ?? 0;
-    const end = element.selectionEnd ?? start;
+
+    // 如果有提供位址資訊，優先使用它
+    const start = positionInfo?.start ?? element.selectionStart ?? 0;
+    const end = positionInfo?.end ?? element.selectionEnd ?? start;
 
     try {
       // 使用 setRangeText 而不是直接修改 value
@@ -135,33 +219,56 @@ export async function insertTextAtCursor(text: string) {
       element.dispatchEvent(new Event('input', { bubbles: true }));
       element.dispatchEvent(new Event('change', { bubbles: true }));
 
-      console.log('Text inserted successfully in input/textarea');
+      console.log('成功插入文字到 input/textarea');
       return true;
     } catch (error) {
-      console.error('Error inserting text:', error);
+      console.error('插入文字時發生錯誤:', error);
       return false;
     }
   }
+
   // 策略 2: 處理 contenteditable 元素
   if (element instanceof HTMLElement && element.isContentEditable) {
+    // 如果有位址資訊，嘗試找到對應的範圍
+    if (positionInfo) {
+      try {
+        const { startNode, endNode, startOffset, endOffset } = findTextRangeNodes(
+          element,
+          positionInfo.start,
+          positionInfo.end,
+        );
+
+        if (startNode && endNode) {
+          const range = document.createRange();
+          range.setStart(startNode, startOffset);
+          range.setEnd(endNode, endOffset);
+          insertIntoRange(range, text);
+          return true;
+        }
+      } catch (error) {
+        console.warn('無法使用位址資訊找到範圍，回到預設處理:', error);
+      }
+    }
+
+    // 若無位址資訊或找不到範圍，使用預設方法
     element.focus();
 
     try {
-      // Store selection state
+      // 儲存選取狀態
       const selection = window.getSelection();
       const originalRange = selection?.getRangeAt(0).cloneRange();
 
-      // Try using execCommand first。
+      // 先嘗試使用 execCommand
       const success = document.execCommand('insertText', false, text);
 
       if (!success && selection && selection.rangeCount > 0) {
-        console.warn('execCommand failed, fallback to insertIntoRange');
+        console.warn('execCommand 失敗，改用 insertIntoRange');
 
         const fallbackRange = selection.getRangeAt(0);
         insertIntoRange(fallbackRange, text); // 使用共用工具函式
       }
 
-      // Ensure focus is maintained
+      // 確保保持焦點
       requestAnimationFrame(() => {
         element.focus();
         if (originalRange) {
@@ -175,15 +282,15 @@ export async function insertTextAtCursor(text: string) {
 
       return true;
     } catch (error) {
-      console.error('Error inserting text:', error);
+      console.error('插入文字時發生錯誤:', error);
 
-      // Attempt to restore focus on error
+      // 嘗試在錯誤時回復焦點
       if (wasActive) {
         element.focus();
       }
     }
   }
 
-  console.warn('No suitable insertion method found');
+  console.warn('找不到合適的插入方法');
   return false;
 }

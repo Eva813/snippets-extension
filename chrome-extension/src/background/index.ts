@@ -1,9 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'webextension-polyfill';
 
-chrome.runtime.onInstalled.addListener(() => {
-  // 設定當點擊擴充功能圖示時自動開啟側邊欄
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
+// chrome.runtime.onInstalled.addListener(() => {
+//   // 設定當點擊擴充功能圖示時自動開啟側邊欄
+//   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
+// });
+// 監聽 extension icon 點擊事件（Chrome manifest v3 使用 chrome.action）
+chrome.action.onClicked.addListener(tab => {
+  console.log('Extension icon clicked:', tab);
+  if (tab.id !== undefined) {
+    chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
+  }
 });
 
 let popupData: { title: string; content: any } | null = null;
@@ -66,3 +73,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 //console.log('background loaded');
+
+// 接收 contnent-Ui sidePanel 傳送的訊息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'sidePanelInsertPrompt') {
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      if (!tabs || !tabs[0]?.id) {
+        console.warn('No active tab found.');
+        sendResponse({ success: false, error: 'No active tab found.' });
+        return;
+      }
+      const { content, shortcut, name } = message.snippet;
+      const title = `${shortcut} - ${name}`;
+      chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: content, title }, response => {
+        console.log('執行 sidePanel 插入:', response);
+        sendResponse({ success: true, response });
+      });
+    });
+    return true;
+  }
+  return false; // 確保所有程式碼路徑都返回值
+});
