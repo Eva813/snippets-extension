@@ -45,7 +45,7 @@ const SidePanel = () => {
           {
             id: '6mJw031VPo2WxNIQyeYN',
             name: 'Demo - Styled Text',
-            content: 'be a translate expert, I will give you a sentence and help me translate to english',
+            content: '<p>be a translate expert, I will give you a sentence and help me translate to english</p>',
             shortcut: '/ih',
           },
           {
