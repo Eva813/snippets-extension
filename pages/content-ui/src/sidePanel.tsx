@@ -11,6 +11,82 @@ const SidePanel = () => {
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
   // 新增動畫觸發的 snippet id 狀態
   // const [activeAnimationId, setActiveAnimationId] = useState<string | null>(null);
+  // 新的狀態變數用於控制 DOM 和動畫
+  const [alignment, setAlignment] = useState<'left' | 'right'>('left');
+  const [visible, setVisible] = useState(false); // 控制是否應該顯示
+  const [inDOM, setInDOM] = useState(false); // 控制是否在 DOM 中
+  const [isAnimating, setIsAnimating] = useState(false); // 控制動畫狀態
+  const [noAnimation, setNoAnimation] = useState(false);
+
+  // 修改動畫處理函式
+  const handlePanelAnimationEnd = (e: React.TransitionEvent) => {
+    // 只處理 transform 屬性的轉換
+    if (e.propertyName === 'transform') {
+      if (!visible) {
+        // 僅當面板應該隱藏時才移除 DOM
+        setInDOM(false);
+        setIsAnimating(false);
+      }
+      // 如果面板應該顯示，保持 isAnimating 為 true
+    }
+  };
+  // 監聽來自背景腳本的訊息
+  useEffect(() => {
+    const messageListener = (message: any) => {
+      console.log('收到訊息:', message);
+      if (message.action === 'toggleSlidePanel') {
+        console.log('切換側邊面板顯示狀態');
+
+        // 切換面板顯示狀態
+        setVisible(prev => {
+          const newState = !prev;
+          console.log('側邊面板新狀態:', newState ? '顯示' : '隱藏');
+
+          if (newState) {
+            // 顯示面板：先加入 DOM，然後啟動動畫
+            setInDOM(true);
+            requestAnimationFrame(() => {
+              setIsAnimating(true);
+            });
+          } else {
+            // 隱藏面板：先啟動動畫，動畫結束後再從 DOM 移除
+            setIsAnimating(false);
+            // 實際 DOM 移除由 handlePanelAnimationEnd 處理
+          }
+
+          return newState;
+        });
+      }
+    };
+
+    // 註冊監聽器
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    // 元件卸載時移除監聽器
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    };
+  }, []);
+  // 切換面板對齊方向
+  // const toggleAlignment = () => {
+  //   setAlignment(prev => (prev === 'left' ? 'right' : 'left'));
+  //   console.log('面板對齊方向切換為:', alignment);
+  // };
+  // 切換面板對齊方向
+  const toggleAlignment = () => {
+    // 步驟 1：暫時禁用動畫
+    setNoAnimation(true);
+
+    // 步驟 2：切換方位
+    setAlignment(prev => (prev === 'left' ? 'right' : 'left'));
+
+    // 步驟 3：用 requestAnimationFrame 或 setTimeout
+    // 讓瀏覽器先渲染好「新的 left / right」位置後，再把 no-animation 移除
+    // 這樣下次再點擊顯示 / 隱藏就有動畫了
+    requestAnimationFrame(() => {
+      setNoAnimation(false);
+    });
+  };
 
   const toggleCollapse = (folderId: string) => {
     const newCollapsed = new Set(collapsedFolders);
@@ -137,11 +213,30 @@ const SidePanel = () => {
     }
   });
 
+  // 如果不在 DOM 中，直接回傳 null
+  if (!inDOM) {
+    return null;
+  }
+
+  // 動態設定 CSS 類別
+  const panelClasses = `slide-panel ${alignment} ${visible ? 'visible bg-white' : ''} ${noAnimation ? 'no-animation' : ''}`;
+
   return (
-    <div className="h-[500px]">
+    <div className={panelClasses} onTransitionEnd={handlePanelAnimationEnd}>
       {/* onMouseDown={(e) =>  e.preventDefault()} */}
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
+
+      {/* Sidebar Options */}
+      <div className="sidebar-options-container text-black">
+        <button onClick={toggleAlignment}>
+          {alignment === 'left' ? 'Align Right' : 'Align Left'}
+          {panelClasses.toString()}
+        </button>
+        {/* <button onClick={toggleOverlay}>
+          {overlay ? 'Push to Side' : 'Overlay'}
+        </button> */}
+      </div>
       {/* snippets List*/}
       <div className="size-full overflow-y-auto bg-white p-2">
         <h2 className="mb-2 text-lg font-semibold text-black">Snippets</h2>

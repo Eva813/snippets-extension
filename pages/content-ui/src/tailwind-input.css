@@ -2,20 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 基本面板樣式 */
 .slide-panel {
-    position: fixed;
-    top: 0;
-    right: -300px; /* 初始在畫面右側外面 */
-    width: 300px;
-    height: 100%;
-    background: #fff;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-    transition: right 0.3s ease-in-out;
-    overflow-y: auto;
-    z-index: 9999;
-  }
-  
-  .slide-panel.visible {
-    right: 0; /* 加上 visible 後拉入畫面 */
-  }
-  
+  position: fixed;
+  top: 0;
+  width: 300px;
+  height: 100%;
+  /* background: #fff; */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  /* opacity 0.3s ease-in-out */
+  transition: transform 0.3s ease-in-out, ;
+  overflow-y: auto;
+  z-index: 9999;
+}
+.slide-panel.no-animation {
+  transition: none !important; 
+}
+ 
+/* 左側面板 - 明確設定 left 和 right 值 */
+.slide-panel.left {
+  left: 0px!important;
+  right: unset!important;
+  transform: translate(-100%);
+}
+
+/* 右側面板 - 明確設定 left 和 right 值 */
+.slide-panel.right {
+  left: unset!important;
+  right: 0px!important;
+  transform: translate(100%);
+}
+
+/* 左側面板 - 顯示 */
+.slide-panel.left.visible {
+  transform: translateX(0);
+}
+
+/* 右側面板 - 顯示 */
+.slide-panel.right.visible {
+  transform: translateX(0);
+}
+
+/* 隱藏的左側面板 */
+/* .slide-panel.left:not(.visible) {
+  transform: translateX(-100%);
+} */
+
+/* 隱藏的右側面板 */
+/* .slide-panel.right:not(.visible) {
+  transform: translateX(100%);
+} */
+
+/* 顯示狀態 - 移除 transform */
+/* .slide-panel.visible {
+  display: block;
+}
+
+.slide-panel.unvisible {
+  display: none;
+} */
+
+
+/* 側邊欄選項容器 */
+.sidebar-options-container {
+  position: absolute;
+  top: 10px;
+  right: 10px; /* 將按鈕放在右上角 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background-color: #f3f4f6;
+  padding: 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10000;
+}
