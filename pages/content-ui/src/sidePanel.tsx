@@ -14,58 +14,34 @@ const SidePanel = () => {
   // 新的狀態變數用於控制 DOM 和動畫
   const [alignment, setAlignment] = useState<'left' | 'right'>('left');
   const [visible, setVisible] = useState(false); // 控制是否應該顯示
-  const [inDOM, setInDOM] = useState(false); // 控制是否在 DOM 中
+  const [isInDOM, setIsInDOM] = useState(false); // 是否掛載到 DOM
   const [isAnimating, setIsAnimating] = useState(false); // 控制動畫狀態
   const [noAnimation, setNoAnimation] = useState(false);
 
-  // 修改動畫處理函式
-  const handlePanelAnimationEnd = (e: React.TransitionEvent) => {
-    // 只處理 transform 屬性的轉換
-    if (e.propertyName === 'transform') {
-      if (!visible) {
-        // 僅當面板應該隱藏時才移除 DOM
-        setInDOM(false);
-        setIsAnimating(false);
-      }
-      // 如果面板應該顯示，保持 isAnimating 為 true
-    }
-  };
   // 監聽來自背景腳本的訊息
   useEffect(() => {
     const messageListener = (message: any) => {
-      console.log('收到訊息:', message);
       if (message.action === 'toggleSlidePanel') {
-        console.log('切換側邊面板顯示狀態');
-
-        // 切換面板顯示狀態
         setVisible(prev => {
-          const newState = !prev;
-          console.log('側邊面板新狀態:', newState ? '顯示' : '隱藏');
-
-          if (newState) {
-            // 顯示面板：先加入 DOM，然後啟動動畫
-            setInDOM(true);
+          const willShow = !prev;
+          if (willShow) {
+            // 1. 先插入 DOM
+            setIsInDOM(true);
+            // 2. 等待下一幀，再加上 .visible 觸發滑入
             requestAnimationFrame(() => {
               setIsAnimating(true);
             });
           } else {
-            // 隱藏面板：先啟動動畫，動畫結束後再從 DOM 移除
+            // 1. 先移除 .visible，讓它有滑出動畫
             setIsAnimating(false);
-            // 實際 DOM 移除由 handlePanelAnimationEnd 處理
+            // 2. 動畫結束後，再從 DOM 移除
           }
-
-          return newState;
+          return willShow;
         });
       }
     };
-
-    // 註冊監聽器
     chrome.runtime.onMessage.addListener(messageListener);
-
-    // 元件卸載時移除監聽器
-    return () => {
-      chrome.runtime.onMessage.removeListener(messageListener);
-    };
+    return () => chrome.runtime.onMessage.removeListener(messageListener);
   }, []);
   // 切換面板對齊方向
   // const toggleAlignment = () => {
@@ -74,17 +50,26 @@ const SidePanel = () => {
   // };
   // 切換面板對齊方向
   const toggleAlignment = () => {
-    // 步驟 1：暫時禁用動畫
-    setNoAnimation(true);
+    // 先暫時關閉動畫
+    setIsAnimating(false);
 
-    // 步驟 2：切換方位
+    // 因為現在可能還是 visible 狀態，所以先等一下把 transform 回到 off-screen
+    // 或者直接把 transition 關閉
+    setNoAnimation(true); // 加一個 no-animation class
+
+    // 切換 left / right
     setAlignment(prev => (prev === 'left' ? 'right' : 'left'));
 
-    // 步驟 3：用 requestAnimationFrame 或 setTimeout
-    // 讓瀏覽器先渲染好「新的 left / right」位置後，再把 no-animation 移除
-    // 這樣下次再點擊顯示 / 隱藏就有動畫了
+    // 確保 DOM 更新完後，再關掉 no-animation
     requestAnimationFrame(() => {
       setNoAnimation(false);
+
+      // 如果原本就處在「顯示」的狀態，需要再次加回 isAnimating=true，否則面板會卡在 off-screen
+      if (visible) {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      }
     });
   };
 
@@ -214,15 +199,30 @@ const SidePanel = () => {
   });
 
   // 如果不在 DOM 中，直接回傳 null
-  if (!inDOM) {
-    return null;
+  if (!isInDOM) {
+    return null; // 不在 DOM 中就不 render
   }
 
   // 動態設定 CSS 類別
-  const panelClasses = `slide-panel ${alignment} ${visible ? 'visible bg-white' : ''} ${noAnimation ? 'no-animation' : ''}`;
+  // const panelClasses = `slide-panel ${alignment} ${visible ? 'visible bg-white' : ''} ${noAnimation ? 'no-animation' : ''}`;
+
+  const panelClasses = `
+    slide-panel
+    ${alignment} 
+    ${isAnimating ? 'visible bg-white z-[9999]' : 'z-[0]'}
+    ${noAnimation ? 'no-animation' : ''}
+  `;
 
   return (
-    <div className={panelClasses} onTransitionEnd={handlePanelAnimationEnd}>
+    <div
+      className={panelClasses}
+      onTransitionEnd={e => {
+        // 只處理 transform 的 transitionEnd
+        if (!isAnimating) {
+          // 代表現在是滑出結束 → 從 DOM 中移除
+          setIsInDOM(false);
+        }
+      }}>
       {/* onMouseDown={(e) =>  e.preventDefault()} */}
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
@@ -231,11 +231,14 @@ const SidePanel = () => {
       <div className="sidebar-options-container text-black">
         <button onClick={toggleAlignment}>
           {alignment === 'left' ? 'Align Right' : 'Align Left'}
-          {panelClasses.toString()}
+          {panelClasses.toString()} and {isInDOM}
         </button>
         {/* <button onClick={toggleOverlay}>
           {overlay ? 'Push to Side' : 'Overlay'}
         </button> */}
+        <div className="mt-2 text-xs">
+          狀態: {isAnimating ? '動畫中' : '靜止'}, DOM: {isInDOM ? '已掛載' : '未掛載'}
+        </div>
       </div>
       {/* snippets List*/}
       <div className="size-full overflow-y-auto bg-white p-2">

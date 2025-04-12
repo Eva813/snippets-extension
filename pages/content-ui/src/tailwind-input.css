@@ -11,25 +11,24 @@
   /* background: #fff; */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   /* opacity 0.3s ease-in-out */
-  transition: transform 0.3s ease-in-out, ;
+  transition: transform 0.3s ease-in-out;
   overflow-y: auto;
-  z-index: 9999;
+  /* z-index: 9999; */
 }
 .slide-panel.no-animation {
   transition: none !important; 
 }
- 
 /* 左側面板 - 明確設定 left 和 right 值 */
 .slide-panel.left {
-  left: 0px!important;
-  right: unset!important;
+  left: 0px;
+  right: unset;
   transform: translate(-100%);
 }
 
 /* 右側面板 - 明確設定 left 和 right 值 */
 .slide-panel.right {
-  left: unset!important;
-  right: 0px!important;
+  left: unset;
+  right: 0px;
   transform: translate(100%);
 }
 
