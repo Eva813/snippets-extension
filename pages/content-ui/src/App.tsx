@@ -9,7 +9,7 @@ export default function App() {
   // const theme = useStorage(exampleThemeStorage);
 
   // 將原本在 SidePanel 的狀態提升到 App
-  const [alignment, setAlignment] = useState<'left' | 'right'>('left');
+  const [alignment, setAlignment] = useState<'left' | 'right'>('right');
   const [visible, setVisible] = useState(false);
   const [isInDOM, setIsInDOM] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);

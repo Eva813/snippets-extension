@@ -11,14 +11,12 @@ interface SidePanelProps extends Record<string, unknown> {
   isAnimating: boolean;
   noAnimation: boolean;
   setIsInDOM: (value: boolean) => void;
-  // setIsAnimating: (value: boolean) => void;
   toggleAlignment: () => void;
   onHover: (element: HTMLElement | null) => void;
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, noAnimation, setIsInDOM, onHover }) => {
   const goToDashboard = () => chrome.tabs.create({ url: 'https://chatgpt.com/' });
-  //const [activeFolderMenu, setActiveFolderMenu] = useState<string | null>(null);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -224,13 +222,6 @@ const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, 
                               }}>
                               <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />
                             </button>
-                            {/* {activeAnimationId === snippet.id && (
-                              <div
-                                className="firework-animation absolute inset-0 flex items-center justify-center"
-                                >
-                                <span className="sparkle">✨</span>
-                              </div>
-                            )} */}
                           </div>
                           <span className="inline-flex h-6 items-center rounded-full border border-blue-300 px-3 py-1 text-sm  font-medium">
                             {snippet.shortcut}
