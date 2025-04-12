@@ -8,16 +8,17 @@
   top: 0;
   width: 300px;
   height: 100%;
-  /* background: #fff; */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   /* opacity 0.3s ease-in-out */
   transition: transform 0.3s ease-in-out;
   overflow-y: auto;
-  /* z-index: 9999; */
+  z-index: 9999;
 }
+
 .slide-panel.no-animation {
-  transition: none !important; 
+  transition: none !important;
 }
+
 /* 左側面板 - 明確設定 left 和 right 值 */
 .slide-panel.left {
   left: 0px;
@@ -42,38 +43,18 @@
   transform: translateX(0);
 }
 
-/* 隱藏的左側面板 */
-/* .slide-panel.left:not(.visible) {
-  transform: translateX(-100%);
-} */
 
-/* 隱藏的右側面板 */
-/* .slide-panel.right:not(.visible) {
-  transform: translateX(100%);
-} */
-
-/* 顯示狀態 - 移除 transform */
-/* .slide-panel.visible {
-  display: block;
-}
-
-.slide-panel.unvisible {
-  display: none;
-} */
-
-
-/* 側邊欄選項容器 */
+/* SidebarOptions 動態定位 */
 .sidebar-options-container {
-  position: absolute;
-  top: 10px;
-  right: 10px; /* 將按鈕放在右上角 */
+  z-index: 10000;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
-  background-color: #f3f4f6;
-  padding: 8px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 10000;
+  box-shadow: #64748B 0px 2px;
+}
+
+.sidebar-options-container.visible {
+  opacity: 1;
+  pointer-events: auto;
+  /* 當可見時允許點擊 */
 }
