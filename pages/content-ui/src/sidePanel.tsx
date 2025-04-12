@@ -1,77 +1,27 @@
 // import '@src/SidePanel.css';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { FaCaretDown, FaCaretRight, FaArrowAltCircleDown } from 'react-icons/fa';
 import Header from './components/Header';
 
-const SidePanel = () => {
+interface SidePanelProps extends Record<string, unknown> {
+  alignment: 'left' | 'right';
+  visible: boolean;
+  isInDOM: boolean;
+  isAnimating: boolean;
+  noAnimation: boolean;
+  setIsInDOM: (value: boolean) => void;
+  // setIsAnimating: (value: boolean) => void;
+  toggleAlignment: () => void;
+  onHover: (element: HTMLElement | null) => void;
+}
+
+const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, noAnimation, setIsInDOM, onHover }) => {
   const goToDashboard = () => chrome.tabs.create({ url: 'https://chatgpt.com/' });
   //const [activeFolderMenu, setActiveFolderMenu] = useState<string | null>(null);
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
-  // 新增動畫觸發的 snippet id 狀態
-  // const [activeAnimationId, setActiveAnimationId] = useState<string | null>(null);
-  // 新的狀態變數用於控制 DOM 和動畫
-  const [alignment, setAlignment] = useState<'left' | 'right'>('left');
-  const [visible, setVisible] = useState(false); // 控制是否應該顯示
-  const [isInDOM, setIsInDOM] = useState(false); // 是否掛載到 DOM
-  const [isAnimating, setIsAnimating] = useState(false); // 控制動畫狀態
-  const [noAnimation, setNoAnimation] = useState(false);
-
-  // 監聽來自背景腳本的訊息
-  useEffect(() => {
-    const messageListener = (message: any) => {
-      if (message.action === 'toggleSlidePanel') {
-        setVisible(prev => {
-          const willShow = !prev;
-          if (willShow) {
-            // 1. 先插入 DOM
-            setIsInDOM(true);
-            // 2. 等待下一幀，再加上 .visible 觸發滑入
-            requestAnimationFrame(() => {
-              setIsAnimating(true);
-            });
-          } else {
-            // 1. 先移除 .visible，讓它有滑出動畫
-            setIsAnimating(false);
-            // 2. 動畫結束後，再從 DOM 移除
-          }
-          return willShow;
-        });
-      }
-    };
-    chrome.runtime.onMessage.addListener(messageListener);
-    return () => chrome.runtime.onMessage.removeListener(messageListener);
-  }, []);
-  // 切換面板對齊方向
-  // const toggleAlignment = () => {
-  //   setAlignment(prev => (prev === 'left' ? 'right' : 'left'));
-  //   console.log('面板對齊方向切換為:', alignment);
-  // };
-  // 切換面板對齊方向
-  const toggleAlignment = () => {
-    // 先暫時關閉動畫
-    setIsAnimating(false);
-
-    // 因為現在可能還是 visible 狀態，所以先等一下把 transform 回到 off-screen
-    // 或者直接把 transition 關閉
-    setNoAnimation(true); // 加一個 no-animation class
-
-    // 切換 left / right
-    setAlignment(prev => (prev === 'left' ? 'right' : 'left'));
-
-    // 確保 DOM 更新完後，再關掉 no-animation
-    requestAnimationFrame(() => {
-      setNoAnimation(false);
-
-      // 如果原本就處在「顯示」的狀態，需要再次加回 isAnimating=true，否則面板會卡在 off-screen
-      if (visible) {
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      }
-    });
-  };
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const toggleCollapse = (folderId: string) => {
     const newCollapsed = new Set(collapsedFolders);
@@ -204,42 +154,28 @@ const SidePanel = () => {
   }
 
   // 動態設定 CSS 類別
-  // const panelClasses = `slide-panel ${alignment} ${visible ? 'visible bg-white' : ''} ${noAnimation ? 'no-animation' : ''}`;
-
   const panelClasses = `
     slide-panel
     ${alignment} 
-    ${isAnimating ? 'visible bg-white z-[9999]' : 'z-[0]'}
+    ${isAnimating ? 'visible bg-white' : ''}
     ${noAnimation ? 'no-animation' : ''}
   `;
 
   return (
     <div
+      ref={panelRef}
       className={panelClasses}
-      onTransitionEnd={e => {
+      onMouseEnter={() => onHover(panelRef.current)}
+      onMouseLeave={() => onHover(null)}
+      onTransitionEnd={() => {
         // 只處理 transform 的 transitionEnd
         if (!isAnimating) {
           // 代表現在是滑出結束 → 從 DOM 中移除
           setIsInDOM(false);
         }
       }}>
-      {/* onMouseDown={(e) =>  e.preventDefault()} */}
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
-
-      {/* Sidebar Options */}
-      <div className="sidebar-options-container text-black">
-        <button onClick={toggleAlignment}>
-          {alignment === 'left' ? 'Align Right' : 'Align Left'}
-          {panelClasses.toString()} and {isInDOM}
-        </button>
-        {/* <button onClick={toggleOverlay}>
-          {overlay ? 'Push to Side' : 'Overlay'}
-        </button> */}
-        <div className="mt-2 text-xs">
-          狀態: {isAnimating ? '動畫中' : '靜止'}, DOM: {isInDOM ? '已掛載' : '未掛載'}
-        </div>
-      </div>
       {/* snippets List*/}
       <div className="size-full overflow-y-auto bg-white p-2">
         <h2 className="mb-2 text-lg font-semibold text-black">Snippets</h2>
