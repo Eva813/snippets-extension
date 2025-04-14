@@ -19,7 +19,6 @@ export default function App() {
   const sidebarOptionsRef = useRef<HTMLDivElement>(null);
 
   const handleHover = (panel: HTMLElement | null) => {
-    console.log('Hovered panel:', panel);
     setHoveredPanel(panel);
   };
   // 新增 SidebarOptions 的滑鼠進入/離開處理函式
