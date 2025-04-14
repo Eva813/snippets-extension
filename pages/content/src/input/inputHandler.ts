@@ -54,7 +54,7 @@ async function handleInput(event: Event) {
 async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
   const textToCheck = cursorInfo.textBeforeCursor;
   const lastWord = textToCheck.trim().split(/\s+/).pop() || '';
-
+  console.log('找到的最後一個單詞:', lastWord);
   // 先從本地快取查找
   const snippet = getSnippetByShortcut(lastWord);
   if (snippet) {
