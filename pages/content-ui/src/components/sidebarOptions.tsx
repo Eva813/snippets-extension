@@ -27,12 +27,22 @@ const SidebarOptions = forwardRef<HTMLDivElement, SidebarOptionsProps>(
           // 計算垂直位置，將選項放在面板中間
           const top = rect.top;
 
-          // 根據對齊方向決定水平位置
-          const left = alignment === 'left' ? rect.right : null;
-          const right = alignment === 'right' ? window.innerWidth - rect.left : null;
+          // 預估按鈕寬度
+          const optionsWidth = 58;
 
-          console.log('計算得到的位置:', { top, left, right, alignment });
-          setPosition({ top, left, right });
+          // 統一使用 left 屬性進行定位
+          let left = null;
+
+          if (alignment === 'left') {
+            // 左側面板：選項放在面板右側
+            left = rect.right;
+          } else {
+            // 右側面板：選項放在面板左側
+            left = rect.left - optionsWidth;
+          }
+
+          console.log('計算得到的位置:', { top, left, alignment });
+          setPosition({ top, left, right: null }); // 不使用 right 屬性
         } catch (error) {
           console.error('計算位置時發生錯誤:', error);
         }

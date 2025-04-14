@@ -16,7 +16,7 @@ interface SidePanelProps extends Record<string, unknown> {
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, noAnimation, setIsInDOM, onHover }) => {
-  const goToDashboard = () => chrome.tabs.create({ url: 'https://chatgpt.com/' });
+  const goToDashboard = () => chrome.tabs.create({ url: 'https://linxly-nextjs.vercel.app/' });
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -175,12 +175,12 @@ const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, 
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
       {/* snippets List*/}
-      <div className="size-full overflow-y-auto bg-white p-2">
+      <div className="content-area overflow-y-auto bg-white p-2">
         <h2 className="mb-2 text-lg font-semibold text-black">Snippets</h2>
         <ul className="text-black">
           {folders.map(folder => (
             <li key={folder.id} className="mb-2">
-              <button
+              <div
                 className={`flex w-full items-center justify-between rounded px-2 py-1 hover:bg-gray-100 dark:hover:text-black 
                   `}>
                 <strong className="cursor-pointer text-lg">{folder.name}</strong>
@@ -195,7 +195,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, 
                     )}
                   </button>
                 </div>
-              </button>
+              </div>
               {!collapsedFolders.has(folder.id) && (
                 <ul className="ml-4 mt-1">
                   {folder.snippets.length === 0 ? (
