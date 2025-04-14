@@ -19,10 +19,9 @@ const SidebarOptions = forwardRef<HTMLDivElement, SidebarOptionsProps>(
 
     useEffect(() => {
       if (panelRef) {
-        console.log('設定位置 - panelRef 存在');
         try {
           const rect = panelRef.getBoundingClientRect();
-          console.log('面板位置資訊:', rect);
+          // console.log('面板位置資訊:', rect);
 
           // 計算垂直位置，將選項放在面板中間
           const top = rect.top;
@@ -41,13 +40,13 @@ const SidebarOptions = forwardRef<HTMLDivElement, SidebarOptionsProps>(
             left = rect.left - optionsWidth;
           }
 
-          console.log('計算得到的位置:', { top, left, alignment });
+          // console.log('計算得到的位置:', { top, left, alignment });
           setPosition({ top, left, right: null }); // 不使用 right 屬性
         } catch (error) {
           console.error('計算位置時發生錯誤:', error);
         }
       } else {
-        console.log('panelRef 不存在，無法計算位置');
+        console.warn('panelRef 不存在，無法計算位置');
       }
     }, [panelRef, alignment]);
 

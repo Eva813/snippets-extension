@@ -245,7 +245,8 @@ const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, 
                                 hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
                               }`}
                               onMouseDown={e => {
-                                // e.preventDefault(); // Prevent focus change
+                                e.preventDefault(); // Prevent focus change
+                                e.stopPropagation();
                                 insertPrompt(snippet.id, e);
                               }}>
                               <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />

@@ -3,11 +3,11 @@ import { stripHtml, generateElementPath } from './utils/utils';
 
 // 負責收集和準備位置資訊
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  console.log('收到訊息 插入:', message);
   if (message.action !== 'insertPrompt') {
     sendResponse({ success: false, error: 'Unknown action' });
     return false;
   }
+  console.log('收到訊息 插入:', message);
 
   if (!message.prompt) {
     sendResponse({ success: false, error: 'Invalid prompt data' });
