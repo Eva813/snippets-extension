@@ -3,6 +3,7 @@ import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { FaCaretDown, FaCaretRight, FaArrowAltCircleDown } from 'react-icons/fa';
 import Header from './components/Header';
+import type { MessageEvent, SnippetShortcutMessage, SnippetResponse } from '@src/types';
 
 interface SidePanelProps extends Record<string, unknown> {
   alignment: 'left' | 'right';
@@ -136,15 +137,42 @@ const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, 
   };
 
   // 接收取得 snippetByShortcut
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // 新增除錯日誌
-    console.log('收到訊息 runTime:', message);
-    if (message.action === 'getSnippetByShortcut') {
-      console.log('shortcuts 觸發:', message.shortcut);
-      const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.shortcut === message.shortcut);
-      sendResponse({ snippet });
+  useEffect(() => {
+    // 檢查訊息是否為 SnippetShortcutMessage 的類型保護函式
+    function isSnippetShortcutMessage(message: MessageEvent): message is SnippetShortcutMessage {
+      return message.action === 'getSnippetByShortcut' && typeof message.shortcut === 'string';
     }
-  });
+
+    // 訊息處理函式
+    const handleMessage = (
+      message: MessageEvent,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response: SnippetResponse) => void,
+    ) => {
+      // 明確排除 toggleSlidePanel 訊息，避免重複處理
+      if (message.action === 'toggleSlidePanel') {
+        return false;
+      }
+      // 只處理 getSnippetByShortcut 動作，避免顯示過多日誌
+      if (isSnippetShortcutMessage(message)) {
+        console.log('shortcuts 觸發:', message.shortcut);
+        const snippet = folders
+          .flatMap(folder => folder.snippets)
+          .find(snippet => snippet.shortcut === message.shortcut);
+        sendResponse({ snippet });
+        return true; // 表示會以非同步方式回應
+      }
+      return false;
+    };
+
+    // 註冊監聽器
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    // 清理：元件卸載時移除監聽器
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage);
+    };
+  }, [folders]);
 
   // 如果不在 DOM 中，直接回傳 null
   if (!isInDOM) {
