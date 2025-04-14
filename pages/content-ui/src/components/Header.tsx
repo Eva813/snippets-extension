@@ -1,12 +1,13 @@
 import React from 'react';
+import { FaArrowRightLong } from 'react-icons/fa6';
 
 const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
   return (
-    <header className="bg-slate-700 px-6 py-4 text-white">
+    <header className="bg-slate-700 p-4 text-white">
       {/* Search Bar */}
       <div className="flex items-center rounded-md bg-slate-500 px-4 py-2">
         <svg
-          xmlns="http://www.w3.org/2000/svg"
+          xmlns="https://linxly-nextjs.vercel.app/"
           className="mr-2 size-5 text-white"
           viewBox="0 0 20 20"
           fill="currentColor">
@@ -24,18 +25,11 @@ const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center space-x-6">
+      <div className="mt-4 flex items-center justify-end space-x-6 sm:mt-0 md:mt-2">
         {/* Go to Dashboard Link */}
-        <button onClick={goToDashboard} className="flex items-center font-medium text-white">
-          Go to Dashboard
-          <svg xmlns="http://www.w3.org/2000/svg" className="ml-1 size-5" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M10.293 14.707a1 1 0 010-1.414L13.586 10 10.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-              clipRule="evenodd"
-            />
-            <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />
-          </svg>
+        <button onClick={goToDashboard} className="flex items-center text-sm text-white">
+          To Dashboard
+          <FaArrowRightLong className="ml-1 text-sm" />
         </button>
       </div>
     </header>
