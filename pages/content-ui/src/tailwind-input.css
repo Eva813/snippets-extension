@@ -11,8 +11,13 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
   /* opacity 0.3s ease-in-out */
   transition: transform 0.3s ease-in-out;
-  overflow-y: auto;
   z-index: 9999;
+}
+
+.slide-panel .content-area {
+  height: calc(100vh - 60px); /* 假設 header 高度為 60px，請根據實際調整 */
+  overflow-y: auto;
+  padding: 0.5rem;
 }
 
 .slide-panel.no-animation {
