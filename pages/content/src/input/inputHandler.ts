@@ -53,28 +53,73 @@ async function handleInput(event: Event) {
 // 在游標位置附近查找快捷鍵
 async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
   const textToCheck = cursorInfo.textBeforeCursor;
-  const lastWord = textToCheck.trim().split(/\s+/).pop() || '';
-  console.log('找到的最後一個單詞:', lastWord);
+
+  // 檢查最後一個斷行符號的位置
+  const lastNewLineIndex = Math.max(textToCheck.lastIndexOf('\n'), textToCheck.lastIndexOf('\r'));
+
+  // 取得最後一行的文字
+  const lastLineText = lastNewLineIndex >= 0 ? textToCheck.substring(lastNewLineIndex + 1) : textToCheck;
+
+  // 策略 1: 優先檢查常見的前綴格式 (如 /, #, ! 等)
+  const prefixMatch = lastLineText.match(/[/#!@][a-zA-Z0-9_-]+$/);
+  if (prefixMatch) {
+    const prefixCandidate = prefixMatch[0];
+    const result = await checkSnippetCandidate(prefixCandidate);
+    if (result) return result;
+  }
+
+  // 策略 2: 檢查以空白分隔的最後一個單詞
+  const lastWord = lastLineText.trim().split(/\s+/).pop() || '';
+  if (lastWord) {
+    const result = await checkSnippetCandidate(lastWord);
+    if (result) return result;
+  }
+
+  // 策略 3: 漸進式檢查 (限制在合理範圍，如 5 個字元)，只檢查最後幾個字元，而不是整行
+  const maxLength = Math.min(5, lastLineText.trim().length);
+  const trimmedEnd = lastLineText.trim().slice(-maxLength);
+
+  // 從最短的可能快捷鍵開始檢查 (至少 1 個字元)
+  for (let i = 1; i <= maxLength; i++) {
+    const candidate = trimmedEnd.slice(-i);
+    if (candidate !== lastWord) {
+      // 避免重複檢查
+      const result = await checkSnippetCandidate(candidate);
+      if (result) return result;
+    }
+  }
+
+  return null;
+}
+
+// 抽離檢查邏輯，減少程式碼重複
+async function checkSnippetCandidate(candidate: string): Promise<Snippet | null> {
   // 先從本地快取查找
-  const snippet = getSnippetByShortcut(lastWord);
+  const snippet = getSnippetByShortcut(candidate);
   if (snippet) {
     return {
-      shortcut: lastWord,
+      shortcut: candidate,
       content: snippet.content,
       name: snippet.name,
     };
   }
 
   try {
-    // 如果本地快取沒有，則向背景發送訊息查詢
+    // 檢查背景服務連線狀態
+    if (!chrome.runtime?.id) {
+      console.warn('擴充功能未啟用或背景服務未執行');
+      return null;
+    }
+    // 如果本地沒有，再向背景發送訊息
     const response = await chrome.runtime.sendMessage({
       action: 'getSnippetByShortcut',
-      shortcut: lastWord,
+      shortcut: candidate,
     });
 
     if (response?.snippet) {
+      console.log('從背景服務找到快捷鍵:', candidate);
       return {
-        shortcut: lastWord,
+        shortcut: candidate,
         content: response.snippet.content,
         name: response.snippet.name,
       };
