@@ -16,7 +16,7 @@ interface SidePanelProps extends Record<string, unknown> {
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, noAnimation, setIsInDOM, onHover }) => {
-  const goToDashboard = () => chrome.tabs.create({ url: 'https://linxly-nextjs.vercel.app/' });
+  const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
