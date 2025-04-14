@@ -50,7 +50,6 @@ export function getDeepActiveElement(): Element | null {
 export async function insertTextAtCursor(text: string, positionInfo?: { start: number; end: number }) {
   console.log('執行 insertTextAtCursor:', { text, positionInfo });
   const element = getDeepActiveElement();
-  console.log('Active element:', element);
 
   if (!element) {
     console.warn('無法找到活動元素');
@@ -82,8 +81,6 @@ export async function insertTextAtCursor(text: string, positionInfo?: { start: n
           elementPath: generateElementPath(element), // 新增此函式來記錄元素路徑
         },
       });
-
-      console.log('更新游標位置:', newPosition);
 
       // 觸發事件
       element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -125,7 +122,6 @@ export async function insertTextAtCursor(text: string, positionInfo?: { start: n
             },
           });
 
-          console.log('更新 contenteditable 游標位置:', newPosition);
           return true;
         }
       } catch (error) {
@@ -163,8 +159,6 @@ export async function insertTextAtCursor(text: string, positionInfo?: { start: n
           elementPath: generateElementPath(element),
         },
       });
-
-      console.log('更新 contenteditable 預設方法游標位置:', newPosition);
 
       // 確保保持焦點
       requestAnimationFrame(() => {
