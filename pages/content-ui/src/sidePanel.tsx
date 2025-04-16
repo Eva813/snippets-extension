@@ -16,7 +16,15 @@ interface SidePanelProps extends Record<string, unknown> {
   onHover: (element: HTMLElement | null) => void;
 }
 
-const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, noAnimation, setIsInDOM, onHover }) => {
+const SidePanel: React.FC<SidePanelProps> = ({
+  alignment,
+  displayMode,
+  isInDOM,
+  isAnimating,
+  noAnimation,
+  setIsInDOM,
+  onHover,
+}) => {
   const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
@@ -193,6 +201,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ alignment, isInDOM, isAnimating, 
       className={panelClasses}
       onMouseEnter={() => onHover(panelRef.current)}
       onMouseLeave={() => onHover(null)}
+      data-display-mode={displayMode}
       onTransitionEnd={() => {
         // 只處理 transform 的 transitionEnd
         if (!isAnimating) {
