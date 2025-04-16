@@ -42,39 +42,26 @@ export default function App() {
 
     // 當面板顯示且是推擠模式時
     if (isAnimating && displayMode === 'push') {
-      // 先移除類別以避免衝突
-      targetBody.classList.remove('panel-push-mode');
-      targetBody.classList.remove('panel-left');
-      targetBody.classList.remove('panel-right');
+      // 添加推擠模式類別
+      targetBody.classList.add('panel-push-mode');
 
-      // 直接套用內聯樣式到 body
+      // 根據對齊方向添加對應類別
       if (alignment === 'right') {
-        targetBody.style.marginRight = '300px';
-        targetBody.style.marginLeft = ''; // 重設左邊距
+        targetBody.classList.add('panel-push-right');
+        targetBody.classList.remove('panel-push-left');
       } else {
-        targetBody.style.marginLeft = '300px';
-        targetBody.style.marginRight = ''; // 重設右邊距
+        targetBody.classList.add('panel-push-left');
+        targetBody.classList.remove('panel-push-right');
       }
-
-      // 設定過渡效果和其他樣式
-      targetBody.style.transition = 'margin 0.3s ease-in-out';
-      targetBody.style.overflowX = 'hidden';
-      targetBody.style.position = 'relative';
 
       // 保留資料屬性便於除錯
       targetBody.dataset.panelMode = 'push';
       targetBody.dataset.panelAlignment = alignment;
     } else {
-      // 重設樣式
-      targetBody.style.marginLeft = '';
-      targetBody.style.marginRight = '';
-      targetBody.style.transition = '';
-      targetBody.style.overflowX = '';
-
-      // 移除類別
+      // 移除所有類別
       targetBody.classList.remove('panel-push-mode');
-      targetBody.classList.remove('panel-left');
-      targetBody.classList.remove('panel-right');
+      targetBody.classList.remove('panel-push-right');
+      targetBody.classList.remove('panel-push-left');
 
       // 清除資料屬性
       delete targetBody.dataset.panelMode;
@@ -83,11 +70,9 @@ export default function App() {
 
     return () => {
       // 清理函式
-      targetBody.style.marginLeft = '';
-      targetBody.style.marginRight = '';
-      targetBody.style.transition = '';
-      targetBody.style.overflowX = '';
       targetBody.classList.remove('panel-push-mode');
+      targetBody.classList.remove('panel-push-right');
+      targetBody.classList.remove('panel-push-left');
     };
   }, [isAnimating, displayMode, alignment]);
 
