@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { FaCaretDown, FaCaretRight, FaArrowAltCircleDown } from 'react-icons/fa';
 import Header from './components/Header';
 import type { MessageEvent, SnippetShortcutMessage, SnippetResponse } from '@src/types';
+import ToggleSidebarButton from '@src/components/toggleSidebarButton';
 
 interface SidePanelProps extends Record<string, unknown> {
   alignment: 'left' | 'right';
@@ -14,31 +15,25 @@ interface SidePanelProps extends Record<string, unknown> {
   setIsInDOM: (value: boolean) => void;
   toggleAlignment: () => void;
   onHover: (element: HTMLElement | null) => void;
+  onToggle: () => void;
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({
   alignment,
+  visible,
   displayMode,
   isInDOM,
   isAnimating,
   noAnimation,
   setIsInDOM,
   onHover,
+  onToggle,
 }) => {
   const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const toggleCollapse = (folderId: string) => {
-    const newCollapsed = new Set(collapsedFolders);
-    if (newCollapsed.has(folderId)) {
-      newCollapsed.delete(folderId);
-    } else {
-      newCollapsed.add(folderId);
-    }
-    setCollapsedFolders(newCollapsed);
-  };
   const folders = useMemo(
     () => [
       {
@@ -91,7 +86,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
     ],
     [],
   );
-  // 將 snippet 存到 storage
+  //  ==========  將 snippet 存到 storage ==========
   useEffect(() => {
     const snippetsMap = folders.reduce<Record<string, (typeof folders)[0]['snippets'][0]>>((acc, folder) => {
       folder.snippets.forEach(snippet => {
@@ -105,46 +100,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
     });
   }, [folders]);
 
-  const insertPrompt = (id: string, event: React.MouseEvent) => {
-    event.preventDefault();
-    console.log('insertPrompt id:', id);
-
-    const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
-    if (!snippet) {
-      console.warn('Snippet not found.');
-      return;
-    }
-
-    // 檢查 snippet.content 是否包含 'data-snippet'
-    const hasFormField = snippet.content.includes('data-snippet');
-    const title = `${snippet.shortcut} - ${snippet.name}`;
-
-    if (!hasFormField) {
-      // 沒有表單欄位，改由傳送訊息給背景，由背景呼叫 chrome.tabs.query
-      chrome.runtime.sendMessage(
-        {
-          action: 'sidePanelInsertPrompt',
-          snippet: {
-            content: snippet.content,
-            shortcut: snippet.shortcut,
-            name: snippet.name,
-          },
-        },
-        response => {
-          console.log('Insertion response from background:', response);
-          // setActiveAnimationId(id);
-        },
-      );
-    } else {
-      // 有表單欄位，仍透過背景建立 popup
-      const content = snippet.content;
-      chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
-        console.log('Window creation response:', response);
-      });
-    }
-  };
-
-  // 接收取得 snippetByShortcut
+  //  ========== 接收背景訊息 接收取得 snippetByShortcut ==========
   useEffect(() => {
     // 檢查訊息是否為 SnippetShortcutMessage 的類型保護函式
     function isSnippetShortcutMessage(message: MessageEvent): message is SnippetShortcutMessage {
@@ -182,6 +138,56 @@ const SidePanel: React.FC<SidePanelProps> = ({
     };
   }, [folders]);
 
+  // ========== 插入 snippet ==========
+  const insertPrompt = (id: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    console.log('insertPrompt id:', id);
+
+    const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
+    if (!snippet) {
+      console.warn('Snippet not found.');
+      return;
+    }
+
+    // 檢查 snippet.content 是否包含 'data-snippet'
+    const hasFormField = snippet.content.includes('data-snippet');
+    const title = `${snippet.shortcut} - ${snippet.name}`;
+
+    if (!hasFormField) {
+      // 沒有表單欄位，改由傳送訊息給背景，由背景呼叫 chrome.tabs.query
+      chrome.runtime.sendMessage(
+        {
+          action: 'sidePanelInsertPrompt',
+          snippet: {
+            content: snippet.content,
+            shortcut: snippet.shortcut,
+            name: snippet.name,
+          },
+        },
+        response => {
+          console.log('Insertion response from background:', response);
+        },
+      );
+    } else {
+      // 有表單欄位，仍透過背景建立 popup
+      const content = snippet.content;
+      chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
+        console.log('Window creation response:', response);
+      });
+    }
+  };
+
+  // ========== 摺疊 folder ==========
+  const toggleCollapse = (folderId: string) => {
+    const newCollapsed = new Set(collapsedFolders);
+    if (newCollapsed.has(folderId)) {
+      newCollapsed.delete(folderId);
+    } else {
+      newCollapsed.add(folderId);
+    }
+    setCollapsedFolders(newCollapsed);
+  };
+
   // 如果不在 DOM 中，直接回傳 null
   if (!isInDOM) {
     return null; // 不在 DOM 中就不 render
@@ -209,6 +215,18 @@ const SidePanel: React.FC<SidePanelProps> = ({
           setIsInDOM(false);
         }
       }}>
+      {/* 側邊欄切換按鈕 - 固定在面板外側 */}
+      <div
+        className="sidebar-toggle-container"
+        onMouseEnter={e => {
+          e.stopPropagation(); // 阻止事件冒泡
+          onHover(null);
+        }}
+        onMouseLeave={e => {
+          e.stopPropagation(); // 阻止事件冒泡
+        }}>
+        <ToggleSidebarButton alignment={alignment} visible={visible} onToggle={onToggle} />
+      </div>
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
       {/* snippets List*/}
