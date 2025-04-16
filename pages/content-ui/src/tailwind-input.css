@@ -62,3 +62,52 @@
   pointer-events: auto;
   /* 當可見時允許點擊 */
 }
+
+/* toggle side panel button */
+/* 側邊欄切換按鈕容器 */
+.sidebar-toggle-container {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.slide-panel.left .sidebar-toggle-container {
+  right: -24px; /* 按鈕寬度 */
+}
+
+.slide-panel.right .sidebar-toggle-container {
+  left: -24px; /* 按鈕寬度 */
+}
+
+/* 提示工具樣式 */
+
+.toggle-sidebar-btn .sidebar-tooltip {
+  position: absolute;
+  visibility: hidden;
+  background-color: #333;
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1001;
+  top: 0;
+}
+
+.slide-panel.left .toggle-sidebar-btn .sidebar-tooltip {
+  left: 100%;
+  margin-left: 8px;
+}
+
+.slide-panel.right .toggle-sidebar-btn .sidebar-tooltip {
+  right: 100%;
+  margin-right: 8px;
+}
+
+.toggle-sidebar-btn:hover .sidebar-tooltip {
+  visibility: visible;
+}
+
+.shortcut-link {
+  color: #4dabf7;
+}
