@@ -5,92 +5,161 @@ import 'webextension-polyfill';
 //   // 設定當點擊擴充功能圖示時自動開啟側邊欄
 //   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
 // });
-// 監聽 extension icon 點擊事件（Chrome manifest v3 使用 chrome.action）
-chrome.action.onClicked.addListener(tab => {
-  console.log('Extension icon clicked:', tab);
-  if (tab.id !== undefined) {
-    chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
-  }
-});
 
-let popupData: { title: string; content: any } | null = null;
-let targetTabId: number | null | undefined = null; // 用來儲存原本有 content script 注入的 tab id
-// 創建 popup 前儲存原本的目標頁籤 ID，並在提交表單時使用該 ID 發送訊息
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Side-panel 傳送過來建立 popup 的訊息
-  if (message.action === 'createWindow') {
-    popupData = {
-      title: message.title,
-      content: message.content,
-    };
-    // 在建立 popup 之前先儲存當前活動 tab 的 id
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      if (tabs && tabs.length > 0) {
-        targetTabId = tabs[0].id;
-        console.log('Stored target tab id:', targetTabId);
-      }
-      chrome.windows.create(
-        {
-          url: chrome.runtime.getURL('side-panel/formLoader.html'),
-          type: 'popup',
-          width: 500,
-          height: 400,
-        },
-        newWindow => {
-          console.log('Popup window created:', newWindow);
-          sendResponse({ success: true });
-        },
-      );
-    });
-    return true;
-  }
+// 定義類型
+interface PopupData {
+  title: string;
+  content: any; // 建議使用更明確的類型而非 any
+}
 
-  // Popup 啟動後向背景索取先前暫存的資料
-  if (message.action === 'getPopupData') {
-    sendResponse({ data: popupData });
-    return true;
-  }
+interface SnippetData {
+  content: string;
+  shortcut: string;
+  name: string;
+}
 
-  // Popup 表單提交後，背景收到訊息，將資料傳給原本有 content script 的 tab 進行插入
-  if (message.action === 'submitForm') {
-    console.log('Form submission received:', message.finalOutput);
-    if (targetTabId) {
-      chrome.tabs.sendMessage(targetTabId, { action: 'insertPrompt', prompt: message.finalOutput }, response => {
-        if (chrome.runtime.lastError) {
-          console.error('Message send error:', chrome.runtime.lastError);
-        } else {
-          console.log('Insertion response:', response);
-        }
-        console.log('Sending response to popup:', response);
-        sendResponse({ success: true, response });
-      });
-    } else {
-      console.error('No target tab id stored');
-      sendResponse({ success: false, error: 'No target tab id stored' });
+// 全域狀態（考慮改用更好的狀態管理方式）
+let popupData: PopupData | null = null;
+let targetTabId: number | null | undefined = null;
+
+// 監聽 extension icon 點擊事件
+// 擴充功能圖示與快捷鍵處理
+function setupExtensionControls() {
+  // 監聽 extension icon 點擊事件
+  chrome.action.onClicked.addListener(tab => {
+    console.log('Extension icon clicked:', tab);
+    if (tab.id !== undefined) {
+      chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
     }
-    return true;
-  }
-});
+  });
 
-//console.log('background loaded');
-
-// 接收 contnent-Ui sidePanel 傳送的訊息
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'sidePanelInsertPrompt') {
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      if (!tabs || !tabs[0]?.id) {
-        console.warn('No active tab found.');
-        sendResponse({ success: false, error: 'No active tab found.' });
-        return;
+  // 監聽快捷鍵事件
+  chrome.commands.onCommand.addListener(async command => {
+    console.log('Command received:', command);
+    if (command === 'toggle_side_panel') {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id !== undefined) {
+        chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
       }
-      const { content, shortcut, name } = message.snippet;
-      const title = `${shortcut} - ${name}`;
-      chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: content, title }, response => {
-        console.log('執行 sidePanel 插入:', response);
-        sendResponse({ success: true, response });
-      });
-    });
-    return true;
+    }
+  });
+
+  // 處理開啟快捷鍵設定頁面
+  chrome.runtime.onMessage.addListener(message => {
+    if (message.action === 'openShortcutsPage') {
+      chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    }
+  });
+}
+
+// Popup 視窗相關處理
+function setupPopupHandling() {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 建立 popup 視窗
+    if (message.action === 'createWindow') {
+      handleCreatePopupWindow(message, sendResponse);
+      return true;
+    }
+
+    // Popup 請求資料
+    if (message.action === 'getPopupData') {
+      sendResponse({ data: popupData });
+      return true;
+    }
+
+    // Popup 表單提交
+    if (message.action === 'submitForm') {
+      handleFormSubmission(message, sendResponse);
+      return true;
+    }
+
+    return false;
+  });
+}
+
+// 側邊欄相關處理
+function setupSidePanelHandling() {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'sidePanelInsertPrompt') {
+      handleSidePanelInsert(message, sendResponse);
+      return true;
+    }
+    return false;
+  });
+}
+
+// PopupWindow
+function handleCreatePopupWindow(message: any, sendResponse: (response?: any) => void) {
+  popupData = {
+    title: message.title,
+    content: message.content,
+  };
+
+  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+    if (tabs?.[0]?.id) {
+      targetTabId = tabs[0].id;
+      console.log('Stored target tab id:', targetTabId);
+    }
+
+    chrome.windows.create(
+      {
+        url: chrome.runtime.getURL('side-panel/formLoader.html'),
+        type: 'popup',
+        width: 500,
+        height: 400,
+      },
+      newWindow => {
+        console.log('Popup window created:', newWindow);
+        sendResponse({ success: true });
+      },
+    );
+  });
+}
+
+function handleFormSubmission(message: any, sendResponse: (response?: any) => void) {
+  console.log('Form submission received:', message.finalOutput);
+
+  if (!targetTabId) {
+    console.error('No target tab id stored');
+    sendResponse({ success: false, error: 'No target tab id stored' });
+    return;
   }
-  return false; // 確保所有程式碼路徑都返回值
-});
+
+  chrome.tabs.sendMessage(targetTabId, { action: 'insertPrompt', prompt: message.finalOutput }, response => {
+    if (chrome.runtime.lastError) {
+      console.error('Message send error:', chrome.runtime.lastError);
+      sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      return;
+    }
+
+    console.log('Insertion response:', response);
+    sendResponse({ success: true, response });
+  });
+}
+
+function handleSidePanelInsert(message: any, sendResponse: (response?: any) => void) {
+  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+    if (!tabs || !tabs[0]?.id) {
+      console.warn('No active tab found.');
+      sendResponse({ success: false, error: 'No active tab found.' });
+      return;
+    }
+
+    const { content, shortcut, name } = message.snippet as SnippetData;
+    const title = `${shortcut} - ${name}`;
+
+    chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: content, title }, response => {
+      sendResponse({ success: true, response });
+    });
+  });
+}
+
+// 初始化
+function initialize() {
+  setupExtensionControls();
+  setupPopupHandling();
+  setupSidePanelHandling();
+  console.log('Background script initialized');
+}
+
+initialize();

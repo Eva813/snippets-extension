@@ -1,6 +1,7 @@
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
 import { generateElementPath, isEditableElement } from '@src/utils//utils';
 
+let cursorUpdateTimeout: number | null = null;
 // 初始化游標追蹤
 export function initializeCursorTracker() {
   document.addEventListener('click', handleElementClick);
@@ -11,6 +12,15 @@ export function initializeCursorTracker() {
   // document.addEventListener('selectionchange', handleSelectionChange);
 
   console.log('游標追蹤已啟動');
+
+  // 新增清除機制
+  return function cleanup() {
+    if (cursorUpdateTimeout !== null) {
+      clearTimeout(cursorUpdateTimeout);
+      cursorUpdateTimeout = null;
+    }
+    document.removeEventListener('click', handleElementClick);
+  };
 }
 
 // 處理點擊事件
@@ -60,6 +70,4 @@ export function updateCursorPosition(element: HTMLElement) {
       elementPath: generateElementPath(element),
     },
   });
-
-  console.log('游標位置已更新:', { start, end });
 }
