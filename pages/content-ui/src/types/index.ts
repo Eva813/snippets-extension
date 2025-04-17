@@ -31,3 +31,12 @@ export interface Snippet {
   content: string;
   shortcut: string;
 }
+
+/**
+ * 資料夾型別定義
+ */
+export interface Folder {
+  id: string;
+  name: string;
+  snippets: Snippet[];
+}
