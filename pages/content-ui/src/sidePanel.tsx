@@ -1,10 +1,10 @@
 // import '@src/SidePanel.css';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { FaCaretDown, FaCaretRight, FaArrowAltCircleDown } from 'react-icons/fa';
 import Header from './components/Header';
 import type { MessageEvent, SnippetShortcutMessage, SnippetResponse } from '@src/types';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
+import FolderList from './components/folderList';
 
 interface SidePanelProps extends Record<string, unknown> {
   alignment: 'left' | 'right';
@@ -140,7 +140,10 @@ const SidePanel: React.FC<SidePanelProps> = ({
 
   // ========== 插入 snippet ==========
   const insertPrompt = (id: string, event: React.MouseEvent) => {
-    event.preventDefault();
+    if (event && event.preventDefault) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     console.log('insertPrompt id:', id);
 
     const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
@@ -231,66 +234,14 @@ const SidePanel: React.FC<SidePanelProps> = ({
       <Header goToDashboard={goToDashboard} />
       {/* snippets List*/}
       <div className="content-area overflow-y-auto bg-white p-2">
-        <h2 className="mb-2 text-lg font-semibold text-black">Snippets</h2>
-        <ul className="text-black">
-          {folders.map(folder => (
-            <li key={folder.id} className="mb-2">
-              <div
-                className={`flex w-full items-center justify-between rounded px-2 py-1 hover:bg-gray-100 dark:hover:text-black 
-                  `}>
-                <strong className="cursor-pointer text-lg">{folder.name}</strong>
-                <div className="flex items-center">
-                  <button
-                    onClick={() => toggleCollapse(folder.id)}
-                    className="mr-1 rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-gray-800">
-                    {collapsedFolders.has(folder.id) ? (
-                      <FaCaretRight className="text-gray-400" size={16} />
-                    ) : (
-                      <FaCaretDown className="text-gray-400" size={16} />
-                    )}
-                  </button>
-                </div>
-              </div>
-              {!collapsedFolders.has(folder.id) && (
-                <ul className="ml-4 mt-1">
-                  {folder.snippets.length === 0 ? (
-                    <span className="ml-2 text-gray-500">No snippets in the folder</span>
-                  ) : (
-                    folder.snippets.map(snippet => (
-                      <li
-                        key={snippet.id}
-                        className="mb-2"
-                        onMouseEnter={() => setHoveredSnippetId(snippet.id)}
-                        onMouseLeave={() => setHoveredSnippetId(null)}>
-                        <div
-                          className={`flex w-full items-center justify-between rounded px-2 py-1 hover:bg-gray-100 dark:hover:text-black`}>
-                          <span className="flex items-center">{snippet.name}</span>
-                          {/* Button: 只有 hover 時顯示，並使用 invisible 保持對齊 */}
-                          <div className="relative ml-4 mr-auto inline-block">
-                            <button
-                              className={`transition-opacity duration-200 ${
-                                hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
-                              }`}
-                              onMouseDown={e => {
-                                e.preventDefault(); // Prevent focus change
-                                e.stopPropagation();
-                                insertPrompt(snippet.id, e);
-                              }}>
-                              <FaArrowAltCircleDown className="mr-1 inline-block text-slate-700" size={20} />
-                            </button>
-                          </div>
-                          <span className="inline-flex h-6 items-center rounded-full border border-blue-300 px-3 py-1 text-sm  font-medium">
-                            {snippet.shortcut}
-                          </span>
-                        </div>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
+        <FolderList
+          folders={folders}
+          collapsedFolders={collapsedFolders}
+          toggleCollapse={toggleCollapse}
+          hoveredSnippetId={hoveredSnippetId}
+          setHoveredSnippetId={setHoveredSnippetId}
+          insertPrompt={id => insertPrompt(id, {} as React.MouseEvent)}
+        />
       </div>
     </div>
   );
