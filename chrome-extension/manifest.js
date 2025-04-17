@@ -21,6 +21,15 @@ const manifest = {
   manifest_version: 3,
   default_locale: 'en',
   name: '__MSG_extensionName__',
+  commands: {
+    toggle_side_panel: {
+      suggested_key: {
+        default: 'Alt+E',
+        mac: 'Alt+E',
+      },
+      description: 'Toggle the side panel.',
+    },
+  },
   browser_specific_settings: {
     gecko: {
       id: 'example@example.com',

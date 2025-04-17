@@ -72,40 +72,42 @@
 }
 
 .slide-panel.left .sidebar-toggle-container {
-  right: -24px; /* 按鈕寬度 */
+  right: -1.25rem; 
 }
 
 .slide-panel.right .sidebar-toggle-container {
-  left: -24px; /* 按鈕寬度 */
+  left: -1.25rem; 
 }
 
 /* 提示工具樣式 */
-
 .toggle-sidebar-btn .sidebar-tooltip {
   position: absolute;
   visibility: hidden;
   background-color: #333;
-  color: white;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
   white-space: nowrap;
   z-index: 1001;
-  top: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: visibility 0.3s, opacity 0.3s;
 }
 
 .slide-panel.left .toggle-sidebar-btn .sidebar-tooltip {
   left: 100%;
-  margin-left: 8px;
+  margin-left: 1.4375rem; 
 }
 
 .slide-panel.right .toggle-sidebar-btn .sidebar-tooltip {
   right: 100%;
-  margin-right: 8px;
+  margin-right: 0.375rem;
 }
 
 .toggle-sidebar-btn:hover .sidebar-tooltip {
   visibility: visible;
+  opacity: 1; 
+  pointer-events: auto;
 }
 
 .shortcut-link {
