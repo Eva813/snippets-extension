@@ -3,9 +3,9 @@ import { FaArrowRightLong } from 'react-icons/fa6';
 
 const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
   return (
-    <header className="bg-slate-700 p-4 text-white">
+    <header className="bg-primary p-4 text-white">
       {/* Search Bar */}
-      <div className="flex items-center rounded-md bg-slate-500 px-4 py-2">
+      <div className="bg-primary-400 flex items-center rounded-md px-4 py-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="mr-2 size-5 text-white"

@@ -58,7 +58,7 @@ export default function FolderItem({
                         hoveredSnippetId === snippet.id ? 'visible opacity-100' : 'invisible opacity-0'
                       }`}
                       onMouseDown={e => handleSnippetInsert(snippet.id, e)}>
-                      <FaArrowAltCircleDown size={20} className="text-slate-700" />
+                      <FaArrowAltCircleDown size={20} className="text-primary" />
                     </button>
                   </div>
                   <span className="inline-flex h-6 items-center rounded-full border border-blue-300 px-3 py-1 text-sm font-medium">

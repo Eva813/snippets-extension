@@ -59,7 +59,7 @@ const SidebarOptions = forwardRef<HTMLDivElement, SidebarOptionsProps>(
     return (
       <div
         ref={ref}
-        className={`sidebar-options-container bg-slate-700 p-2 ${
+        className={`sidebar-options-container bg-primary p-2 ${
           alignment === 'left'
             ? 'rounded-r-md' // 右側圓角
             : 'rounded-l-md' // 左側圓角
