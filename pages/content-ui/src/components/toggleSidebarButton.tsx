@@ -9,26 +9,37 @@ interface ToggleSidebarButtonProps {
 
 const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, visible, onToggle }) => {
   const handleToggle = () => {
-    // 呼叫原有的 onToggle 函式
+    // 呼叫 onToggle 函式
     onToggle();
-    console.log('onToggle');
+  };
+  const handleShortcutLinkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 發送訊息給背景腳本來處理導航
+    chrome.runtime.sendMessage({ action: 'openShortcutsPage' });
   };
   return (
     <button
       data-testid="sidebar-toggle-btn"
-      className={`toggle-sidebar-btn flex h-10 w-6 items-center justify-center bg-slate-700 ${
+      className={`toggle-sidebar-btn flex h-8 w-5 items-center justify-center bg-slate-700 ${
         alignment === 'left'
           ? 'rounded-r-md' // 右側圓角
           : 'rounded-l-md' // 左側圓角
       } ${alignment} ${visible ? 'visible' : ''}`}
       onClick={handleToggle}>
       <div className="relative">
-        <div className="sidebar-tooltip">
-          close side panel (<span className="shortcut-link">⌥W</span>)
+        <div className="sidebar-tooltip text-white">
+          <span className="text-xs text-white">toggle sidebar</span>
+          <a
+            href="chrome://extensions/shortcuts"
+            rel="noopener noreferrer"
+            className="shortcut-link text-xs text-white hover:underline"
+            onClick={handleShortcutLinkClick}>
+            &nbsp;( ⌥E )
+          </a>
         </div>
       </div>
       {alignment === 'left' ? <FaAngleLeft className="text-white" /> : <FaAngleRight className="text-white" />}{' '}
-      {/* align left 使用 FaAngleLeft ; align right 使用 FaAngleRight */}
     </button>
   );
 };
