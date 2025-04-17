@@ -21,7 +21,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, vi
   return (
     <button
       data-testid="sidebar-toggle-btn"
-      className={`toggle-sidebar-btn flex h-8 w-5 items-center justify-center bg-slate-700 ${
+      className={`toggle-sidebar-btn bg-primary flex h-8 w-5 items-center justify-center ${
         alignment === 'left'
           ? 'rounded-r-md' // 右側圓角
           : 'rounded-l-md' // 左側圓角
