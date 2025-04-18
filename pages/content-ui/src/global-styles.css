@@ -1,0 +1,15 @@
+body.panel-push-mode {
+  overflow-x: hidden;
+  position: relative;
+  transition: margin 0.3s ease-in-out;
+}
+
+body.panel-push-right {
+  margin-right: 300px;
+  margin-left: 0;
+}
+
+body.panel-push-left {
+  margin-left: 300px;
+  margin-right: 0;
+}
