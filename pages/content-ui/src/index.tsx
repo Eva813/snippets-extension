@@ -1,11 +1,17 @@
 import { createRoot } from 'react-dom/client';
 import App from '@src/App';
 import tailwindcssOutput from '../dist/tailwind-output.css?inline';
+import globalStyles from './global-styles.css?inline';
 
 const root = document.createElement('div');
 root.id = 'chrome-extension-boilerplate-react-vite-content-view-root';
 
 document.body.append(root);
+
+// 添加全域樣式到主文件，不在 Shadow DOM 中
+const globalStyle = document.createElement('style');
+globalStyle.textContent = globalStyles;
+document.head.appendChild(globalStyle);
 
 const rootIntoShadow = document.createElement('div');
 rootIntoShadow.id = 'shadow-root';

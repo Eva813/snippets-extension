@@ -307,6 +307,9 @@ importers:
       '@extension/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      react-icons:
+        specifier: ^5.4.0
+        version: 5.4.0(react@18.3.1)
     devDependencies:
       '@extension/hmr':
         specifier: workspace:*
