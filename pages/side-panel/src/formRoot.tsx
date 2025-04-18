@@ -54,7 +54,6 @@ const FormRoot = () => {
   }, []);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Input changed:', e.target);
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   }, []);
@@ -116,7 +115,7 @@ const FormRoot = () => {
   // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹
   const parsedHtmlTree = useMemo(() => {
     if (!popupData) return null;
-    console.log('popupData:', popupData);
+
     const root = parseHtml(popupData.content);
     if (!root) return null;
     return Array.from(root.childNodes).map((child, i) => renderNode(child, `root-${i}`));
@@ -134,7 +133,6 @@ const FormRoot = () => {
       if (!React.isValidElement(node)) return '';
 
       const { type, props } = node;
-      console.log('Node type:', type, 'Props:', props);
 
       // 處理 <input> 和 <select>：轉成對應的表單資料值
       if (type === 'input' || type === 'select') {
@@ -150,7 +148,6 @@ const FormRoot = () => {
 
       // 處理其他元素：遞迴處理子元素
       const children = React.Children.map(props.children, renderNodeToText)?.join('') ?? '';
-      console.log('Children:', children);
       return children;
     };
 
@@ -167,7 +164,6 @@ const FormRoot = () => {
     // 使用 generateFinalText 產生最終的文字內容
     const finalOutput = generateFinalText(parsedHtmlTree, formData);
     chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, () => {
-      // 選擇性：提交後關閉 popup
       window.close();
     });
   };
