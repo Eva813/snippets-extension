@@ -166,9 +166,7 @@ const FormRoot = () => {
     e.preventDefault();
     // 使用 generateFinalText 產生最終的文字內容
     const finalOutput = generateFinalText(parsedHtmlTree, formData);
-    console.log('Final output:', finalOutput);
-    chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, response => {
-      console.log('Form submitted, response:', response);
+    chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, () => {
       // 選擇性：提交後關閉 popup
       window.close();
     });
@@ -192,7 +190,7 @@ const FormRoot = () => {
           <div className="flex-1 overflow-y-auto">{parsedHtmlTree}</div>
         </div>
         {/* 顯示表單資料的偵錯資訊 */}
-        <div>{JSON.stringify(formData)}</div>
+        {/* <div>{JSON.stringify(formData)}</div> */}
         <div className="bottom-controls">
           <div className="right-content">
             <button className="cancel-button" onClick={handleCancel}>
