@@ -154,6 +154,27 @@ function handleSidePanelInsert(message: any, sendResponse: (response?: any) => v
   });
 }
 
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
+  if (msg.type === 'GET_FOLDERS') {
+    fetch('https://linxly-nextjs-git-feat-snippet-api-eva813s-projects.vercel.app/api/v1/folders', {
+      method: 'GET',
+      // credentials: 'include', // 若需要傳送 cookie.
+      headers: {
+        // 加上這行來 bypass Vercel Authentication
+        'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS,
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        reply({ success: true, data });
+      })
+      .catch(err => {
+        reply({ success: false, error: err.message });
+      });
+    return true; // 使用非同步回覆
+  }
+});
+
 // 初始化
 function initialize() {
   setupExtensionControls();
