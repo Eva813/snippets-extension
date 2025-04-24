@@ -27,7 +27,6 @@ let targetTabId: number | null | undefined = null;
 function setupExtensionControls() {
   // 監聽 extension icon 點擊事件
   chrome.action.onClicked.addListener(tab => {
-    console.log('Extension icon clicked:', tab);
     if (tab.id !== undefined) {
       chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
     }
@@ -35,7 +34,6 @@ function setupExtensionControls() {
 
   // 監聽快捷鍵事件
   chrome.commands.onCommand.addListener(async command => {
-    console.log('Command received:', command);
     if (command === 'toggle_side_panel') {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab?.id !== undefined) {
@@ -98,7 +96,6 @@ function handleCreatePopupWindow(message: any, sendResponse: (response?: any) =>
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (tabs?.[0]?.id) {
       targetTabId = tabs[0].id;
-      console.log('Stored target tab id:', targetTabId);
     }
 
     chrome.windows.create(
@@ -108,8 +105,7 @@ function handleCreatePopupWindow(message: any, sendResponse: (response?: any) =>
         width: 500,
         height: 400,
       },
-      newWindow => {
-        console.log('Popup window created:', newWindow);
+      () => {
         sendResponse({ success: true });
       },
     );
@@ -117,8 +113,6 @@ function handleCreatePopupWindow(message: any, sendResponse: (response?: any) =>
 }
 
 function handleFormSubmission(message: any, sendResponse: (response?: any) => void) {
-  console.log('Form submission received:', message.finalOutput);
-
   if (!targetTabId) {
     console.error('No target tab id stored');
     sendResponse({ success: false, error: 'No target tab id stored' });
@@ -131,8 +125,6 @@ function handleFormSubmission(message: any, sendResponse: (response?: any) => vo
       sendResponse({ success: false, error: chrome.runtime.lastError.message });
       return;
     }
-
-    console.log('Insertion response:', response);
     sendResponse({ success: true, response });
   });
 }
@@ -140,7 +132,6 @@ function handleFormSubmission(message: any, sendResponse: (response?: any) => vo
 function handleSidePanelInsert(message: any, sendResponse: (response?: any) => void) {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (!tabs || !tabs[0]?.id) {
-      console.warn('No active tab found.');
       sendResponse({ success: false, error: 'No active tab found.' });
       return;
     }
@@ -180,7 +171,6 @@ function initialize() {
   setupExtensionControls();
   setupPopupHandling();
   setupSidePanelHandling();
-  console.log('Background script initialized');
 }
 
 initialize();

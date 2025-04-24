@@ -70,9 +70,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
       }) => {
         if (response.success) {
           setFolders(response.data || []);
-          console.log('從 Background 取得的資料夾:', response.data);
         } else {
-          console.error('取得資料夾失敗:', response.error);
           // 載入失敗時使用預設資料
           setFolders([
             {
@@ -112,7 +110,9 @@ const SidePanel: React.FC<SidePanelProps> = ({
     }, {});
 
     chrome.storage.local.set({ snippets: snippetsMap }, () => {
-      console.log('Snippets saved to storage:', snippetsMap);
+      if (import.meta.env.MODE === 'development') {
+        console.log('Snippets saved to storage:', snippetsMap);
+      }
     });
   }, [folders]);
 
@@ -133,9 +133,8 @@ const SidePanel: React.FC<SidePanelProps> = ({
       if (message.action === 'toggleSlidePanel') {
         return false;
       }
-      // 只處理 getSnippetByShortcut 動作，避免顯示過多日誌
+      // 只處理 getSnippetByShortcut 動作
       if (isSnippetShortcutMessage(message)) {
-        console.log('shortcuts 觸發:', message.shortcut);
         const snippet = folders
           .flatMap(folder => folder.snippets)
           .find(snippet => snippet.shortcut === message.shortcut);
@@ -160,7 +159,6 @@ const SidePanel: React.FC<SidePanelProps> = ({
       event.preventDefault();
       event.stopPropagation();
     }
-    console.log('insertPrompt id:', id);
 
     const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
     if (!snippet) {
@@ -183,15 +181,15 @@ const SidePanel: React.FC<SidePanelProps> = ({
             name: snippet.name,
           },
         },
-        response => {
-          console.log('Insertion response from background:', response);
-        },
+        () => {},
       );
     } else {
       // 有表單欄位，仍透過背景建立 popup
       const content = snippet.content;
       chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
-        console.log('Window creation response:', response);
+        if (import.meta.env.MODE === 'development') {
+          console.log('Window creation response:', response);
+        }
       });
     }
   };

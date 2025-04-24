@@ -48,7 +48,6 @@ export function getDeepActiveElement(): Element | null {
 
 // 點擊側邊欄的按鈕時，會將文字插入到當前聚焦的輸入框中
 export async function insertTextAtCursor(text: string, positionInfo?: { start: number; end: number }) {
-  console.log('執行 insertTextAtCursor:', { text, positionInfo });
   const element = getDeepActiveElement();
 
   if (!element) {

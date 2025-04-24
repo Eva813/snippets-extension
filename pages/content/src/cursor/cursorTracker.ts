@@ -11,8 +11,6 @@ export function initializeCursorTracker() {
   // 新增：監聽選取事件
   // document.addEventListener('selectionchange', handleSelectionChange);
 
-  console.log('游標追蹤已啟動');
-
   // 新增清除機制
   return function cleanup() {
     if (cursorUpdateTimeout !== null) {
