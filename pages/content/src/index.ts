@@ -8,7 +8,5 @@ async function initialize() {
   await initializeSnippetManager();
   initializeCursorTracker();
   initializeInputHandler();
-
-  console.log('擴充功能初始化完成');
 }
 initialize();

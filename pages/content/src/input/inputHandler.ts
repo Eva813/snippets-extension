@@ -27,7 +27,6 @@ const debouncedUpdateCursorPosition = debounce(updateCursorPosition, 300);
 
 export function initializeInputHandler() {
   document.addEventListener('input', handleInput);
-  console.info('輸入事件監聽已啟動');
 }
 
 // 處理輸入事件 - 偵測快捷鍵並進行插入
@@ -35,7 +34,6 @@ async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
   const element = getDeepActiveElement();
   if (!isEditableElement(element)) {
-    console.log('不是可編輯元素，返回');
     return;
   }
   debouncedUpdateCursorPosition(target);
@@ -117,7 +115,6 @@ async function checkSnippetCandidate(candidate: string): Promise<Snippet | null>
     });
 
     if (response?.snippet) {
-      console.log('從背景服務找到快捷鍵:', candidate);
       return {
         shortcut: candidate,
         content: response.snippet.content,

@@ -10,8 +10,6 @@ let snippetCache: SnippetCache = {};
 export async function initializeSnippetManager(): Promise<void> {
   await refreshSnippetCache();
   setupStorageListener();
-
-  console.log('程式碼片段管理器初始化完成');
 }
 
 // 重新整理快取資料
