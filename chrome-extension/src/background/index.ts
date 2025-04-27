@@ -147,7 +147,7 @@ function handleSidePanelInsert(message: any, sendResponse: (response?: any) => v
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg.type === 'GET_FOLDERS') {
-    fetch('https://linxly-nextjs-git-feat-snippet-api-eva813s-projects.vercel.app/api/v1/folders', {
+    fetch('https://linxly-nextjs.vercel.app/api/v1/folders', {
       method: 'GET',
       // credentials: 'include', // 若需要傳送 cookie.
       headers: {
