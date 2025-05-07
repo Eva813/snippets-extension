@@ -50,7 +50,6 @@ export function recordCursorInfo() {
     const start = element.selectionStart ?? 0;
     const end = element.selectionEnd ?? start;
     chrome.storage.local.set({ shortcutInfo: { position: { start, end } } });
-    console.log('儲存 caret 資訊:', { start, end });
   } else if (element instanceof HTMLElement && element.isContentEditable) {
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
@@ -59,7 +58,6 @@ export function recordCursorInfo() {
       const start = range.startOffset;
       const end = range.startOffset;
       chrome.storage.local.set({ shortcutInfo: { position: { start, end } } });
-      console.log('Contenteditable - 儲存 caret 資訊:', { start, end });
     }
   }
 }

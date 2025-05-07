@@ -7,7 +7,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     sendResponse({ success: false, error: 'Unknown action' });
     return false;
   }
-  console.log('收到訊息 插入:', message);
 
   if (!message.prompt) {
     sendResponse({ success: false, error: 'Invalid prompt data' });
