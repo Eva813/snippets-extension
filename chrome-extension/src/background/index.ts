@@ -1,11 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'webextension-polyfill';
 
-// chrome.runtime.onInstalled.addListener(() => {
-//   // 設定當點擊擴充功能圖示時自動開啟側邊欄
-//   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
-// });
-
 // 定義類型
 interface PopupData {
   title: string;
