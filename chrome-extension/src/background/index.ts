@@ -21,17 +21,20 @@ interface SnippetData {
 // 全域狀態（考慮改用更好的狀態管理方式）
 let popupData: PopupData | null = null;
 let targetTabId: number | null | undefined = null;
+let hasFoldersGlobal = false;
 
 // 監聽 extension icon 點擊事件
 // 擴充功能圖示與快捷鍵處理
 function setupExtensionControls() {
   // 監聽 extension icon 點擊事件
-  chrome.action.onClicked.addListener(tab => {
-    if (tab.id !== undefined) {
+  chrome.action.onClicked.addListener(async tab => {
+    console.log('hasFoldersGlobal:', hasFoldersGlobal);
+    if (hasFoldersGlobal && tab.id !== undefined) {
       chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
+    } else {
+      chrome.tabs.create({ url: 'http://localhost:3000/login' });
     }
   });
-
   // 監聽快捷鍵事件
   chrome.commands.onCommand.addListener(async command => {
     if (command === 'toggle_side_panel') {
@@ -52,7 +55,7 @@ function setupExtensionControls() {
 
 // Popup 視窗相關處理
 function setupPopupHandling() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     // 建立 popup 視窗
     if (message.action === 'createWindow') {
       handleCreatePopupWindow(message, sendResponse);
@@ -77,7 +80,7 @@ function setupPopupHandling() {
 
 // 側邊欄相關處理
 function setupSidePanelHandling() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     if (message.action === 'sidePanelInsertPrompt') {
       handleSidePanelInsert(message, sendResponse);
       return true;
@@ -163,6 +166,15 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         reply({ success: false, error: err.message });
       });
     return true; // 使用非同步回覆
+  }
+});
+
+chrome.runtime.onMessage.addListener(message => {
+  if (message.action === 'updateIcon') {
+    console.log('updateIcon', message);
+    hasFoldersGlobal = message.hasFolders;
+    const iconPath = message.hasFolders ? 'icon-34.png' : 'icon-34-gray.png';
+    chrome.action.setIcon({ path: iconPath });
   }
 });
 

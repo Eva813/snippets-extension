@@ -1,4 +1,3 @@
-// import '@src/SidePanel.css';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
@@ -102,18 +101,26 @@ const SidePanel: React.FC<SidePanelProps> = ({
   }, []);
   //  ==========  將 snippet 存到 storage ==========
   useEffect(() => {
-    const snippetsMap = folders.reduce<Record<string, (typeof folders)[0]['snippets'][0]>>((acc, folder) => {
-      folder.snippets.forEach(snippet => {
-        acc[snippet.shortcut] = snippet;
-      });
-      return acc;
-    }, {});
+    const validFolders = Array.isArray(folders) ? folders : [];
+    if (validFolders.length <= 0) {
+      // 修正條件，應該是 <= 0
+      console.log('data');
+      chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
+    } else {
+      chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: true });
+      const snippetsMap = validFolders.reduce<Record<string, (typeof folders)[0]['snippets'][0]>>((acc, folder) => {
+        folder.snippets.forEach(snippet => {
+          acc[snippet.shortcut] = snippet;
+        });
+        return acc;
+      }, {});
 
-    chrome.storage.local.set({ snippets: snippetsMap }, () => {
-      if (import.meta.env.MODE === 'development') {
-        console.log('Snippets saved to storage:', snippetsMap);
-      }
-    });
+      chrome.storage.local.set({ snippets: snippetsMap }, () => {
+        if (import.meta.env.MODE === 'development') {
+          console.log('Snippets saved to storage:', snippetsMap);
+        }
+      });
+    }
   }, [folders]);
 
   //  ========== 接收背景訊息 接收取得 snippetByShortcut ==========
@@ -144,10 +151,8 @@ const SidePanel: React.FC<SidePanelProps> = ({
       return false;
     };
 
-    // 註冊監聽器
     chrome.runtime.onMessage.addListener(handleMessage);
 
-    // 清理：元件卸載時移除監聽器
     return () => {
       chrome.runtime.onMessage.removeListener(handleMessage);
     };
@@ -207,7 +212,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
 
   // 如果不在 DOM 中，直接回傳 null
   if (!isInDOM) {
-    return null; // 不在 DOM 中就不 render
+    return null;
   }
 
   // 動態設定 CSS 類別
