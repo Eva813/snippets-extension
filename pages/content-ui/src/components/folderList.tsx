@@ -21,17 +21,19 @@ export default function FolderList({
 }: FolderListProps) {
   return (
     <ul className="text-black">
-      {folders.map((folder: Folder) => (
-        <FolderItem
-          key={folder.id}
-          folder={folder}
-          isCollapsed={collapsedFolders.has(folder.id)}
-          toggleCollapse={toggleCollapse}
-          hoveredSnippetId={hoveredSnippetId}
-          setHoveredSnippetId={setHoveredSnippetId}
-          insertPrompt={insertPrompt}
-        />
-      ))}
+      {Array.isArray(folders)
+        ? folders.map((folder: Folder) => (
+            <FolderItem
+              key={folder.id}
+              folder={folder}
+              isCollapsed={collapsedFolders.has(folder.id)}
+              toggleCollapse={toggleCollapse}
+              hoveredSnippetId={hoveredSnippetId}
+              setHoveredSnippetId={setHoveredSnippetId}
+              insertPrompt={insertPrompt}
+            />
+          ))
+        : null}
     </ul>
   );
 }
