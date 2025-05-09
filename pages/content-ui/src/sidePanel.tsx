@@ -49,56 +49,158 @@ const SidePanel: React.FC<SidePanelProps> = ({
 
   // 元件掛載時取得資料夾
 
+  // const fetchFolders = async () => {
+  //   chrome.runtime.sendMessage(
+  //     { type: 'GET_FOLDERS' },
+  //     (response: {
+  //       success: boolean;
+  //       data?: Array<{
+  //         id: string;
+  //         name: string;
+  //         description: string;
+  //         snippets: Array<{
+  //           id: string;
+  //           name: string;
+  //           content: string;
+  //           shortcut: string;
+  //         }>;
+  //       }>;
+  //       error?: string;
+  //     }) => {
+  //       if (response.success) {
+  //         setFolders(response.data || []);
+  //       } else {
+  //         // 載入失敗時使用預設資料
+  //         setFolders([
+  //           {
+  //             id: 'HplOMyf2mDqvVMdphJbt',
+  //             name: 'My Sample Snippets',
+  //             description: 'This is a sample folder',
+  //             snippets: [
+  //               {
+  //                 id: '5mJw031VPo2WxNIQyeXN',
+  //                 name: 'Demo - Plain text',
+  //                 content: '<p>be a software engineer, familiar with vue, react</p>',
+  //                 shortcut: '/do',
+  //               },
+  //               {
+  //                 id: '6mJw031VPo2WxNIQyeYN',
+  //                 name: 'Demo - Styled Text',
+  //                 content: '<p>be a translate expert, I will give you a sentence and help me translate to english</p>',
+  //                 shortcut: '/ih',
+  //               },
+  //             ],
+  //           },
+  //         ]);
+  //       }
+  //     },
+  //   );
+  // };
+
+  //   const fetchFolders = async () => {
+  //   // 先從 chrome.storage 中檢查是否已有資料
+  //   chrome.storage.local.get('folders', async (result) => {
+  //     if (result.folders) {
+  //       console.log('從 storage 中載入資料夾:', result.folders);
+  //       setFolders(result.folders);
+  //     } else {
+  //       // 如果 storage 中沒有資料，則向 API 發送請求
+  //       chrome.runtime.sendMessage(
+  //         { type: 'GET_FOLDERS' },
+  //         (response: {
+  //           success: boolean;
+  //           data?: Array<{
+  //             id: string;
+  //             name: string;
+  //             description: string;
+  //             snippets: Array<{
+  //               id: string;
+  //               name: string;
+  //               content: string;
+  //               shortcut: string;
+  //             }>;
+  //           }>;
+  //           error?: string;
+  //         }) => {
+  //           if (response.success) {
+  //             setFolders(response.data || []);
+  //             // 將資料存入 storage
+  //             chrome.storage.local.set({ folders: response.data || [] });
+  //           } else {
+  //             // 如果請求失敗，更新圖示狀態
+  //             setFolders([]);
+  //             chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
+  //           }
+  //         },
+  //       );
+  //     }
+  //   });
+  // };
+  // // 清除 chrome.storage.local 的所有資料
+  // chrome.storage.local.clear(() => {
+  //   if (chrome.runtime.lastError) {
+  //     console.error('清除資料失敗:', chrome.runtime.lastError);
+  //   } else {
+  //     console.log('chrome.storage.local 的資料已清除');
+  //   }
+  // });
   const fetchFolders = async () => {
-    chrome.runtime.sendMessage(
-      { type: 'GET_FOLDERS' },
-      (response: {
-        success: boolean;
-        data?: Array<{
-          id: string;
-          name: string;
-          description: string;
-          snippets: Array<{
-            id: string;
-            name: string;
-            content: string;
-            shortcut: string;
-          }>;
-        }>;
-        error?: string;
-      }) => {
-        if (response.success) {
-          setFolders(response.data || []);
-        } else {
-          // 載入失敗時使用預設資料
-          setFolders([
-            {
-              id: 'HplOMyf2mDqvVMdphJbt',
-              name: 'My Sample Snippets',
-              description: 'This is a sample folder',
-              snippets: [
-                {
-                  id: '5mJw031VPo2WxNIQyeXN',
-                  name: 'Demo - Plain text',
-                  content: '<p>be a software engineer, familiar with vue, react</p>',
-                  shortcut: '/do',
-                },
-                {
-                  id: '6mJw031VPo2WxNIQyeYN',
-                  name: 'Demo - Styled Text',
-                  content: '<p>be a translate expert, I will give you a sentence and help me translate to english</p>',
-                  shortcut: '/ih',
-                },
-              ],
-            },
-          ]);
-        }
-      },
-    );
+    console.log('開始執行側邊面板的 fetchFolders');
+    // 先從 chrome.storage 中檢查是否已有資料
+    chrome.storage.local.get(['folders', 'hasFolders'], async result => {
+      console.log('從 storage 讀取的資料:', result);
+
+      if (result.folders && Array.isArray(result.folders) && result.folders.length > 0) {
+        console.log('從 storage 中載入資料夾:', result.folders);
+        setFolders(result.folders);
+      } else {
+        console.log('Storage 中沒有資料夾或為空，向背景腳本請求');
+        // 如果 storage 中沒有資料，則向 API 發送請求
+        chrome.runtime.sendMessage(
+          { type: 'GET_FOLDERS' },
+          (response: {
+            success: boolean;
+            data?: Array<{
+              id: string;
+              name: string;
+              description: string;
+              snippets: Array<{
+                id: string;
+                name: string;
+                content: string;
+                shortcut: string;
+              }>;
+            }>;
+            error?: string;
+          }) => {
+            console.log('GET_FOLDERS 回應:', response);
+            if (response && response.success && response.data) {
+              console.log('成功從背景腳本獲取資料夾:', response.data);
+              setFolders(response.data);
+              // 將資料存入 storage
+              chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
+            } else {
+              console.error('獲取資料夾失敗:', response?.error);
+              // 如果請求失敗，更新圖示狀態
+              setFolders([]);
+              chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
+            }
+          },
+        );
+      }
+    });
   };
+  // useEffect(() => {
+  //   fetchFolders();
+  // }, []);
+
   useEffect(() => {
-    fetchFolders();
-  }, []);
+    // 當面板變為可見時重新獲取資料
+    if (visible && isInDOM) {
+      console.log('側邊面板變為可見，重新獲取資料夾');
+      fetchFolders();
+    }
+  }, [visible, isInDOM]);
   //  ==========  將 snippet 存到 storage ==========
   useEffect(() => {
     const validFolders = Array.isArray(folders) ? folders : [];
