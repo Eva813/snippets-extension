@@ -1,7 +1,6 @@
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 import { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
-import type { MessageEvent, SnippetShortcutMessage, SnippetResponse } from '@src/types';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
 import FolderList from './components/folderList';
 
@@ -47,103 +46,6 @@ const SidePanel: React.FC<SidePanelProps> = ({
     }>
   >([]);
 
-  // 元件掛載時取得資料夾
-
-  // const fetchFolders = async () => {
-  //   chrome.runtime.sendMessage(
-  //     { type: 'GET_FOLDERS' },
-  //     (response: {
-  //       success: boolean;
-  //       data?: Array<{
-  //         id: string;
-  //         name: string;
-  //         description: string;
-  //         snippets: Array<{
-  //           id: string;
-  //           name: string;
-  //           content: string;
-  //           shortcut: string;
-  //         }>;
-  //       }>;
-  //       error?: string;
-  //     }) => {
-  //       if (response.success) {
-  //         setFolders(response.data || []);
-  //       } else {
-  //         // 載入失敗時使用預設資料
-  //         setFolders([
-  //           {
-  //             id: 'HplOMyf2mDqvVMdphJbt',
-  //             name: 'My Sample Snippets',
-  //             description: 'This is a sample folder',
-  //             snippets: [
-  //               {
-  //                 id: '5mJw031VPo2WxNIQyeXN',
-  //                 name: 'Demo - Plain text',
-  //                 content: '<p>be a software engineer, familiar with vue, react</p>',
-  //                 shortcut: '/do',
-  //               },
-  //               {
-  //                 id: '6mJw031VPo2WxNIQyeYN',
-  //                 name: 'Demo - Styled Text',
-  //                 content: '<p>be a translate expert, I will give you a sentence and help me translate to english</p>',
-  //                 shortcut: '/ih',
-  //               },
-  //             ],
-  //           },
-  //         ]);
-  //       }
-  //     },
-  //   );
-  // };
-
-  //   const fetchFolders = async () => {
-  //   // 先從 chrome.storage 中檢查是否已有資料
-  //   chrome.storage.local.get('folders', async (result) => {
-  //     if (result.folders) {
-  //       console.log('從 storage 中載入資料夾:', result.folders);
-  //       setFolders(result.folders);
-  //     } else {
-  //       // 如果 storage 中沒有資料，則向 API 發送請求
-  //       chrome.runtime.sendMessage(
-  //         { type: 'GET_FOLDERS' },
-  //         (response: {
-  //           success: boolean;
-  //           data?: Array<{
-  //             id: string;
-  //             name: string;
-  //             description: string;
-  //             snippets: Array<{
-  //               id: string;
-  //               name: string;
-  //               content: string;
-  //               shortcut: string;
-  //             }>;
-  //           }>;
-  //           error?: string;
-  //         }) => {
-  //           if (response.success) {
-  //             setFolders(response.data || []);
-  //             // 將資料存入 storage
-  //             chrome.storage.local.set({ folders: response.data || [] });
-  //           } else {
-  //             // 如果請求失敗，更新圖示狀態
-  //             setFolders([]);
-  //             chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
-  //           }
-  //         },
-  //       );
-  //     }
-  //   });
-  // };
-  // // 清除 chrome.storage.local 的所有資料
-  // chrome.storage.local.clear(() => {
-  //   if (chrome.runtime.lastError) {
-  //     console.error('清除資料失敗:', chrome.runtime.lastError);
-  //   } else {
-  //     console.log('chrome.storage.local 的資料已清除');
-  //   }
-  // });
   const fetchFolders = async () => {
     console.log('開始執行側邊面板的 fetchFolders');
     // 先從 chrome.storage 中檢查是否已有資料
@@ -157,7 +59,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         console.log('Storage 中沒有資料夾或為空，向背景腳本請求');
         // 如果 storage 中沒有資料，則向 API 發送請求
         chrome.runtime.sendMessage(
-          { type: 'GET_FOLDERS' },
+          { action: 'GET_FOLDERS' },
           (response: {
             success: boolean;
             data?: Array<{
@@ -190,14 +92,10 @@ const SidePanel: React.FC<SidePanelProps> = ({
       }
     });
   };
-  // useEffect(() => {
-  //   fetchFolders();
-  // }, []);
 
   useEffect(() => {
     // 當面板變為可見時重新獲取資料
     if (visible && isInDOM) {
-      console.log('側邊面板變為可見，重新獲取資料夾');
       fetchFolders();
     }
   }, [visible, isInDOM]);
@@ -223,41 +121,6 @@ const SidePanel: React.FC<SidePanelProps> = ({
         }
       });
     }
-  }, [folders]);
-
-  //  ========== 接收背景訊息 接收取得 snippetByShortcut ==========
-  useEffect(() => {
-    // 檢查訊息是否為 SnippetShortcutMessage 的類型保護函式
-    function isSnippetShortcutMessage(message: MessageEvent): message is SnippetShortcutMessage {
-      return message.action === 'getSnippetByShortcut' && typeof message.shortcut === 'string';
-    }
-
-    // 訊息處理函式
-    const handleMessage = (
-      message: MessageEvent,
-      sender: chrome.runtime.MessageSender,
-      sendResponse: (response: SnippetResponse) => void,
-    ) => {
-      // 明確排除 toggleSlidePanel 訊息，避免重複處理
-      if (message.action === 'toggleSlidePanel') {
-        return false;
-      }
-      // 只處理 getSnippetByShortcut 動作
-      if (isSnippetShortcutMessage(message)) {
-        const snippet = folders
-          .flatMap(folder => folder.snippets)
-          .find(snippet => snippet.shortcut === message.shortcut);
-        sendResponse({ snippet });
-        return true; // 表示會以非同步方式回應
-      }
-      return false;
-    };
-
-    chrome.runtime.onMessage.addListener(handleMessage);
-
-    return () => {
-      chrome.runtime.onMessage.removeListener(handleMessage);
-    };
   }, [folders]);
 
   // ========== 插入 snippet ==========
@@ -343,11 +206,11 @@ const SidePanel: React.FC<SidePanelProps> = ({
       <div
         className="sidebar-toggle-container"
         onMouseEnter={e => {
-          e.stopPropagation(); // 阻止事件冒泡
+          e.stopPropagation();
           onHover(null);
         }}
         onMouseLeave={e => {
-          e.stopPropagation(); // 阻止事件冒泡
+          e.stopPropagation();
         }}>
         <ToggleSidebarButton alignment={alignment} visible={visible} onToggle={onToggle} />
       </div>
