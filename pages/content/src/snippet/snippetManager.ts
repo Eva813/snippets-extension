@@ -18,7 +18,6 @@ async function refreshSnippetCache(): Promise<void> {
   snippetCache = result.snippets || {};
 }
 
-// 設定儲存體變更監聽器
 function setupStorageListener(): void {
   chrome.storage.onChanged.addListener(changes => {
     if (changes.snippets) {

@@ -103,8 +103,6 @@ const SidePanel: React.FC<SidePanelProps> = ({
   useEffect(() => {
     const validFolders = Array.isArray(folders) ? folders : [];
     if (validFolders.length <= 0) {
-      // 修正條件，應該是 <= 0
-      console.log('data');
       chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
     } else {
       chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: true });
