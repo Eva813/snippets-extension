@@ -24,7 +24,8 @@ type RuntimeMessage =
   | { action: 'updateIcon'; hasFolders: boolean }
   | { action: 'UPDATE_USER_STATUS_FROM_CLIENT'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
   | { action: 'FROM_LOGIN_PAGE' }
-  | { action: 'USER_LOGGED_OUT' };
+  | { action: 'USER_LOGGED_OUT' }
+  | { action: 'getSnippetByShortcut'; shortcut: string };
 
 // 全域狀態
 let popupData: PopupData | null = null;
@@ -124,6 +125,58 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
     chrome.storage.local.clear(() => {
       sendResponse({ success: true });
     });
+  },
+  getSnippetByShortcut: async (message, sendResponse) => {
+    // const { shortcut } = message as Extract<RuntimeMessage, { action: 'getSnippetByShortcut'; shortcut: string }>;
+    // const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+    // if (!userLoggedIn) {
+    //   sendResponse({ success: false, error: '使用者未登入' });
+    //   return;
+    // }
+    // const { apiDomain } = await chrome.storage.local.get('apiDomain');
+    // const response = await fetch(`${apiDomain}/snippets/shortcut/${shortcut}`, {
+    //   method: 'GET',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+    //   },
+    // });
+
+    // if (!response.ok) {
+    //   sendResponse({ success: false, error: 'Failed to fetch snippet' });
+    //   return;
+    // }
+
+    // const data = await response.json();
+    // sendResponse({ success: true, data });
+    const { shortcut } = message as { action: 'getSnippetByShortcut'; shortcut: string };
+
+    try {
+      // 從本地快取中查找 snippets
+      const { snippets } = await chrome.storage.local.get('snippets');
+      if (snippets && typeof snippets === 'object') {
+        sendResponse({ success: true, snippet: snippets[shortcut] });
+        return;
+      }
+
+      // 如果本地沒有 snippets，觸發 fetchFolders
+      const fetchResult = await fetchFolders();
+      if (!fetchResult.success) {
+        sendResponse({ success: false, error: 'Unable to fetch folders' });
+        return;
+      }
+
+      // 再次從本地快取中查找 snippets
+      const { snippets: updatedSnippets } = await chrome.storage.local.get('snippets');
+      const snippet = updatedSnippets?.[shortcut];
+      if (snippet) {
+        sendResponse({ success: true, snippet });
+      } else {
+        sendResponse({ success: false, error: 'Snippet not found' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
+    }
   },
 };
 
