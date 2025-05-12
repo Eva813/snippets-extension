@@ -89,7 +89,6 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet |
 
   return null;
 }
-
 async function checkSnippetCandidate(candidate: string): Promise<Snippet | null> {
   // 先從本地快取查找
   const snippet = getSnippetByShortcut(candidate);
@@ -99,6 +98,29 @@ async function checkSnippetCandidate(candidate: string): Promise<Snippet | null>
       content: snippet.content,
       name: snippet.name,
     };
+  }
+
+  try {
+    // 檢查背景服務連線狀態
+    if (!chrome.runtime?.id) {
+      console.warn('擴充功能未啟用或背景服務未執行');
+      return null;
+    }
+    // 如果本地沒有，再向背景發送訊息
+    const response = await chrome.runtime.sendMessage({
+      action: 'getSnippetByShortcut',
+      shortcut: candidate,
+    });
+
+    if (response?.snippet) {
+      return {
+        shortcut: candidate,
+        content: response.snippet.content,
+        name: response.snippet.name,
+      };
+    }
+  } catch (error) {
+    console.error('取得程式碼片段失敗:', error);
   }
 
   return null;
