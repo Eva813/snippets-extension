@@ -30,7 +30,7 @@ type RuntimeMessage =
 // 全域狀態
 let popupData: PopupData | null = null;
 let targetTabId: number | null | undefined = null;
-const DEFAULT_API_DOMAIN = 'http://localhost:3000';
+const DEFAULT_API_DOMAIN = 'https://linxly-nextjs-git-feat-login-page-eva813s-projects.vercel.app';
 
 function setupExtensionControls() {
   // 監聽 extension icon 點擊事件
@@ -93,9 +93,9 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       sendResponse({ success: false, error: (error as Error).message || 'unknown error' });
     }
   },
-  updateIcon: (message, sendResponse) => {
-    const { hasFolders } = message as Extract<RuntimeMessage, { action: 'updateIcon'; hasFolders: boolean }>;
-    chrome.action.setIcon({ path: hasFolders ? 'icon-34.png' : 'icon-34-gray.png' });
+  updateIcon: async (message, sendResponse) => {
+    const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+    chrome.action.setIcon({ path: userLoggedIn ? 'icon-34.png' : 'icon-34-gray.png' });
     sendResponse({ success: true });
   },
   UPDATE_USER_STATUS_FROM_CLIENT: (message, sendResponse) => {
@@ -234,6 +234,15 @@ async function initializeIcon(): Promise<void> {
 
 function initializeEventListeners(): void {
   setupExtensionControls();
+  // 監聽儲存空間變更，動態更新 extension icon
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.userLoggedIn) {
+      console.log('userLoggedIn changed:', changes.userLoggedIn);
+      const newValue = changes.userLoggedIn.newValue as boolean;
+      const iconPath = newValue ? 'icon-34.png' : 'icon-34-gray.png';
+      chrome.action.setIcon({ path: iconPath });
+    }
+  });
   chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
     const handler = messageHandlers[message.action];
     if (handler) {
