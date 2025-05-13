@@ -127,28 +127,6 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
     });
   },
   getSnippetByShortcut: async (message, sendResponse) => {
-    // const { shortcut } = message as Extract<RuntimeMessage, { action: 'getSnippetByShortcut'; shortcut: string }>;
-    // const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
-    // if (!userLoggedIn) {
-    //   sendResponse({ success: false, error: '使用者未登入' });
-    //   return;
-    // }
-    // const { apiDomain } = await chrome.storage.local.get('apiDomain');
-    // const response = await fetch(`${apiDomain}/snippets/shortcut/${shortcut}`, {
-    //   method: 'GET',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-    //   },
-    // });
-
-    // if (!response.ok) {
-    //   sendResponse({ success: false, error: 'Failed to fetch snippet' });
-    //   return;
-    // }
-
-    // const data = await response.json();
-    // sendResponse({ success: true, data });
     const { shortcut } = message as { action: 'getSnippetByShortcut'; shortcut: string };
 
     try {
