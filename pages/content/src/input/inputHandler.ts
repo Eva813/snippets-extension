@@ -103,7 +103,7 @@ async function checkSnippetCandidate(candidate: string): Promise<Snippet | null>
   try {
     // 檢查背景服務連線狀態
     if (!chrome.runtime?.id) {
-      console.warn('擴充功能未啟用或背景服務未執行');
+      console.warn('Extension is not enabled or background service is not running');
       return null;
     }
     // 如果本地沒有，再向背景發送訊息

@@ -3,11 +3,19 @@ import { initializeSnippetManager } from '@src/snippet/snippetManager';
 import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler } from '@src/input/inputHandler';
 
-// 初始化應用程式
 async function initialize() {
-  await initializeSnippetManager();
-  initializeCursorTracker();
-  initializeInputHandler();
+  // 檢查使用者是否已登入
+  const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+  console.log('使用者登入狀態:', userLoggedIn);
+
+  // 只有在使用者已登入時才初始化相關功能
+  if (userLoggedIn) {
+    await initializeSnippetManager();
+    initializeInputHandler();
+    initializeCursorTracker();
+  } else {
+    console.log('User is not logged in, skipping initialization');
+  }
 }
 
 window.addEventListener('message', event => {
@@ -17,8 +25,6 @@ window.addEventListener('message', event => {
   }
 
   if (event.data && event.data.type === 'FROM_LOGIN_PAGE' && event.data.action === 'USER_LOGGED_IN') {
-    console.log('內容腳本收到登入通知:', event.data);
-
     // 將訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
@@ -28,17 +34,15 @@ window.addEventListener('message', event => {
       },
       response => {
         if (chrome.runtime.lastError) {
-          console.error('傳送訊息到背景腳本失敗:', chrome.runtime.lastError.message);
+          console.error('Failed to send message to background script:', chrome.runtime.lastError.message);
         } else {
-          console.log('背景腳本回應:', response);
+          console.log('Background script response:', response);
         }
       },
     );
   }
 
   if (event.data && event.data.type === 'FROM_SITE_HEADER' && event.data.action === 'USER_LOGGED_OUT') {
-    console.log('內容腳本收到登出通知:', event.data);
-
     // 將登出訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
@@ -46,9 +50,9 @@ window.addEventListener('message', event => {
       },
       response => {
         if (chrome.runtime.lastError) {
-          console.error('傳送登出訊息到背景腳本失敗:', chrome.runtime.lastError.message);
+          console.error('Failed to send logout message to background script:', chrome.runtime.lastError.message);
         } else {
-          console.log('背景腳本回應:', response);
+          console.log('Background script response:', response);
         }
       },
     );
