@@ -47,16 +47,11 @@ const SidePanel: React.FC<SidePanelProps> = ({
   >([]);
 
   const fetchFolders = async () => {
-    console.log('開始執行側邊面板的 fetchFolders');
     // 先從 chrome.storage 中檢查是否已有資料
     chrome.storage.local.get(['folders', 'hasFolders'], async result => {
-      console.log('從 storage 讀取的資料:', result);
-
       if (result.folders && Array.isArray(result.folders) && result.folders.length > 0) {
-        console.log('從 storage 中載入資料夾:', result.folders);
         setFolders(result.folders);
       } else {
-        console.log('Storage 中沒有資料夾或為空，向背景腳本請求');
         // 如果 storage 中沒有資料，則向 API 發送請求
         chrome.runtime.sendMessage(
           { action: 'GET_FOLDERS' },
