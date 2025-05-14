@@ -61,11 +61,12 @@ window.addEventListener('message', event => {
   }
 });
 // 動態監聽 userLoggedIn 狀態變化
-chrome.storage.onChanged.addListener((changes, area) => {
+chrome.storage.onChanged.addListener(async (changes, area) => {
   if (area === 'local' && changes.userLoggedIn?.newValue === true) {
     // 使用者在其他 tab 登入後，建立監聽
     initializeInputHandler();
     initializeCursorTracker();
+    await initializeSnippetManager();
     chrome.runtime.sendMessage({ action: 'updateIcon' });
   }
 });

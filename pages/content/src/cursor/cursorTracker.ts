@@ -2,8 +2,13 @@ import { getCursorInfo } from '@src/cursor/getCursorInfo';
 import { generateElementPath, isEditableElement } from '@src/utils//utils';
 
 let cursorUpdateTimeout: number | null = null;
+let cleanupCursorListener: (() => void) | null = null;
 // 初始化游標追蹤
 export function initializeCursorTracker() {
+  // 若已有舊 listener，先清除
+  if (cleanupCursorListener) {
+    cleanupCursorListener();
+  }
   document.addEventListener('click', handleElementClick);
   // 新增：監聽按鍵事件 (捕捉方向鍵移動游標的情況)
   // document.addEventListener('keyup', handleKeyUp);
@@ -12,12 +17,13 @@ export function initializeCursorTracker() {
   // document.addEventListener('selectionchange', handleSelectionChange);
 
   // 新增清除機制
-  return function cleanup() {
+  cleanupCursorListener = () => {
     if (cursorUpdateTimeout !== null) {
       clearTimeout(cursorUpdateTimeout);
       cursorUpdateTimeout = null;
     }
     document.removeEventListener('click', handleElementClick);
+    cleanupCursorListener = null;
   };
 }
 

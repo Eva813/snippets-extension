@@ -234,15 +234,6 @@ async function initializeIcon(): Promise<void> {
 
 function initializeEventListeners(): void {
   setupExtensionControls();
-  // 監聽儲存空間變更，動態更新 extension icon
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes.userLoggedIn) {
-      console.log('userLoggedIn changed:', changes.userLoggedIn);
-      const newValue = changes.userLoggedIn.newValue as boolean;
-      const iconPath = newValue ? 'icon-34.png' : 'icon-34-gray.png';
-      chrome.action.setIcon({ path: iconPath });
-    }
-  });
   chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
     const handler = messageHandlers[message.action];
     if (handler) {
