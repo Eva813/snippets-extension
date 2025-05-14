@@ -26,7 +26,13 @@ function setupStorageListener(): void {
   });
 }
 
+export function clearSnippetCache(): void {
+  snippetCache = {};
+}
 // 依快捷鍵尋找程式碼片段
 export function getSnippetByShortcut(shortcut: string): Snippet | null {
-  return snippetCache[shortcut] || null;
+  if (!snippetCache || typeof snippetCache !== 'object') {
+    return null;
+  }
+  return snippetCache[shortcut] ?? null;
 }

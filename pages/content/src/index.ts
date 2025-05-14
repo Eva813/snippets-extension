@@ -1,7 +1,7 @@
 import './messageHandler';
-import { initializeSnippetManager } from '@src/snippet/snippetManager';
+import { initializeSnippetManager, clearSnippetCache } from '@src/snippet/snippetManager';
 import { initializeCursorTracker } from '@src/cursor/cursorTracker';
-import { initializeInputHandler } from '@src/input/inputHandler';
+import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
 
 async function initialize() {
   // 檢查使用者是否已登入
@@ -60,14 +60,22 @@ window.addEventListener('message', event => {
     );
   }
 });
-// 動態監聽 userLoggedIn 狀態變化
+
+// 動態監聽 local storage 變化
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  if (area === 'local' && changes.userLoggedIn?.newValue === true) {
-    // 使用者在其他 tab 登入後，建立監聽
-    initializeInputHandler();
-    initializeCursorTracker();
-    await initializeSnippetManager();
-    chrome.runtime.sendMessage({ action: 'updateIcon' });
+  // 用來檢查變更是否發生在本地儲存區（local storage）
+  if (area === 'local') {
+    if (changes.userLoggedIn?.newValue === false) {
+      clearSnippetCache();
+      clearInputHandler();
+    }
+    // 使用者登入
+    if (changes.userLoggedIn?.newValue === true) {
+      initializeInputHandler();
+      initializeCursorTracker();
+      chrome.runtime.sendMessage({ action: 'updateIcon' });
+      await initializeSnippetManager();
+    }
   }
 });
 

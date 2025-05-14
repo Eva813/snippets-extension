@@ -29,6 +29,10 @@ export function initializeInputHandler() {
   document.addEventListener('input', handleInput);
 }
 
+export function clearInputHandler(): void {
+  document.removeEventListener('input', handleInput);
+}
+
 // 處理輸入事件 - 偵測快捷鍵並進行插入
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
