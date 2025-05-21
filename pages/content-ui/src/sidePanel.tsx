@@ -54,7 +54,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
       } else {
         // 如果 storage 中沒有資料，則向 API 發送請求
         chrome.runtime.sendMessage(
-          { action: 'GET_FOLDERS' },
+          { action: 'getFolders' },
           (response: {
             success: boolean;
             data?: Array<{
@@ -70,9 +70,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
             }>;
             error?: string;
           }) => {
-            console.log('GET_FOLDERS 回應:', response);
             if (response && response.success && response.data) {
-              console.log('成功從背景腳本獲取資料夾:', response.data);
               setFolders(response.data);
               // 將資料存入 storage
               chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
