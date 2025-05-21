@@ -29,7 +29,7 @@ window.addEventListener('message', event => {
     // 將訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
-        action: 'UPDATE_USER_STATUS_FROM_CLIENT',
+        action: 'updateUserStatusFromClient',
         data: event.data.data, // 傳遞從網頁收到的資料
         domain: window.location.origin,
       },
@@ -48,7 +48,7 @@ window.addEventListener('message', event => {
     // 將登出訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
-        action: 'USER_LOGGED_OUT',
+        action: 'userLoggedOut',
       },
       response => {
         if (chrome.runtime.lastError) {

@@ -20,11 +20,10 @@ type RuntimeMessage =
   | { action: 'submitForm'; finalOutput: string }
   | { action: 'sidePanelInsertPrompt'; snippet: SnippetData }
   | { action: 'openShortcutsPage' }
-  | { action: 'GET_FOLDERS' }
+  | { action: 'getFolders' }
   | { action: 'updateIcon'; hasFolders: boolean }
-  | { action: 'UPDATE_USER_STATUS_FROM_CLIENT'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
-  | { action: 'FROM_LOGIN_PAGE' }
-  | { action: 'USER_LOGGED_OUT' }
+  | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
+  | { action: 'userLoggedOut' }
   | { action: 'getSnippetByShortcut'; shortcut: string };
 
 // 全域狀態
@@ -75,7 +74,7 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
     chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
     sendResponse({ success: true });
   },
-  GET_FOLDERS: async (_, sendResponse) => {
+  getFolders: async (_, sendResponse) => {
     try {
       const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
       if (!userLoggedIn) {
@@ -98,10 +97,10 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
     chrome.action.setIcon({ path: userLoggedIn ? 'icon-34.png' : 'icon-34-gray.png' });
     sendResponse({ success: true });
   },
-  UPDATE_USER_STATUS_FROM_CLIENT: (message, sendResponse) => {
+  updateUserStatusFromClient: (message, sendResponse) => {
     const { data, domain } = message as Extract<
       RuntimeMessage,
-      { action: 'UPDATE_USER_STATUS_FROM_CLIENT'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
+      { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
     >;
     chrome.action.setIcon({ path: 'icon-34.png' }, () => {
       if (chrome.runtime.lastError) {
@@ -114,13 +113,7 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       }
     });
   },
-  FROM_LOGIN_PAGE: (_, sendResponse) => {
-    chrome.action.setIcon({ path: 'icon-34.png' });
-    chrome.storage.local.set({ userLoggedIn: true }, () => {
-      sendResponse({ success: true });
-    });
-  },
-  USER_LOGGED_OUT: (_, sendResponse) => {
+  userLoggedOut: (_, sendResponse) => {
     chrome.action.setIcon({ path: 'icon-34-gray.png' });
     chrome.storage.local.clear(() => {
       sendResponse({ success: true });
