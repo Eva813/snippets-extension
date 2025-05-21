@@ -3,6 +3,7 @@ import { initializeSnippetManager, clearSnippetCache } from '@src/snippet/snippe
 import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
 
+const isDev = import.meta.env.MODE !== 'production';
 async function initialize() {
   // 檢查使用者是否已登入
   const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
@@ -15,7 +16,7 @@ async function initialize() {
     // 頁面 reload sendMessag，更新 icon 顏色
     chrome.runtime.sendMessage({ action: 'updateIcon' });
   } else {
-    console.log('User is not logged in, skipping initialization');
+    if (isDev) console.log('User is not logged in, skipping initialization');
   }
 }
 
@@ -35,7 +36,7 @@ window.addEventListener('message', event => {
       },
       response => {
         if (chrome.runtime.lastError) {
-          console.error('Failed to send message to background script:', chrome.runtime.lastError.message);
+          if (isDev) console.error('Failed to send message to background script:', chrome.runtime.lastError.message);
         } else if (response.success) {
           // 登入後只更新 icon，輸入監聽和游標追蹤由 storage.onChanged 統一處理
           chrome.runtime.sendMessage({ action: 'updateIcon' });
@@ -52,9 +53,10 @@ window.addEventListener('message', event => {
       },
       response => {
         if (chrome.runtime.lastError) {
-          console.error('Failed to send logout message to background script:', chrome.runtime.lastError.message);
+          if (isDev)
+            console.error('Failed to send logout message to background script:', chrome.runtime.lastError.message);
         } else {
-          console.log('Background script response:', response);
+          if (isDev) console.log('Background script response:', response);
         }
       },
     );
