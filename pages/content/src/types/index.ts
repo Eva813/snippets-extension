@@ -1,4 +1,4 @@
-export interface Snippet {
+export interface Prompt {
   shortcut: string;
   content: string;
   name?: string;
