@@ -33,23 +33,23 @@ export async function fetchFolders() {
     const data = await resp.json();
     const hasFolders = Array.isArray(data) && data.length > 0;
     console.log('取得資料夾成功:', data);
-    // 整理 snippets 快取
-    // 定義 Snippet 類型
-    type Snippet = {
+    // 整理 prompts 快取
+    // 定義 Prompt 類型
+    type Prompt = {
       shortcut: string;
       content: string;
       [key: string]: string | number | boolean | object | null | undefined; // 可根據需求擴展屬性
     };
 
-    const snippetsMap = (data as { snippets: Snippet[] }[]).reduce<Record<string, Snippet>>((acc, folder) => {
-      folder.snippets.forEach(snippet => {
-        acc[snippet.shortcut] = snippet;
+    const promptsMap = (data as { prompts: Prompt[] }[]).reduce<Record<string, Prompt>>((acc, folder) => {
+      folder.prompts.forEach(prompt => {
+        acc[prompt.shortcut] = prompt;
       });
       return acc;
     }, {});
 
     // await chrome.storage.local.set({ folders: data, hasFolders });
-    await chrome.storage.local.set({ folders: data, hasFolders, snippets: snippetsMap });
+    await chrome.storage.local.set({ folders: data, hasFolders, prompts: promptsMap });
 
     return {
       success: true,

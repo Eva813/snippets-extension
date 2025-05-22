@@ -5,7 +5,7 @@ const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
     <header className="fixed left-0 top-0 z-10 flex w-full items-center justify-between bg-slate-700 px-6 py-4 text-white">
       {/* Search Bar */}
       <div className="flex items-center rounded-md bg-slate-500 px-4 py-2">
-        Quick Snippets with shortcuts
+        Quick Prompts with shortcuts
         {/* <svg
           xmlns="http://www.w3.org/2000/svg"
           className="mr-2 size-5 text-white"
@@ -19,14 +19,14 @@ const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
         </svg>
         <input
           type="text"
-          placeholder="Search snippets..."
+          placeholder="Search prompts..."
           className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white"
         /> */}
       </div>
 
       {/* Action Buttons */}
       <div className="flex items-center space-x-6">
-        {/* New Snippet Button */}
+        {/* New Prompt Button */}
         <button className="flex items-center space-x-2 rounded-md bg-slate-600 px-4 py-2 text-white">
           <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 20 20" fill="currentColor">
             <path
@@ -35,7 +35,7 @@ const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
               clipRule="evenodd"
             />
           </svg>
-          <span>New snippet</span>
+          <span>New prompt</span>
         </button>
 
         {/* Go to Dashboard Link */}

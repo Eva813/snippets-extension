@@ -1,5 +1,5 @@
 import './messageHandler';
-import { initializeSnippetManager, clearSnippetCache } from '@src/snippet/snippetManager';
+import { initializePromptManager, clearPromptCache } from '@src/prompt/promptManager';
 import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
 
@@ -12,7 +12,7 @@ async function initialize() {
   if (userLoggedIn) {
     initializeInputHandler();
     initializeCursorTracker();
-    await initializeSnippetManager();
+    await initializePromptManager();
     // 頁面 reload sendMessag，更新 icon 顏色
     chrome.runtime.sendMessage({ action: 'updateIcon' });
   } else {
@@ -68,7 +68,7 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
   // 用來檢查變更是否發生在本地儲存區（local storage）
   if (area === 'local') {
     if (changes.userLoggedIn?.newValue === false) {
-      clearSnippetCache();
+      clearPromptCache();
       clearInputHandler();
     }
     // 使用者登入
@@ -76,7 +76,7 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
       initializeInputHandler();
       initializeCursorTracker();
       chrome.runtime.sendMessage({ action: 'updateIcon' });
-      await initializeSnippetManager();
+      await initializePromptManager();
     }
   }
 });

@@ -29,7 +29,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
 }) => {
   const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
-  const [hoveredSnippetId, setHoveredSnippetId] = useState<string | null>(null);
+  const [hoveredPromptId, setHoveredPromptId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const [folders, setFolders] = useState<
@@ -37,7 +37,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
       id: string;
       name: string;
       description: string;
-      snippets: Array<{
+      prompts: Array<{
         id: string;
         name: string;
         content: string;
@@ -61,7 +61,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
               id: string;
               name: string;
               description: string;
-              snippets: Array<{
+              prompts: Array<{
                 id: string;
                 name: string;
                 content: string;
@@ -92,61 +92,61 @@ const SidePanel: React.FC<SidePanelProps> = ({
       fetchFolders();
     }
   }, [visible, isInDOM]);
-  //  ==========  將 snippet 存到 storage ==========
+  //  ==========  將 prompt 存到 storage ==========
   useEffect(() => {
     const validFolders = Array.isArray(folders) ? folders : [];
     if (validFolders.length <= 0) {
       chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
     } else {
       chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: true });
-      const snippetsMap = validFolders.reduce<Record<string, (typeof folders)[0]['snippets'][0]>>((acc, folder) => {
-        folder.snippets.forEach(snippet => {
-          acc[snippet.shortcut] = snippet;
+      const promptsMap = validFolders.reduce<Record<string, (typeof folders)[0]['prompts'][0]>>((acc, folder) => {
+        folder.prompts.forEach(prompt => {
+          acc[prompt.shortcut] = prompt;
         });
         return acc;
       }, {});
 
-      chrome.storage.local.set({ snippets: snippetsMap }, () => {
+      chrome.storage.local.set({ prompts: promptsMap }, () => {
         if (import.meta.env.MODE === 'development') {
-          console.log('Snippets saved to storage:', snippetsMap);
+          console.log('Prompts saved to storage:', promptsMap);
         }
       });
     }
   }, [folders]);
 
-  // ========== 插入 snippet ==========
+  // ========== 插入 prompt ==========
   const insertPrompt = (id: string, event: React.MouseEvent) => {
     if (event && event.preventDefault) {
       event.preventDefault();
       event.stopPropagation();
     }
 
-    const snippet = folders.flatMap(folder => folder.snippets).find(snippet => snippet.id === id);
-    if (!snippet) {
-      console.warn('Snippet not found.');
+    const prompt = folders.flatMap(folder => folder.prompts).find(prompt => prompt.id === id);
+    if (!prompt) {
+      console.warn('Prompt not found.');
       return;
     }
 
-    // 檢查 snippet.content 是否包含 'data-snippet'
-    const hasFormField = snippet.content.includes('data-snippet');
-    const title = `${snippet.shortcut} - ${snippet.name}`;
+    // 檢查 prompt.content 是否包含 'data-prompt'
+    const hasFormField = prompt.content.includes('data-prompt');
+    const title = `${prompt.shortcut} - ${prompt.name}`;
 
     if (!hasFormField) {
       // 沒有表單欄位，改由傳送訊息給背景，由背景呼叫 chrome.tabs.query
       chrome.runtime.sendMessage(
         {
           action: 'sidePanelInsertPrompt',
-          snippet: {
-            content: snippet.content,
-            shortcut: snippet.shortcut,
-            name: snippet.name,
+          prompt: {
+            content: prompt.content,
+            shortcut: prompt.shortcut,
+            name: prompt.name,
           },
         },
         () => {},
       );
     } else {
       // 有表單欄位，仍透過背景建立 popup
-      const content = snippet.content;
+      const content = prompt.content;
       chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
         if (import.meta.env.MODE === 'development') {
           console.log('Window creation response:', response);
@@ -207,14 +207,14 @@ const SidePanel: React.FC<SidePanelProps> = ({
       </div>
       {/* Header */}
       <Header goToDashboard={goToDashboard} />
-      {/* snippets List*/}
+      {/* prompts List*/}
       <div className="content-area overflow-y-auto bg-white p-2">
         <FolderList
           folders={folders}
           collapsedFolders={collapsedFolders}
           toggleCollapse={toggleCollapse}
-          hoveredSnippetId={hoveredSnippetId}
-          setHoveredSnippetId={setHoveredSnippetId}
+          hoveredPromptId={hoveredPromptId}
+          setHoveredPromptId={setHoveredPromptId}
           insertPrompt={id => insertPrompt(id, {} as React.MouseEvent)}
         />
       </div>
