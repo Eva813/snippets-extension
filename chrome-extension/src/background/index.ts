@@ -1,34 +1,50 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'webextension-polyfill';
-
-// chrome.runtime.onInstalled.addListener(() => {
-//   // 設定當點擊擴充功能圖示時自動開啟側邊欄
-//   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
-// });
+import { fetchFolders } from './utils/fetchFolders';
 
 // 定義類型
 interface PopupData {
   title: string;
-  content: any; // 建議使用更明確的類型而非 any
+  content: string | Record<string, unknown>;
 }
 
-interface SnippetData {
+interface PromptData {
   content: string;
   shortcut: string;
   name: string;
 }
 
-// 全域狀態（考慮改用更好的狀態管理方式）
+type RuntimeMessage =
+  | { action: 'createWindow'; title: string; content: string }
+  | { action: 'getPopupData' }
+  | { action: 'submitForm'; finalOutput: string }
+  | { action: 'sidePanelInsertPrompt'; prompt: PromptData }
+  | { action: 'openShortcutsPage' }
+  | { action: 'getFolders' }
+  | { action: 'updateIcon'; hasFolders: boolean }
+  | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
+  | { action: 'userLoggedOut' }
+  | { action: 'getPromptByShortcut'; shortcut: string };
+
+// 全域狀態
 let popupData: PopupData | null = null;
 let targetTabId: number | null | undefined = null;
+const DEFAULT_API_DOMAIN = 'https://linxly-nextjs-git-feat-login-page-eva813s-projects.vercel.app';
 
-// 監聽 extension icon 點擊事件
-// 擴充功能圖示與快捷鍵處理
 function setupExtensionControls() {
   // 監聽 extension icon 點擊事件
-  chrome.action.onClicked.addListener(tab => {
+  chrome.action.onClicked.addListener(async tab => {
+    const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+    if (!userLoggedIn) {
+      chrome.tabs.create({ url: `${DEFAULT_API_DOMAIN}/login` });
+      return;
+    }
+
     if (tab.id !== undefined) {
+      await fetchFolders();
       chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
+    } else {
+      chrome.tabs.create({ url: `${DEFAULT_API_DOMAIN}/login` });
     }
   });
 
@@ -41,53 +57,104 @@ function setupExtensionControls() {
       }
     }
   });
-
-  // 處理開啟快捷鍵設定頁面
-  chrome.runtime.onMessage.addListener(message => {
-    if (message.action === 'openShortcutsPage') {
-      chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
-    }
-  });
 }
 
-// Popup 視窗相關處理
-function setupPopupHandling() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // 建立 popup 視窗
-    if (message.action === 'createWindow') {
-      handleCreatePopupWindow(message, sendResponse);
-      return true;
+// 建立一個處理器映射物件
+const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (response?: any) => void) => void> = {
+  createWindow: (message, sendResponse) =>
+    handleCreatePopupWindow(message as Extract<RuntimeMessage, { action: 'createWindow' }>, sendResponse),
+  getPopupData: (_, sendResponse) => sendResponse({ data: popupData }),
+  submitForm: (message, sendResponse) =>
+    handleFormSubmission(message as Extract<RuntimeMessage, { action: 'submitForm' }>, sendResponse),
+  // 側邊欄相關處理
+  sidePanelInsertPrompt: (message, sendResponse) =>
+    handleSidePanelInsert(message as Extract<RuntimeMessage, { action: 'sidePanelInsertPrompt' }>, sendResponse),
+  // 開啟快捷鍵設定頁面
+  openShortcutsPage: (_, sendResponse) => {
+    chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    sendResponse({ success: true });
+  },
+  getFolders: async (_, sendResponse) => {
+    try {
+      const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+      if (!userLoggedIn) {
+        sendResponse({ success: false, error: '使用者未登入' });
+        return;
+      }
+
+      const result = await fetchFolders();
+      if (result.success && result.folders) {
+        sendResponse({ success: true, data: result.folders });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'unknown error' });
     }
+  },
+  updateIcon: async (message, sendResponse) => {
+    const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+    chrome.action.setIcon({ path: userLoggedIn ? 'icon-34.png' : 'icon-34-gray.png' });
+    sendResponse({ success: true });
+  },
+  updateUserStatusFromClient: (message, sendResponse) => {
+    const { data, domain } = message as Extract<
+      RuntimeMessage,
+      { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
+    >;
+    chrome.action.setIcon({ path: 'icon-34.png' }, () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        chrome.storage.local.set({ userLoggedIn: data.status === 'loggedIn', apiDomain: domain }, async () => {
+          if (data.status === 'loggedIn') await fetchFolders();
+          sendResponse({ success: true, message: 'user status updated' });
+        });
+      }
+    });
+  },
+  userLoggedOut: (_, sendResponse) => {
+    chrome.action.setIcon({ path: 'icon-34-gray.png' });
+    chrome.storage.local.clear(() => {
+      sendResponse({ success: true });
+    });
+  },
+  getPromptByShortcut: async (message, sendResponse) => {
+    const { shortcut } = message as { action: 'getPromptByShortcut'; shortcut: string };
 
-    // Popup 請求資料
-    if (message.action === 'getPopupData') {
-      sendResponse({ data: popupData });
-      return true;
+    try {
+      // 從本地快取中查找 prompts
+      const { prompts } = await chrome.storage.local.get('prompts');
+      if (prompts && typeof prompts === 'object') {
+        sendResponse({ success: true, prompt: prompts[shortcut] });
+        return;
+      }
+
+      // 如果本地沒有 prompts，觸發 fetchFolders
+      const fetchResult = await fetchFolders();
+      if (!fetchResult.success) {
+        sendResponse({ success: false, error: 'Unable to fetch folders' });
+        return;
+      }
+
+      // 再次從本地快取中查找 prompts
+      const { prompts: updatedPrompts } = await chrome.storage.local.get('prompts');
+      const prompt = updatedPrompts?.[shortcut];
+      if (prompt) {
+        sendResponse({ success: true, prompt });
+      } else {
+        sendResponse({ success: false, error: 'Prompt not found' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
     }
+  },
+};
 
-    // Popup 表單提交
-    if (message.action === 'submitForm') {
-      handleFormSubmission(message, sendResponse);
-      return true;
-    }
-
-    return false;
-  });
-}
-
-// 側邊欄相關處理
-function setupSidePanelHandling() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'sidePanelInsertPrompt') {
-      handleSidePanelInsert(message, sendResponse);
-      return true;
-    }
-    return false;
-  });
-}
-
-// PopupWindow
-function handleCreatePopupWindow(message: any, sendResponse: (response?: any) => void) {
+function handleCreatePopupWindow(
+  message: Extract<RuntimeMessage, { action: 'createWindow' }>,
+  sendResponse: (response?: any) => void,
+) {
   popupData = {
     title: message.title,
     content: message.content,
@@ -112,7 +179,10 @@ function handleCreatePopupWindow(message: any, sendResponse: (response?: any) =>
   });
 }
 
-function handleFormSubmission(message: any, sendResponse: (response?: any) => void) {
+function handleFormSubmission(
+  message: Extract<RuntimeMessage, { action: 'submitForm' }>,
+  sendResponse: (response?: any) => void,
+) {
   if (!targetTabId) {
     console.error('No target tab id stored');
     sendResponse({ success: false, error: 'No target tab id stored' });
@@ -129,14 +199,17 @@ function handleFormSubmission(message: any, sendResponse: (response?: any) => vo
   });
 }
 
-function handleSidePanelInsert(message: any, sendResponse: (response?: any) => void) {
+function handleSidePanelInsert(
+  message: Extract<RuntimeMessage, { action: 'sidePanelInsertPrompt' }>,
+  sendResponse: (response?: any) => void,
+) {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     if (!tabs || !tabs[0]?.id) {
       sendResponse({ success: false, error: 'No active tab found.' });
       return;
     }
 
-    const { content, shortcut, name } = message.snippet as SnippetData;
+    const { content, shortcut, name } = message.prompt;
     const title = `${shortcut} - ${name}`;
 
     chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: content, title }, response => {
@@ -145,32 +218,36 @@ function handleSidePanelInsert(message: any, sendResponse: (response?: any) => v
   });
 }
 
-chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  if (msg.type === 'GET_FOLDERS') {
-    fetch('https://linxly-nextjs.vercel.app/api/v1/folders', {
-      method: 'GET',
-      // credentials: 'include', // 若需要傳送 cookie.
-      headers: {
-        // 加上這行來 bypass Vercel Authentication
-        'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS,
-      },
-    })
-      .then(res => res.json())
-      .then(data => {
-        reply({ success: true, data });
-      })
-      .catch(err => {
-        reply({ success: false, error: err.message });
-      });
-    return true; // 使用非同步回覆
-  }
-});
-
 // 初始化
-function initialize() {
+async function initializeIcon(): Promise<void> {
+  const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+  const iconPath = userLoggedIn ? 'icon-34.png' : 'icon-34-gray.png';
+  chrome.action.setIcon({ path: iconPath });
+}
+
+function initializeEventListeners(): void {
   setupExtensionControls();
-  setupPopupHandling();
-  setupSidePanelHandling();
+  chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
+    const handler = messageHandlers[message.action];
+    if (handler) {
+      (async () => {
+        try {
+          await handler(message, sendResponse);
+        } catch (err: any) {
+          sendResponse({ success: false, error: err.message });
+        }
+      })();
+      return true;
+    }
+
+    console.warn(`未處理的 action: ${message.action}`);
+    return false;
+  });
+}
+
+async function initialize(): Promise<void> {
+  await initializeIcon();
+  initializeEventListeners();
 }
 
 initialize();

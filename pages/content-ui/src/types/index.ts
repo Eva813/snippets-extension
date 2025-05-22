@@ -7,25 +7,25 @@ export interface MessageEvent {
 }
 
 /**
- * snippet 片段快速鍵訊息介面
+ * prompt 片段快速鍵訊息介面
  */
-export interface SnippetShortcutMessage extends MessageEvent {
-  /** 特定的 getSnippetByShortcut 動作 */
-  action: 'getSnippetByShortcut';
+export interface PromptShortcutMessage extends MessageEvent {
+  /** 特定的 getPromptByShortcut 動作 */
+  action: 'getPromptByShortcut';
   shortcut: string;
 }
 
 /**
- * snippet 片段回應介面
+ * prompt 片段回應介面
  */
-export interface SnippetResponse {
-  snippet?: Snippet;
+export interface PromptResponse {
+  prompt?: Prompt;
 }
 
 /**
- * snippet 片段型別定義
+ * prompt 片段型別定義
  */
-export interface Snippet {
+export interface Prompt {
   id?: string;
   name: string;
   content: string;
@@ -38,5 +38,5 @@ export interface Snippet {
 export interface Folder {
   id: string;
   name: string;
-  snippets: Snippet[];
+  prompts: Prompt[];
 }

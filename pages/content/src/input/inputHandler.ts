@@ -1,10 +1,10 @@
 import { getDeepActiveElement } from '@src/textInserter';
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
-import { getSnippetByShortcut } from '../snippet/snippetManager';
+import { getPromptByShortcut } from '../prompt/promptManager';
 import { stripHtml, isEditableElement } from '../utils/utils';
 import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
 import { insertIntoRange } from '@src/utils/insertIntoRange';
-import type { Snippet, CursorInfo } from '@src/types';
+import type { Prompt, CursorInfo } from '@src/types';
 import { updateCursorPosition } from '@src/cursor/cursorTracker';
 
 // 建立 debounce
@@ -29,6 +29,10 @@ export function initializeInputHandler() {
   document.addEventListener('input', handleInput);
 }
 
+export function clearInputHandler(): void {
+  document.removeEventListener('input', handleInput);
+}
+
 // 處理輸入事件 - 偵測快捷鍵並進行插入
 async function handleInput(event: Event) {
   const target = event.target as HTMLElement;
@@ -40,16 +44,16 @@ async function handleInput(event: Event) {
 
   // 獲取游標資訊並尋找快捷鍵
   const cursorInfo = getCursorInfo(target);
-  const snippet = await findShortcutNearCursor(cursorInfo);
+  const prompt = await findShortcutNearCursor(cursorInfo);
 
   // 如果找到匹配的程式碼片段，則處理插入
-  if (snippet) {
-    await processSnippetInsertion(snippet, element as HTMLElement, cursorInfo);
+  if (prompt) {
+    await processPromptInsertion(prompt, element as HTMLElement, cursorInfo);
   }
 }
 
 // 在游標位置附近查找快捷鍵
-async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet | null> {
+async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Prompt | null> {
   const textToCheck = cursorInfo.textBeforeCursor;
 
   // 檢查最後一個斷行符號的位置
@@ -62,14 +66,14 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet |
   const prefixMatch = lastLineText.match(/[/#!@][a-zA-Z0-9_-]+$/);
   if (prefixMatch) {
     const prefixCandidate = prefixMatch[0];
-    const result = await checkSnippetCandidate(prefixCandidate);
+    const result = await checkPromptCandidate(prefixCandidate);
     if (result) return result;
   }
 
   // 策略 2: 檢查以空白分隔的最後一個單詞
   const lastWord = lastLineText.trim().split(/\s+/).pop() || '';
   if (lastWord) {
-    const result = await checkSnippetCandidate(lastWord);
+    const result = await checkPromptCandidate(lastWord);
     if (result) return result;
   }
 
@@ -82,61 +86,59 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Snippet |
     const candidate = trimmedEnd.slice(-i);
     if (candidate !== lastWord) {
       // 避免重複檢查
-      const result = await checkSnippetCandidate(candidate);
+      const result = await checkPromptCandidate(candidate);
       if (result) return result;
     }
   }
 
   return null;
 }
-
-// 抽離檢查邏輯，減少程式碼重複
-async function checkSnippetCandidate(candidate: string): Promise<Snippet | null> {
+async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
   // 先從本地快取查找
-  const snippet = getSnippetByShortcut(candidate);
-  if (snippet) {
+  const prompt = getPromptByShortcut(candidate);
+  if (prompt) {
     return {
       shortcut: candidate,
-      content: snippet.content,
-      name: snippet.name,
+      content: prompt.content,
+      name: prompt.name,
     };
   }
 
   try {
     // 檢查背景服務連線狀態
     if (!chrome.runtime?.id) {
-      console.warn('擴充功能未啟用或背景服務未執行');
+      console.warn('Extension is not enabled or background service is not running');
       return null;
     }
     // 如果本地沒有，再向背景發送訊息
     const response = await chrome.runtime.sendMessage({
-      action: 'getSnippetByShortcut',
+      action: 'getPromptByShortcut',
       shortcut: candidate,
     });
 
-    if (response?.snippet) {
+    if (response?.prompt) {
       return {
         shortcut: candidate,
-        content: response.snippet.content,
-        name: response.snippet.name,
+        content: response.prompt.content,
+        name: response.prompt.name,
       };
     }
   } catch (error) {
-    console.error('取得程式碼片段失敗:', error);
+    console.error('取得提示失敗:', error);
   }
 
   return null;
 }
 
-async function processSnippetInsertion(snippet: Snippet, element: HTMLElement, cursorInfo: CursorInfo) {
+async function processPromptInsertion(prompt: Prompt, element: HTMLElement, cursorInfo: CursorInfo) {
   // 檢查是否包含表單欄位
-  const hasFormField = snippet.content.includes('data-snippet');
+  const hasFormField = prompt.content.includes('data-prompt');
 
   if (!hasFormField) {
     // 純文字插入，直接處理
-    const insertData: Snippet = {
-      ...snippet,
-      content: stripHtml(snippet.content),
+    const insertData: Prompt = {
+      ...prompt,
+      content: stripHtml(prompt.content),
     };
 
     insertContent(element, insertData, cursorInfo);
@@ -144,31 +146,31 @@ async function processSnippetInsertion(snippet: Snippet, element: HTMLElement, c
   }
 
   const shortcutInfo = {
-    shortcut: snippet.shortcut,
+    shortcut: prompt.shortcut,
     position: {
-      start: cursorInfo.start - snippet.shortcut.length,
+      start: cursorInfo.start - prompt.shortcut.length,
       end: cursorInfo.start,
     },
   };
 
   await chrome.storage.local.set({ shortcutInfo });
 
-  const title = `${snippet.shortcut} - ${snippet.name}`;
-  chrome.runtime.sendMessage({ action: 'createWindow', title, content: snippet.content });
+  const title = `${prompt.shortcut} - ${prompt.name}`;
+  chrome.runtime.sendMessage({ action: 'createWindow', title, content: prompt.content });
 }
 
 // 插入內容到指定元素
-function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: CursorInfo) {
-  const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(snippet.shortcut);
+function insertContent(element: HTMLElement, prompt: Prompt, cursorInfo: CursorInfo) {
+  const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
   if (shortcutStart === -1) return;
 
   const beforeShortcut = cursorInfo.textBeforeCursor.slice(0, shortcutStart);
-  const combinedText = beforeShortcut + snippet.content + cursorInfo.textAfterCursor;
+  const combinedText = beforeShortcut + prompt.content + cursorInfo.textAfterCursor;
 
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
     // 處理一般的輸入元素
     element.value = combinedText;
-    const cursorPos = beforeShortcut.length + snippet.content.length;
+    const cursorPos = beforeShortcut.length + prompt.content.length;
     element.setSelectionRange(cursorPos, cursorPos);
 
     // 觸發事件通知框架更新
@@ -176,7 +178,7 @@ function insertContent(element: HTMLElement, snippet: Snippet, cursorInfo: Curso
     element.dispatchEvent(new Event('change', { bubbles: true }));
   } else if (element.isContentEditable) {
     // 處理富文字編輯器
-    insertContentToContentEditable(element, snippet.content, cursorInfo, snippet.shortcut.length);
+    insertContentToContentEditable(element, prompt.content, cursorInfo, prompt.shortcut.length);
   }
 }
 
