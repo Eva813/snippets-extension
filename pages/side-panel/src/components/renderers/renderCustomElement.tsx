@@ -18,13 +18,13 @@ const typeToRenderer: Record<
   ) => React.ReactNode,
 };
 
-type SnippetAttribute = {
+type PromptAttribute = {
   name: string;
   value: string;
 };
 
-type Snippet = {
-  attributes: SnippetAttribute[];
+type Prompt = {
+  attributes: PromptAttribute[];
 };
 
 export function renderCustomElement(
@@ -34,11 +34,11 @@ export function renderCustomElement(
   initFormData?: (id: string, value: string) => void,
 ): React.ReactNode {
   const type = el.getAttribute('data-type')?.toLowerCase();
-  const snippet = el.getAttribute('data-snippet');
-  if (!snippet || !type) return null;
+  const prompt = el.getAttribute('data-prompt');
+  if (!prompt || !type) return null;
 
   try {
-    const parsed = JSON.parse(snippet) as Snippet;
+    const parsed = JSON.parse(prompt) as Prompt;
     const attrs = parsed.attributes.reduce((acc: Record<string, string>, attr) => {
       acc[attr.name] = attr.value;
       return acc;

@@ -8,7 +8,7 @@ interface PopupData {
   content: string | Record<string, unknown>;
 }
 
-interface SnippetData {
+interface PromptData {
   content: string;
   shortcut: string;
   name: string;
@@ -18,13 +18,13 @@ type RuntimeMessage =
   | { action: 'createWindow'; title: string; content: string }
   | { action: 'getPopupData' }
   | { action: 'submitForm'; finalOutput: string }
-  | { action: 'sidePanelInsertPrompt'; snippet: SnippetData }
+  | { action: 'sidePanelInsertPrompt'; prompt: PromptData }
   | { action: 'openShortcutsPage' }
   | { action: 'getFolders' }
   | { action: 'updateIcon'; hasFolders: boolean }
   | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
   | { action: 'userLoggedOut' }
-  | { action: 'getSnippetByShortcut'; shortcut: string };
+  | { action: 'getPromptByShortcut'; shortcut: string };
 
 // 全域狀態
 let popupData: PopupData | null = null;
@@ -119,31 +119,31 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       sendResponse({ success: true });
     });
   },
-  getSnippetByShortcut: async (message, sendResponse) => {
-    const { shortcut } = message as { action: 'getSnippetByShortcut'; shortcut: string };
+  getPromptByShortcut: async (message, sendResponse) => {
+    const { shortcut } = message as { action: 'getPromptByShortcut'; shortcut: string };
 
     try {
-      // 從本地快取中查找 snippets
-      const { snippets } = await chrome.storage.local.get('snippets');
-      if (snippets && typeof snippets === 'object') {
-        sendResponse({ success: true, snippet: snippets[shortcut] });
+      // 從本地快取中查找 prompts
+      const { prompts } = await chrome.storage.local.get('prompts');
+      if (prompts && typeof prompts === 'object') {
+        sendResponse({ success: true, prompt: prompts[shortcut] });
         return;
       }
 
-      // 如果本地沒有 snippets，觸發 fetchFolders
+      // 如果本地沒有 prompts，觸發 fetchFolders
       const fetchResult = await fetchFolders();
       if (!fetchResult.success) {
         sendResponse({ success: false, error: 'Unable to fetch folders' });
         return;
       }
 
-      // 再次從本地快取中查找 snippets
-      const { snippets: updatedSnippets } = await chrome.storage.local.get('snippets');
-      const snippet = updatedSnippets?.[shortcut];
-      if (snippet) {
-        sendResponse({ success: true, snippet });
+      // 再次從本地快取中查找 prompts
+      const { prompts: updatedPrompts } = await chrome.storage.local.get('prompts');
+      const prompt = updatedPrompts?.[shortcut];
+      if (prompt) {
+        sendResponse({ success: true, prompt });
       } else {
-        sendResponse({ success: false, error: 'Snippet not found' });
+        sendResponse({ success: false, error: 'Prompt not found' });
       }
     } catch (error) {
       sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
@@ -209,7 +209,7 @@ function handleSidePanelInsert(
       return;
     }
 
-    const { content, shortcut, name } = message.snippet;
+    const { content, shortcut, name } = message.prompt;
     const title = `${shortcut} - ${name}`;
 
     chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: content, title }, response => {

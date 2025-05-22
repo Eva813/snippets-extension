@@ -19,7 +19,7 @@ const Header = ({ goToDashboard }: { goToDashboard: () => void }) => {
         </svg>
         <input
           type="text"
-          placeholder="Search snippets..."
+          placeholder="Search prompts..."
           className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white"
         />
       </div>
