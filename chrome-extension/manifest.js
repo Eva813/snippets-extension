@@ -37,7 +37,7 @@ const manifest = {
     },
   },
   version: packageJson.version,
-  description: '__MSG_extensionDescription__',
+  description: 'A tool for managing and inserting prompts',
   host_permissions: ['<all_urls>', 'http://localhost:3000/*'],
   permissions: ['storage', 'scripting', 'tabs', 'notifications', 'sidePanel', 'windows', 'activeTab', 'cookies'],
   options_page: 'options/index.html',
