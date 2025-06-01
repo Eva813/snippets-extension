@@ -38,8 +38,13 @@ const manifest = {
   },
   version: packageJson.version,
   description: 'A tool for managing and inserting prompts',
-  host_permissions: ['<all_urls>', 'http://localhost:3000/*'],
-  permissions: ['storage', 'scripting', 'tabs', 'notifications', 'sidePanel', 'windows', 'activeTab', 'cookies'],
+  host_permissions: [
+    'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
+    'https://linxly-nextjs.vercel.app/*',
+    'http://localhost:3000/*',
+  ],
+  permissions: ['storage', 'windows', 'activeTab'],
+  // optional_permissions: ['scripting', 'notifications', 'cookies', 'tabs', 'sidePanel'],
   options_page: 'options/index.html',
   background: {
     service_worker: 'background.iife.js',
@@ -70,10 +75,6 @@ const manifest = {
       matches: ['<all_urls>'],
       css: ['content.css'],
     },
-    // {
-    //   matches: ["http://localhost:3000/login*"],
-    //   js: ["src/contentScript.js"]
-    // }
   ],
   devtools_page: 'devtools/index.html',
   web_accessible_resources: [
@@ -86,12 +87,9 @@ const manifest = {
     matches: [
       'https://linxly-nextjs.vercel.app/*',
       // 如果您在本地開發後台，也加入本地位址，例如:
-      'http://localhost:3000/*',
+      // 'http://localhost:3000/*',
     ],
   },
-  // side_panel: {
-  //   default_path: 'side-panel/index.html',
-  // },
 };
 
 export default manifest;

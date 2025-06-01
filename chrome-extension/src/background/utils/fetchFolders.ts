@@ -2,11 +2,8 @@ const DEFAULT_API_DOMAIN = 'http://localhost:3000';
 
 export async function fetchFolders() {
   try {
-    console.log('開始執行 fetchFolders 函式');
-
     const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
     if (!userLoggedIn) {
-      console.log('使用者未登入，無法取得資料夾');
       return { success: false, error: 'User not logged in' };
     }
 
@@ -32,7 +29,6 @@ export async function fetchFolders() {
 
     const data = await resp.json();
     const hasFolders = Array.isArray(data) && data.length > 0;
-    console.log('取得資料夾成功:', data);
     // 整理 prompts 快取
     // 定義 Prompt 類型
     type Prompt = {
