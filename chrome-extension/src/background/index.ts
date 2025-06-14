@@ -29,7 +29,7 @@ type RuntimeMessage =
 // 全域狀態
 let popupData: PopupData | null = null;
 let targetTabId: number | null | undefined = null;
-const DEFAULT_API_DOMAIN = 'https://linxly-nextjs-git-feat-login-page-eva813s-projects.vercel.app';
+const DEFAULT_API_DOMAIN = 'https://linxly-nextjs.vercel.app';
 
 function setupExtensionControls() {
   // 監聽 extension icon 點擊事件
