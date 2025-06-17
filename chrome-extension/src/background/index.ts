@@ -82,7 +82,10 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
         return;
       }
 
+      // 先清除本地快取，確保取得最新資料
+      await chrome.storage.local.remove(['folders', 'prompts']);
       const result = await fetchFolders();
+      console.log('Fetched folders (force refresh):', result);
       if (result.success && result.folders) {
         sendResponse({ success: true, data: result.folders });
       } else {
