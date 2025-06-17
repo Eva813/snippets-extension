@@ -1,5 +1,5 @@
 import { insertTextAtCursor, getDeepActiveElement } from './textInserter';
-import { stripHtml, generateElementPath } from './utils/utils';
+import { parseHtmlToText, generateElementPath } from './utils/utils';
 
 // 負責收集和準備位置資訊
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -16,8 +16,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // 先嘗試獲取已保存的游標位置
   chrome.storage.local.get(['cursorPosition', 'shortcutInfo'], async result => {
     const activeElement = getDeepActiveElement();
-    const cleanPrompt = stripHtml(message.prompt);
-    // const originalPrompt = message.prompt;
+    const cleanPrompt = parseHtmlToText(message.prompt);
 
     if (!activeElement) {
       console.warn('無聚焦元素，無法插入');

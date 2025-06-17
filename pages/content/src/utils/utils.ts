@@ -6,6 +6,43 @@ export function stripHtml(html: string): string {
   return temp.textContent || temp.innerText || '';
 }
 
+// 將 HTML 轉換為結構化純文字的函式
+export function parseHtmlToText(html: string): string {
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  function traverse(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent || '';
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as HTMLElement;
+      switch (element.tagName.toLowerCase()) {
+        case 'p':
+          return traverseChildren(node) + '\n'; // 段落換行
+        case 'ul':
+          return traverseChildren(node); // 列表不換行
+        case 'li':
+          return '• ' + traverseChildren(node) + '\n'; // 列點符號
+        case 'h1':
+          return `【${traverseChildren(node)}】\n`; // Jemmy 樣式
+        case 'h2':
+          return `▋${traverseChildren(node)}\n`;
+        case 'h3':
+          return `➤ ${traverseChildren(node)}\n`;
+        default:
+          return traverseChildren(node);
+      }
+    }
+    return '';
+  }
+
+  function traverseChildren(node: Node): string {
+    return Array.from(node.childNodes).map(traverse).join('');
+  }
+
+  return traverse(tempDiv).trim();
+}
+
 // export function convertTemplate(template: string): { convertedHtml: string; initialData: Record<string, string> } {
 //   console.log('convertedHtml:', template);
 //   const parser = new DOMParser();
