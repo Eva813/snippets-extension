@@ -10,37 +10,52 @@ export function stripHtml(html: string): string {
 export function parseHtmlToText(html: string): string {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
+  console.log('tempDiv.innerHTML:', tempDiv.innerHTML);
 
-  function traverse(node: Node): string {
+  function traverse(node: Node, parentTag?: string, depth: number = 0): string {
     if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent || '';
+      const text = node.textContent || '';
+      if (!text.trim()) return '';
+      return text.trim();
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as HTMLElement;
-      switch (element.tagName.toLowerCase()) {
-        case 'p':
-          return traverseChildren(node) + '\n'; // 段落換行
+      const tagName = element.tagName.toLowerCase();
+
+      switch (tagName) {
+        case 'p': {
+          const content = traverseChildren(node, tagName, depth);
+          if (parentTag === 'li') {
+            return content;
+          }
+          if (!content.trim()) {
+            return '\n';
+          }
+          return content + '\n';
+        }
         case 'ul':
-          return traverseChildren(node); // 列表不換行
-        case 'li':
-          return '• ' + traverseChildren(node) + '\n'; // 列點符號
-        case 'h1':
-          return `【${traverseChildren(node)}】\n`; // Jemmy 樣式
-        case 'h2':
-          return `▋${traverseChildren(node)}\n`;
-        case 'h3':
-          return `➤ ${traverseChildren(node)}\n`;
+          return traverseChildren(node, tagName, depth + 1);
+        case 'li': {
+          // 根據深度加入縮排空格
+          const indent = '  '.repeat(depth);
+          return `${indent}` + traverseChildren(node, tagName, depth) + '\n';
+        }
+        case 'br':
+          return '\n';
         default:
-          return traverseChildren(node);
+          return traverseChildren(node, tagName, depth);
       }
     }
     return '';
   }
 
-  function traverseChildren(node: Node): string {
-    return Array.from(node.childNodes).map(traverse).join('');
+  function traverseChildren(node: Node, parentTag?: string, depth: number = 0): string {
+    return Array.from(node.childNodes)
+      .map(child => traverse(child, parentTag, depth))
+      .join('');
   }
 
-  return traverse(tempDiv).trim();
+  const raw = traverse(tempDiv);
+  return raw.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 // export function convertTemplate(template: string): { convertedHtml: string; initialData: Record<string, string> } {
