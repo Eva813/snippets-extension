@@ -2,37 +2,28 @@ import { FaArrowRightLong } from 'react-icons/fa6';
 import { IoReload } from 'react-icons/io5';
 import { useState } from 'react';
 
-const Header = ({ goToDashboard, onReload }: { goToDashboard: () => void; onReload?: () => Promise<void> }) => {
+const Header = ({ goToDashboard, onReload }: { goToDashboard: () => void; onReload: () => Promise<void> }) => {
   const [isLoading, setIsLoading] = useState(false);
+
   const handleReload = async () => {
-    if (isLoading) return; // 防止重複點擊
+    if (isLoading) return;
 
     setIsLoading(true);
+    const startTime = Date.now();
+
     try {
-      if (onReload) {
-        // 使用傳入的 onReload 函式直接更新 SidePanel 的 folders state
-        await onReload();
-        console.log('Folders reloaded successfully via onReload');
-      } else {
-        // 備用方案：使用原本的方式
-        await new Promise(resolve => {
-          chrome.runtime.sendMessage({ action: 'getFolders' }, response => {
-            if (response?.success) {
-              console.log('Folders reloaded successfully:', response.data);
-            } else {
-              console.error('Failed to reload folders:', response?.error);
-            }
-            resolve(response);
-          });
-        });
-      }
+      await onReload();
+      console.log('Folders reloaded successfully');
     } catch (error) {
       console.error('Error reloading folders:', error);
     } finally {
-      // 確保至少顯示 500ms 的載入動畫，讓使用者看到反饋
+      const elapsedTime = Date.now() - startTime;
+      const minLoadingTime = 800;
+      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+
       setTimeout(() => {
         setIsLoading(false);
-      }, 500);
+      }, remainingTime);
     }
   };
 
@@ -65,10 +56,13 @@ const Header = ({ goToDashboard, onReload }: { goToDashboard: () => void; onRelo
         <button
           onClick={handleReload}
           disabled={isLoading}
-          className={`flex items-center text-sm text-white ${isLoading ? 'cursor-not-allowed opacity-70' : 'hover:opacity-80'}`}>
+          className={`group flex items-center text-sm text-white transition-all duration-200 ${
+            isLoading ? 'cursor-not-allowed opacity-70' : 'hover:opacity-80'
+          }`}
+          title={isLoading ? 'reloading...' : 'Reload Prompts'}>
           <IoReload
             size={20}
-            className={isLoading ? 'animate-spin' : ''}
+            className={`transition-transform duration-200 ${isLoading ? 'animate-spin' : 'group-hover:rotate-45'}`}
             style={isLoading ? { animationDuration: '1s' } : {}}
           />
         </button>
