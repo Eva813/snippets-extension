@@ -1,5 +1,5 @@
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
 import FolderList from './components/folderList';
@@ -43,44 +43,23 @@ const SidePanel: React.FC<SidePanelProps> = ({
       }>;
     }>
   >([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  const fetchFolders = async (forceRefresh = false) => {
-    if (forceRefresh) {
-      // 強制重新獲取最新資料
-      chrome.runtime.sendMessage(
-        { action: 'getFolders' },
-        (response: {
-          success: boolean;
-          data?: Array<{
-            id: string;
-            name: string;
-            description: string;
-            prompts: Array<{
-              id: string;
-              name: string;
-              content: string;
-              shortcut: string;
-            }>;
-          }>;
-          error?: string;
-        }) => {
-          if (response && response.success && response.data) {
-            setFolders(response.data);
-            chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
-          } else {
-            console.error('獲取資料夾失敗:', response?.error);
-            setFolders([]);
-            chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
-          }
-        },
-      );
-    } else {
-      // 先從 chrome.storage 中檢查是否已有資料
-      chrome.storage.local.get(['folders', 'hasFolders'], async result => {
-        if (result.folders && Array.isArray(result.folders) && result.folders.length > 0) {
-          setFolders(result.folders);
-        } else {
-          // 如果 storage 中沒有資料，則向 API 發送請求
+  const fetchFolders = useCallback(
+    async (forceRefresh = false) => {
+      // 避免重複載入
+      if (!forceRefresh && hasInitialized && folders.length > 0) {
+        return;
+      }
+
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        if (forceRefresh) {
+          // 強制重新獲取最新資料
           chrome.runtime.sendMessage(
             { action: 'getFolders' },
             (response: {
@@ -98,27 +77,69 @@ const SidePanel: React.FC<SidePanelProps> = ({
               }>;
               error?: string;
             }) => {
+              setIsLoading(false);
+              setHasInitialized(true);
               if (response && response.success && response.data) {
                 setFolders(response.data);
                 chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
               } else {
-                console.error('獲取資料夾失敗:', response?.error);
+                const errorMsg = response?.error || '獲取資料夾失敗';
+                console.error('獲取資料夾失敗:', errorMsg);
+                setLoadError(errorMsg);
                 setFolders([]);
                 chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
               }
             },
           );
+        } else {
+          // 先快速從本地載入，然後在背景同步
+          const result = await new Promise<{ folders?: typeof folders; hasFolders?: boolean }>(resolve => {
+            chrome.storage.local.get(['folders', 'hasFolders'], resolve);
+          });
+
+          if (result.folders && Array.isArray(result.folders) && result.folders.length > 0) {
+            // 立即顯示快取的資料
+            setFolders(result.folders);
+            setIsLoading(false);
+            setHasInitialized(true);
+          } else {
+            // 沒有快取資料，從 API 載入
+            chrome.runtime.sendMessage(
+              { action: 'getFolders' },
+              (response: { success: boolean; data?: typeof folders; error?: string }) => {
+                setIsLoading(false);
+                setHasInitialized(true);
+                if (response && response.success && response.data) {
+                  setFolders(response.data);
+                  chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
+                } else {
+                  const errorMsg = response?.error || '獲取資料夾失敗';
+                  console.error('獲取資料夾失敗:', errorMsg);
+                  setLoadError(errorMsg);
+                  setFolders([]);
+                  chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
+                }
+              },
+            );
+          }
         }
-      });
-    }
-  };
+      } catch (error) {
+        setIsLoading(false);
+        setHasInitialized(true);
+        const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+        setLoadError(errorMsg);
+        console.error('載入資料夾時發生錯誤:', error);
+      }
+    },
+    [hasInitialized, folders.length],
+  );
 
   useEffect(() => {
-    // 當面板變為可見時重新獲取資料
-    if (visible && isInDOM) {
+    // 只在第一次顯示或沒有資料時載入
+    if (visible && isInDOM && !hasInitialized) {
       fetchFolders();
     }
-  }, [visible, isInDOM]);
+  }, [visible, isInDOM, hasInitialized, fetchFolders]);
   //  ==========  將 prompt 存到 storage ==========
   useEffect(() => {
     const validFolders = Array.isArray(folders) ? folders : [];
@@ -126,16 +147,26 @@ const SidePanel: React.FC<SidePanelProps> = ({
       chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
     } else {
       chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: true });
-      const promptsMap = validFolders.reduce<Record<string, (typeof folders)[0]['prompts'][0]>>((acc, folder) => {
-        folder.prompts.forEach(prompt => {
-          acc[prompt.shortcut] = prompt;
-        });
-        return acc;
-      }, {});
 
-      chrome.storage.local.set({ prompts: promptsMap }, () => {
-        if (import.meta.env.MODE === 'development') {
-          console.log('Prompts saved to storage:', promptsMap);
+      // 檢查是否需要更新 prompts（避免重複更新）
+      chrome.storage.local.get(['prompts'], result => {
+        const promptsMap = validFolders.reduce<Record<string, (typeof folders)[0]['prompts'][0]>>((acc, folder) => {
+          folder.prompts.forEach(prompt => {
+            acc[prompt.shortcut] = prompt;
+          });
+          return acc;
+        }, {});
+
+        // 只有在 prompts 有變化時才更新
+        const currentPromptsString = JSON.stringify(result.prompts || {});
+        const newPromptsString = JSON.stringify(promptsMap);
+
+        if (currentPromptsString !== newPromptsString) {
+          chrome.storage.local.set({ prompts: promptsMap }, () => {
+            if (import.meta.env.MODE === 'development') {
+              console.log('Prompts saved to storage:', promptsMap);
+            }
+          });
         }
       });
     }
@@ -226,14 +257,30 @@ const SidePanel: React.FC<SidePanelProps> = ({
       <Header goToDashboard={goToDashboard} onReload={() => fetchFolders(true)} />
       {/* prompts List*/}
       <div className="content-area overflow-y-auto bg-white p-2">
-        <FolderList
-          folders={folders}
-          collapsedFolders={collapsedFolders}
-          toggleCollapse={toggleCollapse}
-          hoveredPromptId={hoveredPromptId}
-          setHoveredPromptId={setHoveredPromptId}
-          insertPrompt={id => insertPrompt(id, {} as React.MouseEvent)}
-        />
+        {isLoading && folders.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-gray-500">載入資料夾中...</div>
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="mb-2 text-red-500">載入失敗</div>
+            <div className="mb-4 text-sm text-gray-400">{loadError}</div>
+            <button
+              onClick={() => fetchFolders(true)}
+              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
+              重試
+            </button>
+          </div>
+        ) : (
+          <FolderList
+            folders={folders}
+            collapsedFolders={collapsedFolders}
+            toggleCollapse={toggleCollapse}
+            hoveredPromptId={hoveredPromptId}
+            setHoveredPromptId={setHoveredPromptId}
+            insertPrompt={id => insertPrompt(id, {} as React.MouseEvent)}
+          />
+        )}
       </div>
     </div>
   );
