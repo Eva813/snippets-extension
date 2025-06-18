@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaAngleLeft } from 'react-icons/fa';
+import { FaAngleRight } from 'react-icons/fa6';
 
 interface ToggleSidebarButtonProps {
   alignment: 'left' | 'right'; //  alignment 參數保留以備未來擴展，目前固定使用右側設定
@@ -37,7 +37,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ visible, onTo
           </a>
         </div>
       </div>
-      <FaAngleLeft className="text-white" />
+      <FaAngleRight className="text-white" />
     </button>
   );
 };

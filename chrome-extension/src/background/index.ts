@@ -41,7 +41,6 @@ function setupExtensionControls() {
     }
 
     if (tab.id !== undefined) {
-      await fetchFolders();
       chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
     } else {
       chrome.tabs.create({ url: `${DEFAULT_API_DOMAIN}/login` });

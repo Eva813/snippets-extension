@@ -6,11 +6,9 @@ export function stripHtml(html: string): string {
   return temp.textContent || temp.innerText || '';
 }
 
-// 將 HTML 轉換為結構化純文字的函式
 export function parseHtmlToText(html: string): string {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
-  console.log('tempDiv.innerHTML:', tempDiv.innerHTML);
 
   function traverse(node: Node, parentTag?: string, depth: number = 0): string {
     if (node.nodeType === Node.TEXT_NODE) {
