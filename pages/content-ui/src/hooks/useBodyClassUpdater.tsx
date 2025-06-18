@@ -1,6 +1,3 @@
-/**
- * 更新 body 的 CSS 類別的自定義 Hook
- */
 import { useEffect } from 'react';
 
 function useBodyClassUpdater(isAnimating: boolean, displayMode: 'overlay' | 'push', alignment: 'left' | 'right') {
@@ -10,17 +7,10 @@ function useBodyClassUpdater(isAnimating: boolean, displayMode: 'overlay' | 'pus
     const updateBodyClasses = () => {
       if (isAnimating && displayMode === 'push') {
         targetBody.classList.add('panel-push-mode');
-        if (alignment === 'right') {
-          targetBody.classList.add('panel-push-right');
-          targetBody.classList.remove('panel-push-left');
-        } else {
-          targetBody.classList.add('panel-push-left');
-          targetBody.classList.remove('panel-push-right');
-        }
         targetBody.dataset.panelMode = 'push';
         targetBody.dataset.panelAlignment = alignment;
       } else {
-        targetBody.classList.remove('panel-push-mode', 'panel-push-right', 'panel-push-left');
+        targetBody.classList.remove('panel-push-mode');
         delete targetBody.dataset.panelMode;
         delete targetBody.dataset.panelAlignment;
       }
@@ -31,7 +21,7 @@ function useBodyClassUpdater(isAnimating: boolean, displayMode: 'overlay' | 'pus
 
     return () => {
       // 清理副作用：移除所有相關的 class
-      targetBody.classList.remove('panel-push-mode', 'panel-push-right', 'panel-push-left');
+      targetBody.classList.remove('panel-push-mode');
     };
   }, [isAnimating, displayMode, alignment]);
 }

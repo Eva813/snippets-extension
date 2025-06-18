@@ -7,12 +7,11 @@ import FolderList from './components/folderList';
 interface SidePanelProps extends Record<string, unknown> {
   alignment: 'left' | 'right';
   visible: boolean;
+  displayMode: 'overlay' | 'push';
   isInDOM: boolean;
   isAnimating: boolean;
   noAnimation: boolean;
   setIsInDOM: (value: boolean) => void;
-  toggleAlignment: () => void;
-  onHover: (element: HTMLElement | null) => void;
   onToggle: () => void;
 }
 
@@ -24,7 +23,6 @@ const SidePanel: React.FC<SidePanelProps> = ({
   isAnimating,
   noAnimation,
   setIsInDOM,
-  onHover,
   onToggle,
 }) => {
   const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
@@ -212,8 +210,6 @@ const SidePanel: React.FC<SidePanelProps> = ({
     <div
       ref={panelRef}
       className={panelClasses}
-      onMouseEnter={() => onHover(panelRef.current)}
-      onMouseLeave={() => onHover(null)}
       data-display-mode={displayMode}
       onTransitionEnd={() => {
         // 只處理 transform 的 transitionEnd
@@ -223,15 +219,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         }
       }}>
       {/* 側邊欄切換按鈕 - 固定在面板外側 */}
-      <div
-        className="sidebar-toggle-container"
-        onMouseEnter={e => {
-          e.stopPropagation();
-          onHover(null);
-        }}
-        onMouseLeave={e => {
-          e.stopPropagation();
-        }}>
+      <div className="sidebar-toggle-container">
         <ToggleSidebarButton alignment={alignment} visible={visible} onToggle={onToggle} />
       </div>
       {/* Header */}
