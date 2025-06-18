@@ -1,4 +1,24 @@
-body.panel-push-mode {
+/* 更具體的選擇器，避免與頁面樣式衝突 */
+body[data-panel-mode="push"] {
+  overflow-x: hidden;
+  position: relative;
+  transition: margin 0.3s ease-in-out;
+}
+
+/* 右側面板推送模式 */
+body[data-panel-mode="push"][data-panel-alignment="right"] {
+  margin-right: 300px;
+  margin-left: 0;
+}
+
+/* 左側面板推送模式 */
+body[data-panel-mode="push"][data-panel-alignment="left"] {
+  margin-left: 300px;
+  margin-right: 0;
+}
+
+/* 為了向後相容，保留原始類別但增加更高的特異性 */
+body.panel-push-mode[data-panel-mode="push"] {
   overflow-x: hidden;
   position: relative;
   transition: margin 0.3s ease-in-out;
