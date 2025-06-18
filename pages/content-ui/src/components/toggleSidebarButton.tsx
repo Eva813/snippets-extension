@@ -1,13 +1,13 @@
 import React from 'react';
-import { FaAngleLeft, FaAngleRight } from 'react-icons/fa';
+import { FaAngleLeft } from 'react-icons/fa';
 
 interface ToggleSidebarButtonProps {
-  alignment: 'left' | 'right';
+  alignment: 'left' | 'right'; //  alignment 參數保留以備未來擴展，目前固定使用右側設定
   visible: boolean;
   onToggle: () => void;
 }
 
-const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, visible, onToggle }) => {
+const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ visible, onToggle }) => {
   const handleToggle = () => {
     // 呼叫 onToggle 函式
     onToggle();
@@ -21,11 +21,9 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, vi
   return (
     <button
       data-testid="sidebar-toggle-btn"
-      className={`toggle-sidebar-btn bg-primary flex h-8 w-5 items-center justify-center ${
-        alignment === 'left'
-          ? 'rounded-r-md' // 右側圓角
-          : 'rounded-l-md' // 左側圓角
-      } ${alignment} ${visible ? 'visible' : ''}`}
+      className={`toggle-sidebar-btn right bg-primary flex h-8 w-5 items-center justify-center rounded-l-md ${
+        visible ? 'visible' : ''
+      }`}
       onClick={handleToggle}>
       <div className="relative">
         <div className="sidebar-tooltip text-white">
@@ -39,7 +37,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, vi
           </a>
         </div>
       </div>
-      {alignment === 'left' ? <FaAngleLeft className="text-white" /> : <FaAngleRight className="text-white" />}{' '}
+      <FaAngleLeft className="text-white" />
     </button>
   );
 };
