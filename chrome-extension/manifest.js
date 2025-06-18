@@ -43,7 +43,7 @@ const manifest = {
     'https://linxly-nextjs.vercel.app/*',
     'http://localhost:3000/*',
   ],
-  permissions: ['storage', 'windows', 'activeTab'],
+  permissions: ['storage', 'windows', 'activeTab', 'scripting'],
   // optional_permissions: ['scripting', 'notifications', 'cookies', 'tabs', 'sidePanel'],
   options_page: 'options/index.html',
   background: {
@@ -64,16 +64,14 @@ const manifest = {
   },
   content_scripts: [
     {
-      matches: ['<all_urls>'],
+      matches: ['*://*/*'],
       js: ['content/index.iife.js'],
+      run_at: 'document_idle', // 等待 DOM 和其他資源載入完成
     },
     {
-      matches: ['<all_urls>'],
+      matches: ['*://*/*'],
       js: ['content-ui/index.iife.js'],
-    },
-    {
-      matches: ['<all_urls>'],
-      css: ['content.css'],
+      run_at: 'document_idle', // 延遲載入 UI
     },
   ],
   devtools_page: 'devtools/index.html',
