@@ -84,7 +84,12 @@ const Header = ({
           <div className="group relative">
             <button
               onClick={() => displayMode !== 'push' && toggleDisplayMode()}
-              className={`flex items-center justify-center rounded-md p-1 text-base text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white ${displayMode === 'push' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+              disabled={displayMode === 'push'}
+              className={`flex items-center justify-center rounded-md p-1 text-base transition-all duration-200 ${
+                displayMode === 'push'
+                  ? 'cursor-not-allowed text-white opacity-80'
+                  : 'text-gray-300 hover:bg-slate-600/50 hover:text-white hover:opacity-80'
+              }`}
               title="push website to the side">
               <GoSidebarCollapse size={17} />
             </button>
@@ -93,10 +98,16 @@ const Header = ({
               push website to the side
             </span>
           </div>
+
           <div className="group relative">
             <button
               onClick={() => displayMode !== 'overlay' && toggleDisplayMode()}
-              className={`flex items-center justify-center rounded-md p-1 text-base text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white ${displayMode === 'overlay' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+              disabled={displayMode === 'overlay'}
+              className={`flex items-center justify-center rounded-md p-1 text-base transition-all duration-200 ${
+                displayMode === 'overlay'
+                  ? 'cursor-not-allowed text-white opacity-80'
+                  : 'text-gray-300 hover:bg-slate-600/50 hover:text-white hover:opacity-80'
+              }`}
               title="overlay website">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <g clipPath="url(#clip0)">
