@@ -1,13 +1,10 @@
 import { useEffect, useRef } from 'react';
 
 // 更新 extension container 的 CSS 類別
-
 function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' | 'push', alignment: 'left' | 'right') {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    console.log('useContainerClassUpdater - 狀態:', { isAnimating, displayMode, alignment });
-
     // 如果還沒有容器引用，嘗試獲取
     if (!containerRef.current) {
       // 在 Shadow DOM 中尋找 extension container
@@ -51,11 +48,12 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
     };
 
     const updateContainerClasses = () => {
-      console.log('更新容器類別 - isAnimating:', isAnimating, 'displayMode:', displayMode);
+      const isDev = import.meta.env.MODE !== 'production';
+      if (isDev) {
+        console.log('dev mode: 更新容器類別 - isAnimating:', isAnimating, 'displayMode:', displayMode);
+      }
 
-      // 清除所有模式相關的類別
       container.classList.remove('push-mode', 'push-mode-right', 'push-mode-left', 'overlay-mode');
-
       // 清除 host body 的 extension 類別
       hostBody.classList.remove('extension-push-active', 'extension-push-right', 'extension-push-left');
 
@@ -71,18 +69,14 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
           // 安全地推動 host 頁面
           hostBody.classList.add('extension-push-active');
           hostBody.classList.add(`extension-push-${alignment}`);
-
-          console.log('已套用 push 模式類別:', {
-            containerClasses: Array.from(container.classList),
-            bodyClasses: Array.from(hostBody.classList),
-          });
         } else {
           // Overlay 模式：只更新容器樣式
           container.classList.add('overlay-mode');
-          console.log('已套用 overlay 模式');
         }
       } else {
-        console.log('移除所有動畫類別');
+        if (isDev) {
+          console.log('dev mode: remove animation classes');
+        }
       }
     };
 
