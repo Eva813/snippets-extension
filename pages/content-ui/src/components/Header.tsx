@@ -1,5 +1,6 @@
 import { FaArrowRightLong } from 'react-icons/fa6';
 import { IoReload } from 'react-icons/io5';
+import { GoSidebarCollapse } from 'react-icons/go';
 import { useState } from 'react';
 
 const Header = ({
@@ -38,9 +39,8 @@ const Header = ({
   };
 
   return (
-    <header className="bg-primary p-4 text-white">
+    <header className="bg-primary px-4 py-2 text-white">
       <div className="flex w-full items-center">
-        {/* Search Bar */}
         <div className="bg-primary-400 flex w-full items-center rounded-md px-4 py-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -60,33 +60,67 @@ const Header = ({
           />
         </div>
       </div>
-
       {/* Action Buttons */}
-      <div className="mt-4 flex items-center justify-between sm:mt-0 md:mt-2">
-        <button
-          onClick={handleReload}
-          disabled={isLoading}
-          className={`group flex items-center text-sm text-white transition-all duration-200 ${
-            isLoading ? 'cursor-not-allowed opacity-70' : 'hover:opacity-80'
-          }`}
-          title={isLoading ? 'reloading...' : 'Reload Prompts'}>
-          <IoReload
-            size={20}
-            className={`transition-transform duration-200 ${isLoading ? 'animate-spin' : 'group-hover:rotate-45'}`}
-            style={isLoading ? { animationDuration: '1s' } : {}}
-          />
-        </button>
+      <div className="mb-2 flex items-center justify-between sm:mt-0 md:mt-2">
+        <div className="bg-primary-400 flex items-center space-x-2 rounded-lg p-1">
+          <div className="group relative">
+            <button
+              onClick={handleReload}
+              disabled={isLoading}
+              className={`flex items-center justify-center rounded-md p-1 text-base text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white  ${isLoading ? 'cursor-not-allowed opacity-70' : 'hover:opacity-80'}`}
+              title={isLoading ? 'reloading...' : 'Reload Prompts'}>
+              <IoReload
+                size={16}
+                className={`transition-transform duration-200 ${isLoading ? 'animate-spin' : 'hover:rotate-45'}`}
+                style={isLoading ? { animationDuration: '1s' } : {}}
+              />
+            </button>
 
-        {/* Toggle Display Mode Button */}
-        <button
-          onClick={() => {
-            console.log('切換模式:', displayMode);
-            toggleDisplayMode();
-          }}
-          className="ml-4 flex items-center text-sm text-white hover:opacity-80 transition-all duration-200"
-          title={`Switch to ${displayMode === 'push' ? 'overlay' : 'push'} mode`}>
-          {displayMode === 'push' ? 'Overlay' : 'Push'}
-        </button>
+            <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              {isLoading ? 'reloading...' : 'Reload Prompts'}
+            </span>
+          </div>
+
+          <div className="group relative">
+            <button
+              onClick={() => displayMode !== 'push' && toggleDisplayMode()}
+              className={`flex items-center justify-center rounded-md p-1 text-base text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white ${displayMode === 'push' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+              title="push website to the side">
+              <GoSidebarCollapse size={17} />
+            </button>
+
+            <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              push website to the side
+            </span>
+          </div>
+          <div className="group relative">
+            <button
+              onClick={() => displayMode !== 'overlay' && toggleDisplayMode()}
+              className={`flex items-center justify-center rounded-md p-1 text-base text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white ${displayMode === 'overlay' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+              title="overlay website">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <g clipPath="url(#clip0)">
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M16 0C14.8954 0 14 0.895432 14 2V22C14 23.1046 14.8954 24 16 24H22C23.1046 24 24 23.1046 24 22V2C24 0.895431 23.1046 0 22 0H16Z"
+                  />
+                  <path d="M2 1H12V3L2 3V21H12V23H2C0.89543 23 0 22.1046 0 21V3C0 1.89543 0.89543 1 2 1Z" />
+                  <path d="M5 5H12V7H6V11H12V13H5C4.44771 13 4 12.5523 4 12V6C4 5.44772 4.44772 5 5 5Z" />
+                  <path d="M5 16H12V18H5C4.44772 18 4 17.5523 4 17C4 16.4477 4.44772 16 5 16Z" />
+                </g>
+                <defs>
+                  <clipPath id="clip0">
+                    <rect width="24" height="24" fill="white" />
+                  </clipPath>
+                </defs>
+              </svg>
+            </button>
+            <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              overlay website
+            </span>
+          </div>
+        </div>
 
         <button onClick={goToDashboard} className="flex items-center text-sm text-white">
           To Dashboard
