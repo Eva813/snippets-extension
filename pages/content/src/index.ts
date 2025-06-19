@@ -1,4 +1,5 @@
 import './messageHandler';
+import { getInitializationDelay, idleInitialize } from '@extension/shared/lib/utils/pageUtils';
 import { initializePromptManager, clearPromptCache } from '@src/prompt/promptManager';
 import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
@@ -6,26 +7,15 @@ import { safetyManager } from '@src/utils/safetyManager';
 
 const isDev = import.meta.env.MODE !== 'production';
 
-// 檢查是否為 React 頁面
-function isReactPage(): boolean {
-  return !!(
-    document.querySelector('[data-reactroot]') ||
-    document.querySelector('script[src*="react"]') ||
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).React ||
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__
-  );
-}
-
 async function initialize() {
   try {
-    // 初始化安全管理器
-    safetyManager.initialize();
-
-    // 檢查 runtime 狀態
-    if (!safetyManager.checkRuntimeStatus()) {
-      console.warn('[Content Script] Chrome runtime 不可用，跳過初始化');
+    // 初始化安全管理器，並檢查操作安全性
+    if (!safetyManager.initialize()) {
+      console.warn('[Content Script] 安全管理初始化失敗');
+      return;
+    }
+    if (!safetyManager.isOperationSafe()) {
+      console.warn('[Content Script] 系統狀態不安全，跳過初始化');
       return;
     }
 
@@ -41,7 +31,7 @@ async function initialize() {
       chrome.runtime.sendMessage({ action: 'updateIcon' });
 
       if (isDev) {
-        console.log('[Content Script] 初始化完成，React 頁面:', isReactPage());
+        console.log('[Content Script] 初始化完成');
       }
     } else {
       if (isDev) console.log('[Content Script] User is not logged in, skipping initialization');
@@ -51,15 +41,12 @@ async function initialize() {
   }
 }
 
-// 延遲初始化以避免干擾 React 水合
-function delayedInitialize() {
-  const delay = isReactPage() ? 3000 : 1000; // React 頁面延遲更久
-
-  if (isDev) {
-    console.log(`[Content Script] 將在 ${delay}ms 後初始化`);
-  }
-
-  setTimeout(initialize, delay);
+// 在安全時機使用共用的 idleInitialize
+const delay = getInitializationDelay();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => idleInitialize(initialize, delay));
+} else {
+  idleInitialize(initialize, delay);
 }
 
 window.addEventListener('message', event => {
@@ -69,12 +56,6 @@ window.addEventListener('message', event => {
   }
 
   if (event.data && event.data.type === 'FROM_LOGIN_PAGE' && event.data.action === 'USER_LOGGED_IN') {
-    // 檢查 runtime 狀態
-    if (!safetyManager.checkRuntimeStatus()) {
-      console.warn('[Content Script] Chrome runtime 不可用，忽略登入訊息');
-      return;
-    }
-
     // 將訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
@@ -94,12 +75,6 @@ window.addEventListener('message', event => {
   }
 
   if (event.data && event.data.type === 'FROM_SITE_HEADER' && event.data.action === 'USER_LOGGED_OUT') {
-    // 檢查 runtime 狀態
-    if (!safetyManager.checkRuntimeStatus()) {
-      console.warn('[Content Script] Chrome runtime 不可用，忽略登出訊息');
-      return;
-    }
-
     // 將登出訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
@@ -119,12 +94,6 @@ window.addEventListener('message', event => {
 
 // 動態監聽 local storage 變化
 chrome.storage.onChanged.addListener(async (changes, area) => {
-  // 檢查 runtime 狀態
-  if (!safetyManager.checkRuntimeStatus()) {
-    console.warn('[Content Script] Chrome runtime 不可用，忽略 storage 變更');
-    return;
-  }
-
   // 用來檢查變更是否發生在本地儲存區（local storage）
   if (area === 'local') {
     if (changes.userLoggedIn?.newValue === false) {
@@ -147,10 +116,3 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
     }
   }
 });
-
-// 延遲啟動以避免干擾 React 水合
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', delayedInitialize);
-} else {
-  delayedInitialize();
-}

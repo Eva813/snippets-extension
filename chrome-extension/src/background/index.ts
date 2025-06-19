@@ -40,7 +40,7 @@ function setupExtensionControls() {
       return;
     }
 
-    if (tab.id !== undefined && tab.url) {
+    if (tab.id !== undefined) {
       chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
     } else {
       chrome.tabs.create({ url: `${DEFAULT_API_DOMAIN}/login` });
