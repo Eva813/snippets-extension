@@ -10,15 +10,19 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false);
   const noAnimation = false; // 固定為 false，因為不再需要動態切換
 
-  // 目前固定設定：右側對齊，push 模式
+  // 目前固定設定：右側對齊，push／overlay 模式
   const alignment = 'right';
-  const displayMode = 'push';
+  // displayMode 狀態與切換函式
+  const [displayMode, setDisplayMode] = useState<'push' | 'overlay'>('push');
+  const toggleDisplayMode = useCallback(() => {
+    setDisplayMode(prev => (prev === 'push' ? 'overlay' : 'push'));
+  }, []);
 
   const sidebarTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     console.log('App 狀態變化:', { visible, isInDOM, isAnimating, displayMode, alignment });
-  }, [visible, isInDOM, isAnimating]);
+  }, [visible, isInDOM, isAnimating, displayMode, alignment]);
 
   //  Hooks
   const containerRef = useContainerClassUpdater(isAnimating, displayMode, alignment);
@@ -54,6 +58,8 @@ export default function App() {
         noAnimation={noAnimation}
         setIsInDOM={setIsInDOM}
         onToggle={toggleSidebar}
+        // 新增切換顯示模式函式
+        toggleDisplayMode={toggleDisplayMode}
         containerRef={containerRef}
       />
     </div>

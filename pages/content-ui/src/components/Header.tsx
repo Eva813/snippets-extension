@@ -2,7 +2,17 @@ import { FaArrowRightLong } from 'react-icons/fa6';
 import { IoReload } from 'react-icons/io5';
 import { useState } from 'react';
 
-const Header = ({ goToDashboard, onReload }: { goToDashboard: () => void; onReload: () => Promise<void> }) => {
+const Header = ({
+  goToDashboard,
+  onReload,
+  displayMode,
+  toggleDisplayMode,
+}: {
+  goToDashboard: () => void;
+  onReload: () => Promise<void>;
+  displayMode: 'push' | 'overlay';
+  toggleDisplayMode: () => void;
+}) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleReload = async () => {
@@ -66,6 +76,18 @@ const Header = ({ goToDashboard, onReload }: { goToDashboard: () => void; onRelo
             style={isLoading ? { animationDuration: '1s' } : {}}
           />
         </button>
+
+        {/* Toggle Display Mode Button */}
+        <button
+          onClick={() => {
+            console.log('切換模式:', displayMode);
+            toggleDisplayMode();
+          }}
+          className="ml-4 flex items-center text-sm text-white hover:opacity-80 transition-all duration-200"
+          title={`Switch to ${displayMode === 'push' ? 'overlay' : 'push'} mode`}>
+          {displayMode === 'push' ? 'Overlay' : 'Push'}
+        </button>
+
         <button onClick={goToDashboard} className="flex items-center text-sm text-white">
           To Dashboard
           <FaArrowRightLong className="ml-1 text-sm" />
