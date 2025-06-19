@@ -13,6 +13,7 @@ interface SidePanelProps extends Record<string, unknown> {
   noAnimation: boolean;
   setIsInDOM: (value: boolean) => void;
   onToggle: () => void;
+  toggleDisplayMode: () => void;
   containerRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -25,6 +26,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
   noAnimation,
   setIsInDOM,
   onToggle,
+  toggleDisplayMode,
   containerRef,
 }) => {
   const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
@@ -264,21 +266,26 @@ const SidePanel: React.FC<SidePanelProps> = ({
         <ToggleSidebarButton alignment={alignment} visible={visible} onToggle={onToggle} />
       </div>
       {/* Header */}
-      <Header goToDashboard={goToDashboard} onReload={() => fetchFolders(true)} />
+      <Header
+        goToDashboard={goToDashboard}
+        onReload={() => fetchFolders(true)}
+        displayMode={displayMode}
+        toggleDisplayMode={toggleDisplayMode}
+      />
       {/* prompts List*/}
       <div className="content-area overflow-y-auto bg-white p-2">
         {isLoading && folders.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500">載入資料夾中...</div>
+            <div className="text-gray-500">Loading Prompts...</div>
           </div>
         ) : loadError ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="mb-2 text-red-500">載入失敗</div>
+            <div className="mb-2 text-red-500">Failed to load</div>
             <div className="mb-4 text-sm text-gray-400">{loadError}</div>
             <button
               onClick={() => fetchFolders(true)}
               className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
-              重試
+              Retry
             </button>
           </div>
         ) : (

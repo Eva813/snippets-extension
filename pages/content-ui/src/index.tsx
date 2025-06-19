@@ -8,11 +8,11 @@ import { getInitializationDelay, idleInitialize } from '@extension/shared/lib/ut
 const createSafeRoot = (): HTMLElement | null => {
   try {
     // 檢查是否已存在根元素
-    let root = document.getElementById('chrome-extension-boilerplate-react-vite-content-view-root');
+    let root = document.getElementById('chrome-extension-promptbear-react-vite-content-view-root');
 
     if (!root) {
       root = document.createElement('div');
-      root.id = 'chrome-extension-boilerplate-react-vite-content-view-root';
+      root.id = 'chrome-extension-promptbear-react-vite-content-view-root';
 
       // 確保在 DOM 完全載入後添加
       if (document.body) {

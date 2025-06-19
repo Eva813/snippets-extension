@@ -11,7 +11,7 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
     // 如果還沒有容器引用，嘗試獲取
     if (!containerRef.current) {
       // 在 Shadow DOM 中尋找 extension container
-      const shadowHost = document.getElementById('chrome-extension-boilerplate-react-vite-content-view-root');
+      const shadowHost = document.getElementById('chrome-extension-promptbear-react-vite-content-view-root');
       if (shadowHost?.shadowRoot) {
         containerRef.current = shadowHost.shadowRoot.querySelector('.extension-container');
       }
@@ -22,8 +22,6 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
       console.warn('找不到 extension container，跳過樣式更新');
       return;
     }
-
-    console.log('找到 container:', container);
 
     // 保存 host body 的原始狀態
     const hostBody = document.body;
@@ -49,7 +47,6 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
           }
         `;
         document.head.appendChild(style);
-        console.log('注入 push 樣式到主文件');
       }
     };
 
