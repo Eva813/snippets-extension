@@ -170,7 +170,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         if (currentPromptsString !== newPromptsString) {
           chrome.storage.local.set({ prompts: promptsMap }, () => {
             if (import.meta.env.MODE === 'development') {
-              console.log('Prompts saved to storage:', promptsMap);
+              console.log('dev mode: Prompts saved to storage,', promptsMap);
             }
           });
         }
@@ -253,11 +253,9 @@ const SidePanel: React.FC<SidePanelProps> = ({
       onTransitionEnd={e => {
         // 只處理 transform 的 transitionEnd，避免其他元素的 transition 干擾
         if (e.propertyName === 'transform' && e.target === panelRef.current) {
-          console.log('transition 結束:', { isAnimating, visible });
           if (!isAnimating && !visible) {
             // 代表現在是滑出結束 → 從 DOM 中移除
             setIsInDOM(false);
-            console.log('側邊欄從 DOM 中移除');
           }
         }
       }}>
