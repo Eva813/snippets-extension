@@ -5,7 +5,7 @@ import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
 import { safetyManager } from '@src/utils/safetyManager';
 
-const isDev = import.meta.env.MODE !== 'production';
+const isDev = import.meta.env.MODE === 'development';
 
 async function initialize() {
   try {
@@ -31,10 +31,10 @@ async function initialize() {
       chrome.runtime.sendMessage({ action: 'updateIcon' });
 
       if (isDev) {
-        console.log('[Content Script] 初始化完成');
+        console.log('dev mode: [Content Script] 初始化完成');
       }
     } else {
-      if (isDev) console.log('[Content Script] User is not logged in, skipping initialization');
+      if (isDev) console.log('dev mode: [Content Script] User is not logged in, skipping initialization');
     }
   } catch (error) {
     console.error('[Content Script] 初始化失敗:', error);

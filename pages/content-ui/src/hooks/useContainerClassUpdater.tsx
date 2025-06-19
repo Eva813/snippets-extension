@@ -16,7 +16,9 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
 
     const container = containerRef.current;
     if (!container) {
-      console.warn('找不到 extension container，跳過樣式更新');
+      if (import.meta.env.MODE === 'development') {
+        console.warn('dev mode: 找不到 extension container，請確保已正確注入到 Shadow DOM 中');
+      }
       return;
     }
 
@@ -48,7 +50,7 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
     };
 
     const updateContainerClasses = () => {
-      const isDev = import.meta.env.MODE !== 'production';
+      const isDev = import.meta.env.MODE === 'development';
       if (isDev) {
         console.log('dev mode: 更新容器類別 - isAnimating:', isAnimating, 'displayMode:', displayMode);
       }
