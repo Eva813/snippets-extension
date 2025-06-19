@@ -61,7 +61,7 @@ const Header = ({
         </div>
       </div>
       {/* Action Buttons */}
-      <div className="mb-2 flex items-center justify-between sm:mt-0 md:mt-2">
+      <div className="flex items-center justify-between sm:mt-0 md:mt-2">
         <div className="bg-primary-400 flex items-center space-x-2 rounded-lg p-1">
           <div className="group relative">
             <button
