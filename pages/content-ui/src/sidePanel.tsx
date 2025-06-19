@@ -13,6 +13,7 @@ interface SidePanelProps extends Record<string, unknown> {
   noAnimation: boolean;
   setIsInDOM: (value: boolean) => void;
   onToggle: () => void;
+  containerRef?: React.RefObject<HTMLDivElement>;
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({
@@ -24,11 +25,14 @@ const SidePanel: React.FC<SidePanelProps> = ({
   noAnimation,
   setIsInDOM,
   onToggle,
+  containerRef,
 }) => {
   const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredPromptId, setHoveredPromptId] = useState<string | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const defaultPanelRef = useRef<HTMLDivElement>(null);
+  // 使用傳入的 containerRef 或預設的 ref
+  const panelRef = containerRef || defaultPanelRef;
 
   const [folders, setFolders] = useState<
     Array<{
@@ -231,22 +235,28 @@ const SidePanel: React.FC<SidePanelProps> = ({
 
   // 動態設定 CSS 類別
   const panelClasses = `
-    slide-panel
+    extension-container slide-panel
     ${alignment} 
-    ${isAnimating ? 'visible bg-white' : ''}
+    ${visible && isAnimating ? 'visible bg-white' : ''}
     ${noAnimation ? 'no-animation' : ''}
-  `;
+  `
+    .trim()
+    .replace(/\s+/g, ' ');
 
   return (
     <div
       ref={panelRef}
       className={panelClasses}
       data-display-mode={displayMode}
-      onTransitionEnd={() => {
-        // 只處理 transform 的 transitionEnd
-        if (!isAnimating) {
-          // 代表現在是滑出結束 → 從 DOM 中移除
-          setIsInDOM(false);
+      onTransitionEnd={e => {
+        // 只處理 transform 的 transitionEnd，避免其他元素的 transition 干擾
+        if (e.propertyName === 'transform' && e.target === panelRef.current) {
+          console.log('transition 結束:', { isAnimating, visible });
+          if (!isAnimating && !visible) {
+            // 代表現在是滑出結束 → 從 DOM 中移除
+            setIsInDOM(false);
+            console.log('側邊欄從 DOM 中移除');
+          }
         }
       }}>
       {/* 側邊欄切換按鈕 - 固定在面板外側 */}
