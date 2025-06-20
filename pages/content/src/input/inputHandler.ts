@@ -1,7 +1,7 @@
 import { getDeepActiveElement } from '@src/textInserter';
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
 import { getPromptByShortcut } from '../prompt/promptManager';
-import { stripHtml, isEditableElement } from '../utils/utils';
+import { parseHtmlToText, isEditableElement } from '../utils/utils';
 import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
 import { insertIntoRange } from '@src/utils/insertIntoRange';
 import type { Prompt, CursorInfo } from '@src/types';
@@ -134,16 +134,20 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
   // 檢查是否包含表單欄位
   const hasFormField = prompt.content.includes('data-prompt');
 
-  if (!hasFormField) {
-    // 純文字插入，直接處理
-    const insertData: Prompt = {
-      ...prompt,
-      content: stripHtml(prompt.content),
-    };
+  console.log('Prompt processing:', {
+    shortcut: prompt.shortcut,
+    content: prompt.content,
+    name: prompt.name,
+    hasFormField,
+  });
 
-    insertContent(element, insertData, cursorInfo);
+  if (!hasFormField) {
+    // 插入內容，對於 contentEditable 保留原始 HTML，對於一般輸入元素使用純文字
+    insertContent(element, prompt, cursorInfo);
     return;
   }
+
+  console.log('Prompt contains form fields, opening in new window:', prompt);
 
   const shortcutInfo = {
     shortcut: prompt.shortcut,
@@ -165,19 +169,20 @@ function insertContent(element: HTMLElement, prompt: Prompt, cursorInfo: CursorI
   if (shortcutStart === -1) return;
 
   const beforeShortcut = cursorInfo.textBeforeCursor.slice(0, shortcutStart);
-  const combinedText = beforeShortcut + prompt.content + cursorInfo.textAfterCursor;
 
   if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-    // 處理一般的輸入元素
+    // 處理一般的輸入元素 - 使用純文字
+    const textContent = parseHtmlToText(prompt.content);
+    const combinedText = beforeShortcut + textContent + cursorInfo.textAfterCursor;
     element.value = combinedText;
-    const cursorPos = beforeShortcut.length + prompt.content.length;
+    const cursorPos = beforeShortcut.length + textContent.length;
     element.setSelectionRange(cursorPos, cursorPos);
 
     // 觸發事件通知框架更新
     element.dispatchEvent(new Event('input', { bubbles: true }));
     element.dispatchEvent(new Event('change', { bubbles: true }));
   } else if (element.isContentEditable) {
-    // 處理富文字編輯器
+    // 處理富文字編輯器 - 保持原始 HTML
     insertContentToContentEditable(element, prompt.content, cursorInfo, prompt.shortcut.length);
   }
 }
@@ -201,9 +206,27 @@ function insertContentToContentEditable(
     return;
   }
 
-  // 建立範圍並插入內容
+  // 建立範圍並選取
   const range = document.createRange();
   range.setStart(startNode, startOffset);
   range.setEnd(endNode, endOffset);
-  insertIntoRange(range, content);
+
+  const selection = window.getSelection();
+  if (selection) {
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    // 使用與側邊面板相同的方法：先轉換為純文字，然後使用 execCommand insertText
+    const plainTextContent = parseHtmlToText(content);
+    console.log('Using insertText method like sidebar:', { plainTextContent, originalContent: content });
+
+    // 先嘗試使用 execCommand insertText（與側邊面板一致）
+    const success = document.execCommand('insertText', false, plainTextContent);
+
+    if (!success) {
+      console.warn('execCommand insertText 失敗，改用 insertIntoRange');
+      // Fallback 到 insertIntoRange
+      insertIntoRange(range, plainTextContent);
+    }
+  }
 }
