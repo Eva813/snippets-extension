@@ -1,9 +1,8 @@
 import { getDeepActiveElement } from '@src/textInserter';
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
 import { getPromptByShortcut } from '../prompt/promptManager';
-import { parseHtmlToText, isEditableElement } from '../utils/utils';
-import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
-import { insertIntoRange } from '@src/utils/insertIntoRange';
+import { isEditableElement } from '../utils/utils';
+import { insertContent as insertContentService } from '../services/insertionService';
 import type { Prompt, CursorInfo } from '@src/types';
 import { updateCursorPosition } from '@src/cursor/cursorTracker';
 
@@ -142,8 +141,25 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
   });
 
   if (!hasFormField) {
-    // 插入內容，對於 contentEditable 保留原始 HTML，對於一般輸入元素使用純文字
-    insertContent(element, prompt, cursorInfo);
+    // 使用統一的插入服務
+    const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
+    if (shortcutStart === -1) return;
+
+    const position = {
+      start: shortcutStart,
+      end: cursorInfo.start,
+    };
+
+    const result = await insertContentService({
+      content: prompt.content,
+      targetElement: element,
+      position,
+      saveCursorPosition: true,
+    });
+
+    if (!result.success) {
+      console.error('插入失敗:', result.error);
+    }
     return;
   }
 
@@ -161,72 +177,4 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
 
   const title = `${prompt.shortcut} - ${prompt.name}`;
   chrome.runtime.sendMessage({ action: 'createWindow', title, content: prompt.content });
-}
-
-// 插入內容到指定元素
-function insertContent(element: HTMLElement, prompt: Prompt, cursorInfo: CursorInfo) {
-  const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
-  if (shortcutStart === -1) return;
-
-  const beforeShortcut = cursorInfo.textBeforeCursor.slice(0, shortcutStart);
-
-  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-    // 處理一般的輸入元素 - 使用純文字
-    const textContent = parseHtmlToText(prompt.content);
-    const combinedText = beforeShortcut + textContent + cursorInfo.textAfterCursor;
-    element.value = combinedText;
-    const cursorPos = beforeShortcut.length + textContent.length;
-    element.setSelectionRange(cursorPos, cursorPos);
-
-    // 觸發事件通知框架更新
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-    element.dispatchEvent(new Event('change', { bubbles: true }));
-  } else if (element.isContentEditable) {
-    // 處理富文字編輯器 - 保持原始 HTML
-    insertContentToContentEditable(element, prompt.content, cursorInfo, prompt.shortcut.length);
-  }
-}
-
-// 插入內容到 contentEditable 元素
-function insertContentToContentEditable(
-  element: HTMLElement,
-  content: string,
-  cursorInfo: CursorInfo,
-  shortcutLength: number,
-) {
-  // 尋找文字範圍節點
-  const { startNode, endNode, startOffset, endOffset } = findTextRangeNodes(
-    element,
-    cursorInfo.start - shortcutLength,
-    cursorInfo.start,
-  );
-
-  if (!startNode || !endNode) {
-    console.warn('無法找到範圍，取消插入');
-    return;
-  }
-
-  // 建立範圍並選取
-  const range = document.createRange();
-  range.setStart(startNode, startOffset);
-  range.setEnd(endNode, endOffset);
-
-  const selection = window.getSelection();
-  if (selection) {
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    // 使用與側邊面板相同的方法：先轉換為純文字，然後使用 execCommand insertText
-    const plainTextContent = parseHtmlToText(content);
-    console.log('Using insertText method like sidebar:', { plainTextContent, originalContent: content });
-
-    // 先嘗試使用 execCommand insertText（與側邊面板一致）
-    const success = document.execCommand('insertText', false, plainTextContent);
-
-    if (!success) {
-      console.warn('execCommand insertText 失敗，改用 insertIntoRange');
-      // Fallback 到 insertIntoRange
-      insertIntoRange(range, plainTextContent);
-    }
-  }
 }
