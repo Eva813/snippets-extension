@@ -107,7 +107,24 @@ export async function insertTextAtCursor(text: string, positionInfo?: { start: n
           const range = document.createRange();
           range.setStart(startNode, startOffset);
           range.setEnd(endNode, endOffset);
-          insertIntoRange(range, text);
+
+          // 對於 contentEditable，使用 execCommand 來確保換行正確處理
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            console.log('使用 execCommand insertText 替換快捷鍵文字:', { text, positionInfo });
+            const success = document.execCommand('insertText', false, text);
+
+            if (!success) {
+              console.warn('execCommand insertText 失敗，改用 insertIntoRange');
+              insertIntoRange(range, text);
+            }
+          } else {
+            // 沒有 selection API，使用 insertIntoRange
+            insertIntoRange(range, text);
+          }
 
           // 計算新的位置
           const newPosition = positionInfo.start + text.length;

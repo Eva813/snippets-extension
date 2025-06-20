@@ -18,6 +18,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const activeElement = getDeepActiveElement();
     const cleanPrompt = parseHtmlToText(message.prompt);
 
+    console.log('messageHandler processing:', {
+      prompt: message.prompt,
+      cleanPrompt,
+      shortcutInfo: result.shortcutInfo,
+      savedCursorPosition: result.savedCursorPosition,
+      activeElement: activeElement?.tagName,
+    });
+
     if (!activeElement) {
       console.warn('無聚焦元素，無法插入');
       sendResponse({ success: false });
@@ -27,6 +35,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // 優先順序: shortcutInfo > 已保存的游標位置 > 當前游標位置
     let positionInfo = result.shortcutInfo?.position;
     const savedCursorPosition = result.cursorPosition;
+
+    // 對於 shortcutInfo，我們需要保留位置資訊來替換快捷鍵文字
+    if (positionInfo) {
+      console.log('使用 shortcutInfo 位置來替換快捷鍵文字:', positionInfo);
+    }
 
     if (!positionInfo && savedCursorPosition) {
       // 驗證元素是否與保存時相同
@@ -38,6 +51,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         };
       }
     }
+
+    console.log('Final position info:', positionInfo);
 
     // 使用確定的位置資訊進行插入
     const success = await insertTextAtCursor(cleanPrompt, positionInfo);
