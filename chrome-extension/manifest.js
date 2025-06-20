@@ -37,13 +37,13 @@ const manifest = {
     },
   },
   version: packageJson.version,
-  description: 'A tool for managing and inserting prompts',
+  description: '__MSG_extensionDescription__',
   host_permissions: [
     'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
     'https://linxly-nextjs.vercel.app/*',
     'http://localhost:3000/*',
   ],
-  permissions: ['storage', 'windows', 'activeTab', 'scripting'],
+  permissions: ['storage', 'windows', 'activeTab'],
   // optional_permissions: ['scripting', 'notifications', 'cookies', 'tabs', 'sidePanel'],
   options_page: 'options/index.html',
   background: {

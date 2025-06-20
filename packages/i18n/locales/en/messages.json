@@ -1,11 +1,11 @@
 {
   "extensionDescription": {
     "description": "Extension description",
-    "message": "Chrome extension boilerplate developed with Vite, React and Typescript"
+    "message": "PromptBear is a Chrome extension that helps you manage your prompts and improve your productivity."
   },
   "extensionName": {
     "description": "Extension name",
-    "message": "Chrome extension boilerplate"
+    "message": "PromptBear"
   },
   "toggleTheme": {
     "message": "Toggle theme"
