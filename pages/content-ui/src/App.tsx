@@ -50,7 +50,6 @@ export default function App() {
         noAnimation={noAnimation}
         setIsInDOM={setIsInDOM}
         onToggle={toggleSidebar}
-        // 新增切換顯示模式函式
         toggleDisplayMode={toggleDisplayMode}
         containerRef={containerRef}
       />
