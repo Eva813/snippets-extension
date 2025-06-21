@@ -1,5 +1,5 @@
 /**
- * 將文字插入到指定 Range 中，使用現代 API 避免 execCommand
+ * 將文字插入到指定 Range 中，避免 execCommand
  * @param range 要插入內容的 DOM Range
  * @param plainText 欲插入的純文字
  * @param htmlText 可選的 HTML 內容（用於富文字編輯器）
@@ -88,12 +88,31 @@ export function insertIntoRange(range: Range, plainText: string, htmlText?: stri
         // 移動游標到插入內容之後
         range.collapse(false);
       } else {
-        // 一般情況插入純文字
-        const textNode = document.createTextNode(plainText);
-        range.insertNode(textNode);
+        // 檢查是否為 contentEditable 元素且文字包含換行
+        if (targetElement && (targetElement as HTMLElement).isContentEditable && plainText.includes('\n')) {
+          // 對於 contentEditable，將換行符轉換為 <br> 標籤
+          const lines = plainText.split('\n');
+          const fragment = document.createDocumentFragment();
 
-        // 移動游標到文字節點之後
-        range.setStartAfter(textNode);
+          lines.forEach((line, index) => {
+            if (line.length > 0) {
+              fragment.appendChild(document.createTextNode(line));
+            }
+            // 除了最後一行，都添加 <br> 標籤
+            if (index < lines.length - 1) {
+              fragment.appendChild(document.createElement('br'));
+            }
+          });
+
+          range.insertNode(fragment);
+        } else {
+          // 一般情況插入純文字
+          const textNode = document.createTextNode(plainText);
+          range.insertNode(textNode);
+        }
+
+        // 移動游標到插入內容之後
+        range.setStartAfter(range.endContainer);
         range.collapse(true);
       }
 
