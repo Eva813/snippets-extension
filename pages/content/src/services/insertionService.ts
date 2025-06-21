@@ -1,12 +1,12 @@
 /**
  * 統一的內容插入服務
- * 統一處理所有類型的內容插入，避免邏輯分散
+ * 統一處理所有類型的內容插入
  */
 
 import { parseHtmlToText, generateElementPath, isEditableElement } from '../utils/utils';
 import { findTextRangeNodes } from '../utils/findTextRangeNodes';
 import { insertIntoRange } from '../utils/insertIntoRange';
-import { getDeepActiveElement } from '../textInserter';
+import { getDeepActiveElement } from '../utils/getDeepActiveElement';
 
 export interface InsertionOptions {
   /** 要插入的 HTML 內容 */
