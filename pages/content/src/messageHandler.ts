@@ -1,4 +1,4 @@
-import { getDeepActiveElement } from './textInserter';
+import { getDeepActiveElement } from './utils/getDeepActiveElement';
 import { parseHtmlToText } from './utils/utils';
 import { insertContent } from './services/insertionService';
 
@@ -39,7 +39,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     let positionInfo: { start: number; end: number } | undefined = undefined;
 
     if (storageResult.shortcutInfo?.position) {
-      // 快捷鍵觸發的表單提交：需要替換快捷鍵文字
+      // 快捷鍵觸發的表單提交：需要替
+      //  換快捷鍵文字
       positionInfo = storageResult.shortcutInfo.position;
       console.log('使用 shortcutInfo 位置來替換快捷鍵文字:', positionInfo);
     } else {
@@ -50,7 +51,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     console.log('Final position info:', positionInfo);
 
-    // 使用統一的插入服務
     const insertResult = await insertContent({
       content: message.prompt,
       targetElement: activeElement as HTMLElement,

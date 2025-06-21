@@ -1,4 +1,4 @@
-import { getDeepActiveElement } from '@src/textInserter';
+import { getDeepActiveElement } from '@src/utils/getDeepActiveElement';
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
 import { getPromptByShortcut } from '../prompt/promptManager';
 import { isEditableElement } from '../utils/utils';
@@ -141,7 +141,6 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
   });
 
   if (!hasFormField) {
-    // 使用統一的插入服務
     const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
     if (shortcutStart === -1) return;
 
@@ -158,7 +157,7 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
     });
 
     if (!result.success) {
-      console.error('插入失敗:', result.error);
+      console.error('Insert failed:', result.error);
     }
     return;
   }
