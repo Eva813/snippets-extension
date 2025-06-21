@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
 import FolderList from './components/folderList';
+import { AiOutlineWarning } from 'react-icons/ai';
 
 interface SidePanelProps extends Record<string, unknown> {
   alignment: 'left' | 'right';
@@ -119,8 +120,8 @@ const SidePanel: React.FC<SidePanelProps> = ({
                   setFolders(response.data);
                   chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
                 } else {
-                  const errorMsg = response?.error || '獲取資料夾失敗';
-                  console.error('獲取資料夾失敗:', errorMsg);
+                  const errorMsg = response?.error || 'Failed to retrieve folder';
+                  console.error('Failed to retrieve folder:', errorMsg);
                   setLoadError(errorMsg);
                   setFolders([]);
                   chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
@@ -132,9 +133,9 @@ const SidePanel: React.FC<SidePanelProps> = ({
       } catch (error) {
         setIsLoading(false);
         setHasInitialized(true);
-        const errorMsg = error instanceof Error ? error.message : '未知錯誤';
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         setLoadError(errorMsg);
-        console.error('載入資料夾時發生錯誤:', error);
+        console.error('Error occurred while loading folders:', error);
       }
     },
     [hasInitialized, folders.length],
@@ -278,12 +279,15 @@ const SidePanel: React.FC<SidePanelProps> = ({
           </div>
         ) : loadError ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="mb-2 text-red-500">Failed to load</div>
-            <div className="mb-4 text-sm text-gray-400">{loadError}</div>
+            <AiOutlineWarning className="mb-4 text-4xl text-gray-500" />
+            <div className="mb-2 text-center text-gray-500">Something went wrong</div>
+            <div className="mb-2 text-center text-sm text-gray-400">
+              {`We're having trouble loading this content. Please check your connection and try again.`}
+            </div>
             <button
               onClick={() => fetchFolders(true)}
-              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600">
-              Retry
+              className="rounded bg-slate-500 px-4 py-2 text-white hover:bg-slate-600">
+              Try Again
             </button>
           </div>
         ) : (
