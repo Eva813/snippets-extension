@@ -130,15 +130,7 @@ async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
 }
 
 async function processPromptInsertion(prompt: Prompt, element: HTMLElement, cursorInfo: CursorInfo) {
-  // 檢查是否包含表單欄位
   const hasFormField = prompt.content.includes('data-prompt');
-
-  console.log('Prompt processing:', {
-    shortcut: prompt.shortcut,
-    content: prompt.content,
-    name: prompt.name,
-    hasFormField,
-  });
 
   if (!hasFormField) {
     const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
@@ -161,8 +153,6 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
     }
     return;
   }
-
-  console.log('Prompt contains form fields, opening in new window:', prompt);
 
   const shortcutInfo = {
     shortcut: prompt.shortcut,

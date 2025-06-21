@@ -27,7 +27,7 @@ export interface InsertionResult {
   error?: string;
   newCursorPosition?: number;
 }
-
+const isDev = import.meta.env.MODE === 'development';
 /**
  * 統一的內容插入函式
  * 處理所有類型的元素（input、textarea、contentEditable）
@@ -43,13 +43,6 @@ export async function insertContent(options: InsertionOptions): Promise<Insertio
 
   // 2. 轉換內容
   const plainTextContent = parseHtmlToText(content);
-
-  console.log('統一插入服務:', {
-    content,
-    plainTextContent,
-    element: element.tagName,
-    hasPosition: !!position,
-  });
 
   try {
     let newCursorPosition: number;
@@ -76,7 +69,7 @@ export async function insertContent(options: InsertionOptions): Promise<Insertio
 
     return { success: true, newCursorPosition };
   } catch (error) {
-    console.error('內容插入失敗:', error);
+    if (isDev) console.error('Content insertion failed:', error);
     return { success: false, error: (error as Error).message };
   }
 }
@@ -117,12 +110,6 @@ async function insertIntoContentEditable(
 ): Promise<number> {
   element.focus();
 
-  console.log('contentEditable 插入:', {
-    hasPosition: !!position,
-    position,
-    text: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
-  });
-
   if (position) {
     // 有位置資訊：替換指定範圍的內容
     return insertAtSpecificPosition(element, text, position);
@@ -144,7 +131,7 @@ async function insertAtSpecificPosition(
     const { startNode, endNode, startOffset, endOffset } = findTextRangeNodes(element, position.start, position.end);
 
     if (!startNode || !endNode) {
-      console.warn('無法找到指定位置的節點，fallback 到當前游標位置');
+      if (isDev) console.warn('無法找到指定位置的節點，fallback 到當前游標位置');
       return insertAtCurrentCursor(element, text);
     }
 
@@ -161,20 +148,21 @@ async function insertAtSpecificPosition(
       const success = document.execCommand('insertText', false, text);
 
       if (!success) {
-        console.warn('execCommand 失敗，使用 fallback 方法');
+        if (isDev) console.warn('execCommand 失敗，使用 fallback 方法');
         insertIntoRange(range, text);
       }
     }
 
     return position.start + text.length;
   } catch (error) {
-    console.warn('指定位置插入失敗，fallback 到當前游標位置:', error);
+    if (isDev) console.warn('指定位置插入失敗，fallback 到當前游標位置:', error);
     return insertAtCurrentCursor(element, text);
   }
 }
 
 /**
  * 在 contentEditable 的當前游標位置插入內容
+ * 會是側邊面板插入的主要方法
  */
 async function insertAtCurrentCursor(element: HTMLElement, text: string): Promise<number> {
   const selection = window.getSelection();
@@ -190,12 +178,10 @@ async function insertAtCurrentCursor(element: HTMLElement, text: string): Promis
 
   // 計算當前位置
   const currentPosition = getCurrentContentEditablePosition(element);
-
-  // 使用 execCommand 插入
   const success = document.execCommand('insertText', false, text);
 
   if (!success && selection && selection.rangeCount > 0) {
-    console.warn('execCommand 失敗，使用 fallback 方法');
+    if (isDev) console.warn('execCommand 失敗，使用 fallback 方法');
     const fallbackRange = selection.getRangeAt(0);
     insertIntoRange(fallbackRange, text);
   }
