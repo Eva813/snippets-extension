@@ -1,5 +1,5 @@
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
-import { generateElementPath, isEditableElement } from '@src/utils//utils';
+import { generateElementPath, isEditableElement } from '@src/utils/utils';
 
 let cursorUpdateTimeout: number | null = null;
 let cleanupCursorListener: (() => void) | null = null;

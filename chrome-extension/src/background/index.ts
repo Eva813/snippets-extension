@@ -29,7 +29,7 @@ type RuntimeMessage =
 // 全域狀態
 let popupData: PopupData | null = null;
 let targetTabId: number | null | undefined = null;
-const DEFAULT_API_DOMAIN = 'https://linxly-nextjs-git-feat-login-page-eva813s-projects.vercel.app';
+const DEFAULT_API_DOMAIN = 'https://linxly-nextjs.vercel.app';
 
 function setupExtensionControls() {
   // 監聽 extension icon 點擊事件
@@ -41,7 +41,6 @@ function setupExtensionControls() {
     }
 
     if (tab.id !== undefined) {
-      await fetchFolders();
       chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
     } else {
       chrome.tabs.create({ url: `${DEFAULT_API_DOMAIN}/login` });
@@ -82,7 +81,10 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
         return;
       }
 
+      // 先清除本地快取，確保取得最新資料
+      await chrome.storage.local.remove(['folders', 'prompts']);
       const result = await fetchFolders();
+      console.log('Fetched folders (force refresh):', result);
       if (result.success && result.folders) {
         sendResponse({ success: true, data: result.folders });
       } else {

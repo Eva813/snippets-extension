@@ -115,7 +115,6 @@ const FormRoot = () => {
   // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹
   const parsedHtmlTree = useMemo(() => {
     if (!popupData) return null;
-
     const root = parseHtml(popupData.content);
     if (!root) return null;
     return Array.from(root.childNodes).map((child, i) => renderNode(child, `root-${i}`));
@@ -138,6 +137,11 @@ const FormRoot = () => {
       if (type === 'input' || type === 'select') {
         const value = formData[props.id] ?? '';
         return ` ${value} `;
+      }
+
+      // 處理 <br>：轉換為 HTML <br> 標籤
+      if (type === 'br') {
+        return '<br>';
       }
 
       // 處理 <p>：保留段落格式

@@ -1,7 +1,6 @@
-import { insertTextAtCursor, getDeepActiveElement } from './textInserter';
-import { stripHtml, generateElementPath } from './utils/utils';
+import { getDeepActiveElement } from './utils/getDeepActiveElement';
+import { insertContent } from './services/insertionService';
 
-// 負責收集和準備位置資訊
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action !== 'insertPrompt') {
     sendResponse({ success: false, error: 'Unknown action' });
@@ -14,10 +13,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   // 先嘗試獲取已保存的游標位置
-  chrome.storage.local.get(['cursorPosition', 'shortcutInfo'], async result => {
+  chrome.storage.local.get(['cursorPosition', 'shortcutInfo'], async storageResult => {
     const activeElement = getDeepActiveElement();
-    const cleanPrompt = stripHtml(message.prompt);
-    // const originalPrompt = message.prompt;
 
     if (!activeElement) {
       console.warn('無聚焦元素，無法插入');
@@ -25,30 +22,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       return;
     }
 
-    // 優先順序: shortcutInfo > 已保存的游標位置 > 當前游標位置
-    let positionInfo = result.shortcutInfo?.position;
-    const savedCursorPosition = result.cursorPosition;
+    // 優先順序處理邏輯：
+    // 1. shortcutInfo：快捷鍵觸發的表單提交(有含 data-prompt)，需要替換快捷鍵文字
+    // 2. 側邊面板插入：使用當前游標位置，完全忽略任何保存的位置
+    let positionInfo: { start: number; end: number } | undefined = undefined;
 
-    if (!positionInfo && savedCursorPosition) {
-      // 驗證元素是否與保存時相同
-      const currentPath = generateElementPath(activeElement);
-      if (currentPath === savedCursorPosition.elementPath) {
-        positionInfo = {
-          start: savedCursorPosition.start,
-          end: savedCursorPosition.end,
-        };
-      }
+    if (storageResult.shortcutInfo?.position) {
+      // 快捷鍵觸發的表單提交(有含 data-prompt)：需要替換快捷鍵文字
+      positionInfo = storageResult.shortcutInfo.position;
+    } else {
+      // 側邊面板直接插入：使用當前游標位置，完全忽略保存的位置
+      positionInfo = undefined;
     }
 
-    // 使用確定的位置資訊進行插入
-    const success = await insertTextAtCursor(cleanPrompt, positionInfo);
+    const insertResult = await insertContent({
+      content: message.prompt,
+      targetElement: activeElement as HTMLElement,
+      position: positionInfo,
+      saveCursorPosition: true,
+    });
 
     // 只在使用快捷鍵插入時清除 shortcutInfo
-    if (result.shortcutInfo) {
+    if (storageResult.shortcutInfo) {
       chrome.storage.local.remove('shortcutInfo');
     }
 
-    sendResponse({ success });
+    sendResponse({ success: insertResult.success, error: insertResult.error });
   });
 
   return true;

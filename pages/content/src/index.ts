@@ -1,23 +1,52 @@
 import './messageHandler';
+import { getInitializationDelay, idleInitialize } from '@extension/shared/lib/utils/pageUtils';
 import { initializePromptManager, clearPromptCache } from '@src/prompt/promptManager';
 import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
+import { safetyManager } from '@src/utils/safetyManager';
 
-const isDev = import.meta.env.MODE !== 'production';
+const isDev = import.meta.env.MODE === 'development';
+
 async function initialize() {
-  // 檢查使用者是否已登入
-  const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+  try {
+    // 初始化安全管理器，並檢查操作安全性
+    if (!safetyManager.initialize()) {
+      console.warn('[Content Script] 安全管理初始化失敗');
+      return;
+    }
+    if (!safetyManager.isOperationSafe()) {
+      console.warn('[Content Script] 系統狀態不安全，跳過初始化');
+      return;
+    }
 
-  // 只有在使用者已登入時才初始化相關功能
-  if (userLoggedIn) {
-    initializeInputHandler();
-    initializeCursorTracker();
-    await initializePromptManager();
-    // 頁面 reload sendMessag，更新 icon 顏色
-    chrome.runtime.sendMessage({ action: 'updateIcon' });
-  } else {
-    if (isDev) console.log('User is not logged in, skipping initialization');
+    // 檢查使用者是否已登入
+    const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+
+    // 只有在使用者已登入時才初始化相關功能
+    if (userLoggedIn) {
+      initializeInputHandler();
+      initializeCursorTracker();
+      await initializePromptManager();
+      // 頁面 reload sendMessage，更新 icon 顏色
+      chrome.runtime.sendMessage({ action: 'updateIcon' });
+
+      if (isDev) {
+        console.log('dev mode: [Content Script] 初始化完成');
+      }
+    } else {
+      if (isDev) console.log('dev mode: [Content Script] User is not logged in, skipping initialization');
+    }
+  } catch (error) {
+    console.error('[Content Script] 初始化失敗:', error);
   }
+}
+
+// 在安全時機使用共用的 idleInitialize
+const delay = getInitializationDelay();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => idleInitialize(initialize, delay));
+} else {
+  idleInitialize(initialize, delay);
 }
 
 window.addEventListener('message', event => {
@@ -68,17 +97,22 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
   // 用來檢查變更是否發生在本地儲存區（local storage）
   if (area === 'local') {
     if (changes.userLoggedIn?.newValue === false) {
+      if (isDev) console.log('[Content Script] 使用者登出，清理快取');
       clearPromptCache();
       clearInputHandler();
     }
     // 使用者登入
     if (changes.userLoggedIn?.newValue === true) {
-      initializeInputHandler();
-      initializeCursorTracker();
-      chrome.runtime.sendMessage({ action: 'updateIcon' });
-      await initializePromptManager();
+      if (isDev) console.log('[Content Script] 使用者登入，重新初始化');
+
+      try {
+        initializeInputHandler();
+        initializeCursorTracker();
+        chrome.runtime.sendMessage({ action: 'updateIcon' });
+        await initializePromptManager();
+      } catch (error) {
+        console.error('[Content Script] 重新初始化失敗:', error);
+      }
     }
   }
 });
-
-initialize();

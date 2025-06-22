@@ -1,9 +1,8 @@
-import { getDeepActiveElement } from '@src/textInserter';
+import { getDeepActiveElement } from '@src/utils/getDeepActiveElement';
 import { getCursorInfo } from '@src/cursor/getCursorInfo';
 import { getPromptByShortcut } from '../prompt/promptManager';
-import { stripHtml, isEditableElement } from '../utils/utils';
-import { findTextRangeNodes } from '@src/utils/findTextRangeNodes';
-import { insertIntoRange } from '@src/utils/insertIntoRange';
+import { isEditableElement } from '../utils/utils';
+import { insertContent as insertContentService } from '../services/insertionService';
 import type { Prompt, CursorInfo } from '@src/types';
 import { updateCursorPosition } from '@src/cursor/cursorTracker';
 
@@ -131,17 +130,27 @@ async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
 }
 
 async function processPromptInsertion(prompt: Prompt, element: HTMLElement, cursorInfo: CursorInfo) {
-  // 檢查是否包含表單欄位
   const hasFormField = prompt.content.includes('data-prompt');
 
   if (!hasFormField) {
-    // 純文字插入，直接處理
-    const insertData: Prompt = {
-      ...prompt,
-      content: stripHtml(prompt.content),
+    const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
+    if (shortcutStart === -1) return;
+
+    const position = {
+      start: shortcutStart,
+      end: cursorInfo.start,
     };
 
-    insertContent(element, insertData, cursorInfo);
+    const result = await insertContentService({
+      content: prompt.content,
+      targetElement: element,
+      position,
+      saveCursorPosition: true,
+    });
+
+    if (!result.success) {
+      console.error('Insert failed:', result.error);
+    }
     return;
   }
 
@@ -157,53 +166,4 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
 
   const title = `${prompt.shortcut} - ${prompt.name}`;
   chrome.runtime.sendMessage({ action: 'createWindow', title, content: prompt.content });
-}
-
-// 插入內容到指定元素
-function insertContent(element: HTMLElement, prompt: Prompt, cursorInfo: CursorInfo) {
-  const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
-  if (shortcutStart === -1) return;
-
-  const beforeShortcut = cursorInfo.textBeforeCursor.slice(0, shortcutStart);
-  const combinedText = beforeShortcut + prompt.content + cursorInfo.textAfterCursor;
-
-  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-    // 處理一般的輸入元素
-    element.value = combinedText;
-    const cursorPos = beforeShortcut.length + prompt.content.length;
-    element.setSelectionRange(cursorPos, cursorPos);
-
-    // 觸發事件通知框架更新
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-    element.dispatchEvent(new Event('change', { bubbles: true }));
-  } else if (element.isContentEditable) {
-    // 處理富文字編輯器
-    insertContentToContentEditable(element, prompt.content, cursorInfo, prompt.shortcut.length);
-  }
-}
-
-// 插入內容到 contentEditable 元素
-function insertContentToContentEditable(
-  element: HTMLElement,
-  content: string,
-  cursorInfo: CursorInfo,
-  shortcutLength: number,
-) {
-  // 尋找文字範圍節點
-  const { startNode, endNode, startOffset, endOffset } = findTextRangeNodes(
-    element,
-    cursorInfo.start - shortcutLength,
-    cursorInfo.start,
-  );
-
-  if (!startNode || !endNode) {
-    console.warn('無法找到範圍，取消插入');
-    return;
-  }
-
-  // 建立範圍並插入內容
-  const range = document.createRange();
-  range.setStart(startNode, startOffset);
-  range.setEnd(endNode, endOffset);
-  insertIntoRange(range, content);
 }

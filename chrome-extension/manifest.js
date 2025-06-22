@@ -37,7 +37,7 @@ const manifest = {
     },
   },
   version: packageJson.version,
-  description: 'A tool for managing and inserting prompts',
+  description: '__MSG_extensionDescription__',
   host_permissions: [
     'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
     'https://linxly-nextjs.vercel.app/*',
@@ -64,16 +64,14 @@ const manifest = {
   },
   content_scripts: [
     {
-      matches: ['<all_urls>'],
+      matches: ['*://*/*'],
       js: ['content/index.iife.js'],
+      run_at: 'document_idle', // 等待 DOM 和其他資源載入完成
     },
     {
-      matches: ['<all_urls>'],
+      matches: ['*://*/*'],
       js: ['content-ui/index.iife.js'],
-    },
-    {
-      matches: ['<all_urls>'],
-      css: ['content.css'],
+      run_at: 'document_idle', // 延遲載入 UI
     },
   ],
   devtools_page: 'devtools/index.html',
