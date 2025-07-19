@@ -6,8 +6,8 @@ export async function fetchFolders() {
     if (!userLoggedIn) {
       return { success: false, error: 'User not logged in' };
     }
-
-    const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
+    // apiDomain || DEFAULT_API_DOMAIN
+    const baseUrl = 'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/';
     const resp = await fetch(`${baseUrl}/api/v1/folders`, {
       method: 'GET',
       headers: { 'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS },

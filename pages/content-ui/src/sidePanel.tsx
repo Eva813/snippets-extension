@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
 import FolderList from './components/folderList';
+import PromptSpaceSelector from './components/PromptSpaceSelector';
 import { AiOutlineWarning } from 'react-icons/ai';
 
 interface SidePanelProps extends Record<string, unknown> {
@@ -53,6 +54,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [selectedPromptSpace, setSelectedPromptSpace] = useState<string>('promptSpace-default');
 
   const fetchFolders = useCallback(
     async (forceRefresh = false) => {
@@ -147,6 +149,18 @@ const SidePanel: React.FC<SidePanelProps> = ({
       fetchFolders();
     }
   }, [visible, isInDOM, hasInitialized, fetchFolders]);
+
+  // Handle prompt space change and fetch data
+  const handlePromptSpaceChange = (spaceId: string) => {
+    setSelectedPromptSpace(spaceId);
+  };
+
+  const handleFetchDataForSpace = (spaceId: string) => {
+    console.log('Fetching data for space:', spaceId);
+    // Here you can add API call to fetch data for the specific prompt space
+    // For example: fetchFolders(true, spaceId);
+    fetchFolders(true);
+  };
   //  ==========  將 prompt 存到 storage ==========
   useEffect(() => {
     const validFolders = Array.isArray(folders) ? folders : [];
@@ -238,7 +252,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
 
   // 動態設定 CSS 類別
   const panelClasses = `
-    extension-container slide-panel
+    extension-container slide-panel overflow-visible
     ${alignment} 
     ${visible && isAnimating ? 'visible bg-white' : ''}
     ${noAnimation ? 'no-animation' : ''}
@@ -271,6 +285,14 @@ const SidePanel: React.FC<SidePanelProps> = ({
         displayMode={displayMode}
         toggleDisplayMode={toggleDisplayMode}
       />
+
+      {/* Prompt Space Selection */}
+      <PromptSpaceSelector
+        selectedSpaceId={selectedPromptSpace}
+        onSpaceChange={handlePromptSpaceChange}
+        onFetchData={handleFetchDataForSpace}
+      />
+
       {/* prompts List*/}
       <div className="content-area overflow-y-auto bg-white p-2">
         {isLoading && folders.length === 0 ? (
