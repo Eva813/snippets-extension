@@ -34,7 +34,7 @@
     "@typescript-eslint/consistent-type-imports": "error",
     "react/prop-types": "off",
     "tailwindcss/no-custom-classname": ["error", {
-      "whitelist": ["bg-primary", "bg-primary-400", "text-primary", "bg-light"]
+      "whitelist": ["bg-primary", "bg-primary-400", "bg-primary-50", "text-primary", "text-primary-800", "bg-light"]
     }]
   },
   "globals": {

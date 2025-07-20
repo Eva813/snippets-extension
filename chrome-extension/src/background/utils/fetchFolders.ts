@@ -1,14 +1,28 @@
 const DEFAULT_API_DOMAIN = 'http://localhost:3000';
 
-export async function fetchFolders() {
+export async function fetchFolders(promptSpaceId?: string) {
   try {
     const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
     if (!userLoggedIn) {
       return { success: false, error: 'User not logged in' };
     }
-    // apiDomain || DEFAULT_API_DOMAIN
-    const baseUrl = 'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/';
-    const resp = await fetch(`${baseUrl}/api/v1/folders`, {
+
+    // If no promptSpaceId provided, try to get a default one
+    if (!promptSpaceId) {
+      // First try to get from storage
+      const { promptSpaces } = await chrome.storage.local.get(['promptSpaces']);
+      if (promptSpaces?.ownedSpaces?.length > 0) {
+        promptSpaceId = promptSpaces.ownedSpaces[0].id;
+      } else if (promptSpaces?.sharedSpaces?.length > 0) {
+        promptSpaceId = promptSpaces.sharedSpaces[0].space.id;
+      } else {
+        return { success: false, error: 'No prompt space available' };
+      }
+    }
+
+    const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
+    const url = `${baseUrl}/api/v1/folders?promptSpaceId=${promptSpaceId}`;
+    const resp = await fetch(url, {
       method: 'GET',
       headers: { 'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS },
       credentials: 'include',

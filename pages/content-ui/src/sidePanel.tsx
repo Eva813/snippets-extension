@@ -55,6 +55,61 @@ const SidePanel: React.FC<SidePanelProps> = ({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [selectedPromptSpace, setSelectedPromptSpace] = useState<string>('promptSpace-default');
+  const [promptSpaces, setPromptSpaces] = useState<
+    Array<{
+      id: string;
+      name: string;
+      type: 'my' | 'shared';
+      isReadOnly?: boolean;
+    }>
+  >([]);
+
+  // Fetch prompt spaces
+  const fetchPromptSpaces = useCallback(async () => {
+    try {
+      chrome.runtime.sendMessage(
+        { action: 'getPromptSpaces' },
+        (response: {
+          success: boolean;
+          data?: {
+            ownedSpaces: Array<{ id: string; name: string; userId: string; createdAt: string; updatedAt?: string }>;
+            sharedSpaces: Array<{
+              space: { id: string; name: string; userId: string; createdAt: string; updatedAt?: string };
+              permission: 'view' | 'edit';
+              sharedBy: string;
+              sharedAt: string;
+            }>;
+          };
+          error?: string;
+        }) => {
+          if (response && response.success && response.data) {
+            // Convert API response to component format
+            const spaces = [
+              ...response.data.ownedSpaces.map(space => ({
+                id: space.id,
+                name: space.name,
+                type: 'my' as const,
+              })),
+              ...response.data.sharedSpaces.map(sharedSpace => ({
+                id: sharedSpace.space.id,
+                name: sharedSpace.space.name,
+                type: 'shared' as const,
+                isReadOnly: sharedSpace.permission === 'view',
+              })),
+            ];
+            setPromptSpaces(spaces);
+
+            // Set default selected space if none selected
+            if (selectedPromptSpace === 'promptSpace-default' && spaces.length > 0) {
+              setSelectedPromptSpace(spaces[0].id);
+            }
+          }
+        },
+      );
+    } catch (error) {
+      console.error('Error fetching prompt spaces:', error);
+    }
+  }, [selectedPromptSpace]);
 
   const fetchFolders = useCallback(
     async (forceRefresh = false) => {
@@ -146,20 +201,71 @@ const SidePanel: React.FC<SidePanelProps> = ({
   useEffect(() => {
     // 只在第一次顯示或沒有資料時載入
     if (visible && isInDOM && !hasInitialized) {
+      fetchPromptSpaces();
       fetchFolders();
     }
-  }, [visible, isInDOM, hasInitialized, fetchFolders]);
+  }, [visible, isInDOM, hasInitialized, fetchFolders, fetchPromptSpaces]);
 
   // Handle prompt space change and fetch data
   const handlePromptSpaceChange = (spaceId: string) => {
+    console.log('Changing prompt space to:', spaceId);
     setSelectedPromptSpace(spaceId);
   };
 
   const handleFetchDataForSpace = (spaceId: string) => {
     console.log('Fetching data for space:', spaceId);
-    // Here you can add API call to fetch data for the specific prompt space
-    // For example: fetchFolders(true, spaceId);
-    fetchFolders(true);
+    // Fetch folders for the specific prompt space
+    fetchFoldersForSpace(spaceId);
+  };
+
+  // Fetch folders for a specific prompt space
+  const fetchFoldersForSpace = async (promptSpaceId: string) => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      chrome.runtime.sendMessage(
+        { action: 'getSpaceFolders', promptSpaceId },
+        (response: {
+          success: boolean;
+          data?: Array<{
+            id: string;
+            name: string;
+            description: string;
+            prompts: Array<{
+              id: string;
+              name: string;
+              content: string;
+              shortcut: string;
+            }>;
+          }>;
+          error?: string;
+        }) => {
+          setIsLoading(false);
+          if (response && response.success && response.data) {
+            setFolders(response.data);
+          } else {
+            const errorMsg = response?.error || 'Failed to fetch folders for space';
+            console.error('Failed to fetch folders for space:', errorMsg);
+            setLoadError(errorMsg);
+            setFolders([]);
+          }
+        },
+      );
+    } catch (error) {
+      setIsLoading(false);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      setLoadError(errorMsg);
+      console.error('Error occurred while loading folders for space:', error);
+    }
+  };
+
+  // Reload both prompt spaces and folders
+  const handleReload = async () => {
+    // First reload prompt spaces
+    await fetchPromptSpaces();
+    // Then reload folders
+    await fetchFolders(true);
   };
   //  ==========  將 prompt 存到 storage ==========
   useEffect(() => {
@@ -281,7 +387,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
       {/* Header */}
       <Header
         goToDashboard={goToDashboard}
-        onReload={() => fetchFolders(true)}
+        onReload={handleReload}
         displayMode={displayMode}
         toggleDisplayMode={toggleDisplayMode}
       />
@@ -291,6 +397,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         selectedSpaceId={selectedPromptSpace}
         onSpaceChange={handlePromptSpaceChange}
         onFetchData={handleFetchDataForSpace}
+        spaces={promptSpaces}
       />
 
       {/* prompts List*/}
