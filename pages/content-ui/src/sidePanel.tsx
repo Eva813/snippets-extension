@@ -1,23 +1,19 @@
+import React, { useState, useRef, useEffect } from 'react';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
-import { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
-import FolderList from './components/folderList';
 import PromptSpaceSelector from './components/PromptSpaceSelector';
-import { AiOutlineWarning } from 'react-icons/ai';
+import ContentArea from './components/contentArea';
 
-interface SidePanelProps extends Record<string, unknown> {
-  alignment: 'left' | 'right';
-  visible: boolean;
-  displayMode: 'overlay' | 'push';
-  isInDOM: boolean;
-  isAnimating: boolean;
-  noAnimation: boolean;
-  setIsInDOM: (value: boolean) => void;
-  onToggle: () => void;
-  toggleDisplayMode: () => void;
-  containerRef?: React.RefObject<HTMLDivElement>;
-}
+// Hooks
+import { usePromptSpaces } from './hooks/usePromptSpaces';
+import { useFolders } from './hooks/useFolders';
+import { usePromptStorage } from './hooks/usePromptStorage';
+
+// Types and constants
+import type { SidePanelProps } from './types/sidePanel';
+import { INITIAL_SPACE_ID, EXTERNAL_URLS, ERROR_MESSAGES } from './constants/sidePanel';
+import { insertPrompt, generatePanelClasses, openDashboard } from './utils/sidePanel';
 
 const SidePanel: React.FC<SidePanelProps> = ({
   alignment,
@@ -31,317 +27,79 @@ const SidePanel: React.FC<SidePanelProps> = ({
   toggleDisplayMode,
   containerRef,
 }) => {
-  const goToDashboard = () => window.open('https://linxly-nextjs.vercel.app/', '_blank');
+  // UI state
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredPromptId, setHoveredPromptId] = useState<string | null>(null);
   const defaultPanelRef = useRef<HTMLDivElement>(null);
-  // 使用傳入的 containerRef 或預設的 ref
   const panelRef = containerRef || defaultPanelRef;
 
-  const [folders, setFolders] = useState<
-    Array<{
-      id: string;
-      name: string;
-      description: string;
-      prompts: Array<{
-        id: string;
-        name: string;
-        content: string;
-        shortcut: string;
-      }>;
-    }>
-  >([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const [selectedPromptSpace, setSelectedPromptSpace] = useState<string>('promptSpace-default');
-  const [promptSpaces, setPromptSpaces] = useState<
-    Array<{
-      id: string;
-      name: string;
-      type: 'my' | 'shared';
-      isReadOnly?: boolean;
-    }>
-  >([]);
-
-  // Fetch prompt spaces
-  const fetchPromptSpaces = useCallback(async () => {
-    try {
-      chrome.runtime.sendMessage(
-        { action: 'getPromptSpaces' },
-        (response: {
-          success: boolean;
-          data?: {
-            ownedSpaces: Array<{ id: string; name: string; userId: string; createdAt: string; updatedAt?: string }>;
-            sharedSpaces: Array<{
-              space: { id: string; name: string; userId: string; createdAt: string; updatedAt?: string };
-              permission: 'view' | 'edit';
-              sharedBy: string;
-              sharedAt: string;
-            }>;
-          };
-          error?: string;
-        }) => {
-          if (response && response.success && response.data) {
-            // Convert API response to component format
-            const spaces = [
-              ...response.data.ownedSpaces.map(space => ({
-                id: space.id,
-                name: space.name,
-                type: 'my' as const,
-              })),
-              ...response.data.sharedSpaces.map(sharedSpace => ({
-                id: sharedSpace.space.id,
-                name: sharedSpace.space.name,
-                type: 'shared' as const,
-                isReadOnly: sharedSpace.permission === 'view',
-              })),
-            ];
-            setPromptSpaces(spaces);
-
-            // Set default selected space if none selected
-            if (selectedPromptSpace === 'promptSpace-default' && spaces.length > 0) {
-              setSelectedPromptSpace(spaces[0].id);
-            }
-          }
-        },
-      );
-    } catch (error) {
-      console.error('Error fetching prompt spaces:', error);
-    }
-  }, [selectedPromptSpace]);
-
-  const fetchFolders = useCallback(
-    async (forceRefresh = false) => {
-      // 避免重複載入
-      if (!forceRefresh && hasInitialized && folders.length > 0) {
-        return;
-      }
-
-      setIsLoading(true);
-      setLoadError(null);
-
-      try {
-        if (forceRefresh) {
-          // 強制重新獲取最新資料
-          chrome.runtime.sendMessage(
-            { action: 'getFolders' },
-            (response: {
-              success: boolean;
-              data?: Array<{
-                id: string;
-                name: string;
-                description: string;
-                prompts: Array<{
-                  id: string;
-                  name: string;
-                  content: string;
-                  shortcut: string;
-                }>;
-              }>;
-              error?: string;
-            }) => {
-              setIsLoading(false);
-              setHasInitialized(true);
-              if (response && response.success && response.data) {
-                setFolders(response.data);
-                chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
-              } else {
-                const errorMsg = response?.error || '獲取資料夾失敗';
-                console.error('獲取資料夾失敗:', errorMsg);
-                setLoadError(errorMsg);
-                setFolders([]);
-                chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
-              }
-            },
-          );
-        } else {
-          // 先快速從本地載入，然後在背景同步
-          const result = await new Promise<{ folders?: typeof folders; hasFolders?: boolean }>(resolve => {
-            chrome.storage.local.get(['folders', 'hasFolders'], resolve);
-          });
-
-          if (result.folders && Array.isArray(result.folders) && result.folders.length > 0) {
-            // 立即顯示快取的資料
-            setFolders(result.folders);
-            setIsLoading(false);
-            setHasInitialized(true);
-          } else {
-            // 沒有快取資料，從 API 載入
-            chrome.runtime.sendMessage(
-              { action: 'getFolders' },
-              (response: { success: boolean; data?: typeof folders; error?: string }) => {
-                setIsLoading(false);
-                setHasInitialized(true);
-                if (response && response.success && response.data) {
-                  setFolders(response.data);
-                  chrome.storage.local.set({ folders: response.data, hasFolders: response.data.length > 0 });
-                } else {
-                  const errorMsg = response?.error || 'Failed to retrieve folder';
-                  console.error('Failed to retrieve folder:', errorMsg);
-                  setLoadError(errorMsg);
-                  setFolders([]);
-                  chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
-                }
-              },
-            );
-          }
-        }
-      } catch (error) {
-        setIsLoading(false);
-        setHasInitialized(true);
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        setLoadError(errorMsg);
-        console.error('Error occurred while loading folders:', error);
-      }
+  // Custom hooks
+  const {
+    promptSpaces,
+    selectedPromptSpace,
+    hasInitialized,
+    setSelectedPromptSpace,
+    setHasInitialized,
+    fetchPromptSpaces,
+    handlePromptSpaceChange,
+  } = usePromptSpaces({
+    onSpaceSelected: (spaceId: string) => {
+      fetchFoldersForSpace(spaceId);
     },
-    [hasInitialized, folders.length],
-  );
+  });
 
+  const { folders, isLoading, loadError, setIsLoading, setLoadError, fetchFoldersForSpace, clearFolders } =
+    useFolders();
+
+  // Storage sync
+  usePromptStorage({ folders });
+
+  // Initial load effect
   useEffect(() => {
-    // 只在第一次顯示或沒有資料時載入
     if (visible && isInDOM && !hasInitialized) {
       fetchPromptSpaces();
-      fetchFolders();
     }
-  }, [visible, isInDOM, hasInitialized, fetchFolders, fetchPromptSpaces]);
+  }, [visible, isInDOM, hasInitialized, fetchPromptSpaces]);
 
-  // Handle prompt space change and fetch data
-  const handlePromptSpaceChange = (spaceId: string) => {
-    console.log('Changing prompt space to:', spaceId);
-    setSelectedPromptSpace(spaceId);
-  };
-
+  // Event handlers
   const handleFetchDataForSpace = (spaceId: string) => {
-    console.log('Fetching data for space:', spaceId);
-    // Fetch folders for the specific prompt space
     fetchFoldersForSpace(spaceId);
   };
 
-  // Fetch folders for a specific prompt space
-  const fetchFoldersForSpace = async (promptSpaceId: string) => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    try {
-      chrome.runtime.sendMessage(
-        { action: 'getSpaceFolders', promptSpaceId },
-        (response: {
-          success: boolean;
-          data?: Array<{
-            id: string;
-            name: string;
-            description: string;
-            prompts: Array<{
-              id: string;
-              name: string;
-              content: string;
-              shortcut: string;
-            }>;
-          }>;
-          error?: string;
-        }) => {
-          setIsLoading(false);
-          if (response && response.success && response.data) {
-            setFolders(response.data);
-          } else {
-            const errorMsg = response?.error || 'Failed to fetch folders for space';
-            console.error('Failed to fetch folders for space:', errorMsg);
-            setLoadError(errorMsg);
-            setFolders([]);
-          }
-        },
-      );
-    } catch (error) {
-      setIsLoading(false);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      setLoadError(errorMsg);
-      console.error('Error occurred while loading folders for space:', error);
-    }
-  };
-
-  // Reload both prompt spaces and folders
   const handleReload = async () => {
-    // First reload prompt spaces
-    await fetchPromptSpaces();
-    // Then reload folders
-    await fetchFolders(true);
-  };
-  //  ==========  將 prompt 存到 storage ==========
-  useEffect(() => {
-    const validFolders = Array.isArray(folders) ? folders : [];
-    if (validFolders.length <= 0) {
-      chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false });
-    } else {
-      chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: true });
+    try {
+      setIsLoading(true);
+      setLoadError(null);
 
-      // 檢查是否需要更新 prompts（避免重複更新）
-      chrome.storage.local.get(['prompts'], result => {
-        const promptsMap = validFolders.reduce<Record<string, (typeof folders)[0]['prompts'][0]>>((acc, folder) => {
-          folder.prompts.forEach(prompt => {
-            acc[prompt.shortcut] = prompt;
-          });
-          return acc;
-        }, {});
+      // 1. Reload prompt spaces list (may have new/deleted spaces)
+      await fetchPromptSpaces();
 
-        // 只有在 prompts 有變化時才更新
-        const currentPromptsString = JSON.stringify(result.prompts || {});
-        const newPromptsString = JSON.stringify(promptsMap);
-
-        if (currentPromptsString !== newPromptsString) {
-          chrome.storage.local.set({ prompts: promptsMap }, () => {
-            if (import.meta.env.MODE === 'development') {
-              console.log('dev mode: Prompts saved to storage,', promptsMap);
-            }
-          });
+      // 2. If we have a valid selected space, reload its data
+      if (selectedPromptSpace && selectedPromptSpace !== INITIAL_SPACE_ID) {
+        // Verify the selected space still exists in the updated spaces list
+        const spaceStillExists = promptSpaces.some(space => space.id === selectedPromptSpace);
+        if (spaceStillExists) {
+          await fetchFoldersForSpace(selectedPromptSpace);
+        } else {
+          // Selected space no longer exists, reset to initial state
+          setSelectedPromptSpace(INITIAL_SPACE_ID);
+          clearFolders();
+          setHasInitialized(false); // Trigger re-initialization
         }
-      });
-    }
-  }, [folders]);
-
-  // ========== 插入 prompt ==========
-  const insertPrompt = (id: string, event: React.MouseEvent) => {
-    if (event && event.preventDefault) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    const prompt = folders.flatMap(folder => folder.prompts).find(prompt => prompt.id === id);
-    if (!prompt) {
-      console.warn('Prompt not found.');
-      return;
-    }
-
-    // 檢查 prompt.content 是否包含 'data-prompt'
-    const hasFormField = prompt.content.includes('data-prompt');
-    const title = `${prompt.shortcut} - ${prompt.name}`;
-
-    if (!hasFormField) {
-      // 沒有表單欄位，改由傳送訊息給背景，由背景呼叫 chrome.tabs.query
-      chrome.runtime.sendMessage(
-        {
-          action: 'sidePanelInsertPrompt',
-          prompt: {
-            content: prompt.content,
-            shortcut: prompt.shortcut,
-            name: prompt.name,
-          },
-        },
-        () => {},
-      );
-    } else {
-      // 有表單欄位，仍透過背景建立 popup
-      const content = prompt.content;
-      chrome.runtime.sendMessage({ action: 'createWindow', title, content }, response => {
-        if (import.meta.env.MODE === 'development') {
-          console.log('Window creation response:', response);
-        }
-      });
+      }
+    } catch (error) {
+      console.error('Error during reload:', error);
+      setLoadError(ERROR_MESSAGES.FAILED_TO_RELOAD);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // ========== 摺疊 folder ==========
-  const toggleCollapse = (folderId: string) => {
+  const handleInsertPrompt = (id: string, event: React.MouseEvent) => {
+    insertPrompt(folders, id, event);
+  };
+
+  const handleToggleCollapse = (folderId: string) => {
     const newCollapsed = new Set(collapsedFolders);
     if (newCollapsed.has(folderId)) {
       newCollapsed.delete(folderId);
@@ -351,20 +109,23 @@ const SidePanel: React.FC<SidePanelProps> = ({
     setCollapsedFolders(newCollapsed);
   };
 
-  // 如果不在 DOM 中，直接回傳 null
+  const handleRetry = () => {
+    if (selectedPromptSpace && selectedPromptSpace !== INITIAL_SPACE_ID) {
+      fetchFoldersForSpace(selectedPromptSpace);
+    }
+  };
+
+  const goToDashboard = () => {
+    openDashboard(EXTERNAL_URLS.DASHBOARD);
+  };
+
+  // Early return if not in DOM
   if (!isInDOM) {
     return null;
   }
 
-  // 動態設定 CSS 類別
-  const panelClasses = `
-    extension-container slide-panel overflow-visible
-    ${alignment} 
-    ${visible && isAnimating ? 'visible bg-white' : ''}
-    ${noAnimation ? 'no-animation' : ''}
-  `
-    .trim()
-    .replace(/\s+/g, ' ');
+  // Generate panel classes
+  const panelClasses = generatePanelClasses(alignment, visible, isAnimating, noAnimation);
 
   return (
     <div
@@ -372,18 +133,19 @@ const SidePanel: React.FC<SidePanelProps> = ({
       className={panelClasses}
       data-display-mode={displayMode}
       onTransitionEnd={e => {
-        // 只處理 transform 的 transitionEnd，避免其他元素的 transition 干擾
+        // Only handle transform transitionEnd to avoid interference from other elements
         if (e.propertyName === 'transform' && e.target === panelRef.current) {
           if (!isAnimating && !visible) {
-            // 代表現在是滑出結束 → 從 DOM 中移除
+            // Animation finished sliding out → remove from DOM
             setIsInDOM(false);
           }
         }
       }}>
-      {/* 側邊欄切換按鈕 - 固定在面板外側 */}
+      {/* Sidebar toggle button - fixed outside panel */}
       <div className="sidebar-toggle-container">
         <ToggleSidebarButton alignment={alignment} visible={visible} onToggle={onToggle} />
       </div>
+
       {/* Header */}
       <Header
         goToDashboard={goToDashboard}
@@ -400,36 +162,18 @@ const SidePanel: React.FC<SidePanelProps> = ({
         spaces={promptSpaces}
       />
 
-      {/* prompts List*/}
-      <div className="content-area overflow-y-auto bg-white p-2">
-        {isLoading && folders.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-gray-500">Loading Prompts...</div>
-          </div>
-        ) : loadError ? (
-          <div className="flex flex-col items-center justify-center py-8">
-            <AiOutlineWarning className="mb-4 text-4xl text-gray-500" />
-            <div className="mb-2 text-center text-gray-500">Something went wrong</div>
-            <div className="mb-2 text-center text-sm text-gray-400">
-              {`We're having trouble loading this content. Please check your connection and try again.`}
-            </div>
-            <button
-              onClick={() => fetchFolders(true)}
-              className="rounded bg-slate-500 px-4 py-2 text-white hover:bg-slate-600">
-              Try Again
-            </button>
-          </div>
-        ) : (
-          <FolderList
-            folders={folders}
-            collapsedFolders={collapsedFolders}
-            toggleCollapse={toggleCollapse}
-            hoveredPromptId={hoveredPromptId}
-            setHoveredPromptId={setHoveredPromptId}
-            insertPrompt={id => insertPrompt(id, {} as React.MouseEvent)}
-          />
-        )}
-      </div>
+      {/* Content Area */}
+      <ContentArea
+        folders={folders}
+        isLoading={isLoading}
+        loadError={loadError}
+        collapsedFolders={collapsedFolders}
+        hoveredPromptId={hoveredPromptId}
+        onToggleCollapse={handleToggleCollapse}
+        onSetHoveredPromptId={setHoveredPromptId}
+        onInsertPrompt={handleInsertPrompt}
+        onRetry={handleRetry}
+      />
     </div>
   );
 };

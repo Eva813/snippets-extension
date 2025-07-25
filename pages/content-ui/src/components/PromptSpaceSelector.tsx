@@ -6,6 +6,7 @@ interface PromptSpace {
   name: string;
   type: 'my' | 'shared';
   isReadOnly?: boolean;
+  defaultSpace?: boolean;
 }
 
 interface PromptSpaceSelectorProps {
