@@ -39,6 +39,7 @@ const manifest = {
   version: packageJson.version,
   description: '__MSG_extensionDescription__',
   host_permissions: [
+    'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
     'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
     'https://linxly-nextjs.vercel.app/*',
     'http://localhost:3000/*',
@@ -83,6 +84,7 @@ const manifest = {
   ],
   externally_connectable: {
     matches: [
+      'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
       'https://linxly-nextjs.vercel.app/*',
       // 如果您在本地開發後台，也加入本地位址，例如:
       // 'http://localhost:3000/*',

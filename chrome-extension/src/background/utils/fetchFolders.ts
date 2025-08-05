@@ -1,14 +1,19 @@
 const DEFAULT_API_DOMAIN = 'http://localhost:3000';
 
-export async function fetchFolders() {
+export async function fetchFolders(promptSpaceId: string) {
   try {
     const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
     if (!userLoggedIn) {
       return { success: false, error: 'User not logged in' };
     }
 
+    if (!promptSpaceId) {
+      return { success: false, error: 'promptSpaceId is required' };
+    }
+
     const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
-    const resp = await fetch(`${baseUrl}/api/v1/folders`, {
+    const url = `${baseUrl}/api/v1/folders?promptSpaceId=${promptSpaceId}`;
+    const resp = await fetch(url, {
       method: 'GET',
       headers: { 'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS },
       credentials: 'include',
@@ -44,8 +49,8 @@ export async function fetchFolders() {
       return acc;
     }, {});
 
-    // await chrome.storage.local.set({ folders: data, hasFolders });
-    await chrome.storage.local.set({ folders: data, hasFolders, prompts: promptsMap });
+    // Store global folders and prompts (for backward compatibility)
+    await chrome.storage.local.set({ folders: data, prompts: promptsMap });
 
     return {
       success: true,
@@ -54,7 +59,6 @@ export async function fetchFolders() {
     };
   } catch (error) {
     const errorMessage = (error as Error).message || 'unknown error';
-    await chrome.storage.local.set({ hasFolders: false });
     return {
       success: false,
       hasFolders: false,

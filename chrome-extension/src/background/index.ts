@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'webextension-polyfill';
 import { fetchFolders } from './utils/fetchFolders';
+import { fetchPromptSpaces } from './utils/fetchPromptSpaces';
+import { fetchSpaceFolders } from './utils/fetchSpaceFolders';
+import { getDefaultSpaceIdFromApiData, getDefaultSpaceIdFromCache } from './utils/getDefaultSpaceId';
 
 // 定義類型
 interface PopupData {
@@ -21,6 +24,8 @@ type RuntimeMessage =
   | { action: 'sidePanelInsertPrompt'; prompt: PromptData }
   | { action: 'openShortcutsPage' }
   | { action: 'getFolders' }
+  | { action: 'getPromptSpaces' }
+  | { action: 'getSpaceFolders'; promptSpaceId: string }
   | { action: 'updateIcon'; hasFolders: boolean }
   | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
   | { action: 'userLoggedOut' }
@@ -81,12 +86,65 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
         return;
       }
 
+      // First fetch prompt spaces to get a default space ID
+      const promptSpacesResult = await fetchPromptSpaces();
+      if (!promptSpacesResult.success || !promptSpacesResult.data) {
+        sendResponse({ success: false, error: 'Failed to fetch prompt spaces' });
+        return;
+      }
+
+      // Get default prompt space ID using centralized logic
+      const defaultSpaceId = getDefaultSpaceIdFromApiData(promptSpacesResult.data);
+      if (!defaultSpaceId) {
+        sendResponse({ success: false, error: 'No prompt space available' });
+        return;
+      }
+
       // 先清除本地快取，確保取得最新資料
       await chrome.storage.local.remove(['folders', 'prompts']);
-      const result = await fetchFolders();
+      const result = await fetchFolders(defaultSpaceId);
       console.log('Fetched folders (force refresh):', result);
       if (result.success && result.folders) {
         sendResponse({ success: true, data: result.folders });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'unknown error' });
+    }
+  },
+  getPromptSpaces: async (_, sendResponse) => {
+    try {
+      const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+      if (!userLoggedIn) {
+        sendResponse({ success: false, error: 'User not logged in' });
+        return;
+      }
+
+      const result = await fetchPromptSpaces();
+      console.log('Fetched prompt spaces:', result);
+      if (result.success && result.data) {
+        sendResponse({ success: true, data: result.data });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'unknown error' });
+    }
+  },
+  getSpaceFolders: async (message, sendResponse) => {
+    try {
+      const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+      if (!userLoggedIn) {
+        sendResponse({ success: false, error: 'User not logged in' });
+        return;
+      }
+
+      const { promptSpaceId } = message as Extract<RuntimeMessage, { action: 'getSpaceFolders' }>;
+      const result = await fetchSpaceFolders(promptSpaceId);
+      console.log('Fetched space folders:', result);
+      if (result.success && result.data) {
+        sendResponse({ success: true, data: result.data });
       } else {
         sendResponse({ success: false, error: result.error || 'unknown error' });
       }
@@ -109,7 +167,12 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
       } else {
         chrome.storage.local.set({ userLoggedIn: data.status === 'loggedIn', apiDomain: domain }, async () => {
-          if (data.status === 'loggedIn') await fetchFolders();
+          if (data.status === 'loggedIn') {
+            const defaultSpaceId = await getDefaultSpaceIdFromCache();
+            if (defaultSpaceId) {
+              await fetchFolders(defaultSpaceId);
+            }
+          }
           sendResponse({ success: true, message: 'user status updated' });
         });
       }
@@ -133,7 +196,13 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       }
 
       // 如果本地沒有 prompts，觸發 fetchFolders
-      const fetchResult = await fetchFolders();
+      const defaultSpaceId = await getDefaultSpaceIdFromCache();
+      if (!defaultSpaceId) {
+        sendResponse({ success: false, error: 'No prompt space available' });
+        return;
+      }
+
+      const fetchResult = await fetchFolders(defaultSpaceId);
       if (!fetchResult.success) {
         sendResponse({ success: false, error: 'Unable to fetch folders' });
         return;
