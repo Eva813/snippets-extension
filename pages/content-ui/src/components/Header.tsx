@@ -77,7 +77,7 @@ const Header = ({
                 />
               </button>
 
-              <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="absolute left-1/2 top-full z-[60] mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                 {isLoading ? 'reloading...' : 'Reload Prompts'}
               </span>
             </div>
@@ -98,7 +98,7 @@ const Header = ({
                 <GoSidebarCollapse size={17} />
               </button>
 
-              <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="absolute left-1/2 top-full z-[60] mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                 push website to the side
               </span>
             </div>
@@ -131,7 +131,7 @@ const Header = ({
                   </defs>
                 </svg>
               </button>
-              <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="absolute left-1/2 top-full z-[60] mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                 overlay website
               </span>
             </div>
