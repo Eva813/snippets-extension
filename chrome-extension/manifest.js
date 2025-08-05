@@ -30,17 +30,11 @@ const manifest = {
       description: 'Toggle the side panel.',
     },
   },
-  browser_specific_settings: {
-    gecko: {
-      id: 'example@example.com',
-      strict_min_version: '109.0',
-    },
-  },
   version: packageJson.version,
   description: '__MSG_extensionDescription__',
   host_permissions: [
-    'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
-    'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
+    // 'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
+    // 'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
     'https://linxly-nextjs.vercel.app/*',
     'http://localhost:3000/*',
   ],
@@ -54,9 +48,6 @@ const manifest = {
   action: {
     // default_popup: 'popup/index.html',
     default_icon: 'icon-34.png',
-  },
-  chrome_url_overrides: {
-    // newtab: 'new-tab/index.html',
   },
   icons: {
     128: 'icon-128.png',
@@ -75,7 +66,6 @@ const manifest = {
       run_at: 'document_idle', // 延遲載入 UI
     },
   ],
-  devtools_page: 'devtools/index.html',
   web_accessible_resources: [
     {
       resources: ['*.js', '*.css', '*.svg', 'icon-128.png', 'icon-34.png', 'formLoader.html'],
@@ -84,10 +74,10 @@ const manifest = {
   ],
   externally_connectable: {
     matches: [
-      'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
+      // 'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
       'https://linxly-nextjs.vercel.app/*',
       // 如果您在本地開發後台，也加入本地位址，例如:
-      // 'http://localhost:3000/*',
+      'http://localhost:3000/*',
     ],
   },
 };
