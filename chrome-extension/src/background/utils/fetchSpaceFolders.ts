@@ -47,7 +47,6 @@ export async function fetchSpaceFolders(promptSpaceId: string): Promise<{
     }
 
     const data: FolderData[] = await resp.json();
-    const hasFolders = Array.isArray(data) && data.length > 0;
 
     // 整理 prompts 快取
     const promptsMap = data.reduce<Record<string, PromptApiResponse>>((acc, folder) => {
@@ -63,7 +62,6 @@ export async function fetchSpaceFolders(promptSpaceId: string): Promise<{
     await chrome.storage.local.set({
       [`folders_${promptSpaceId}`]: data,
       [`prompts_${promptSpaceId}`]: promptsMap,
-      hasFolders,
     });
 
     return {
@@ -72,7 +70,6 @@ export async function fetchSpaceFolders(promptSpaceId: string): Promise<{
     };
   } catch (error) {
     const errorMessage = (error as Error).message || 'unknown error';
-    await chrome.storage.local.set({ hasFolders: false });
     return {
       success: false,
       error: `fetchSpaceFolders error: ${errorMessage}`,

@@ -58,8 +58,8 @@ export async function fetchFolders(promptSpaceId?: string) {
       return acc;
     }, {});
 
-    // await chrome.storage.local.set({ folders: data, hasFolders });
-    await chrome.storage.local.set({ folders: data, hasFolders, prompts: promptsMap });
+    // Store global folders and prompts (for backward compatibility)
+    await chrome.storage.local.set({ folders: data, prompts: promptsMap });
 
     return {
       success: true,
@@ -68,7 +68,6 @@ export async function fetchFolders(promptSpaceId?: string) {
     };
   } catch (error) {
     const errorMessage = (error as Error).message || 'unknown error';
-    await chrome.storage.local.set({ hasFolders: false });
     return {
       success: false,
       hasFolders: false,
