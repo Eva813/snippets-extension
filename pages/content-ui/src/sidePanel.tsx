@@ -72,12 +72,12 @@ const SidePanel: React.FC<SidePanelProps> = ({
       setLoadError(null);
 
       // 1. Reload prompt spaces list (may have new/deleted spaces)
-      await fetchPromptSpaces();
+      const updatedSpaces = await fetchPromptSpaces();
 
       // 2. If we have a valid selected space, reload its data
       if (selectedPromptSpace && selectedPromptSpace !== INITIAL_SPACE_ID) {
         // Verify the selected space still exists in the updated spaces list
-        const spaceStillExists = promptSpaces.some(space => space.id === selectedPromptSpace);
+        const spaceStillExists = updatedSpaces.some(space => space.id === selectedPromptSpace);
         if (spaceStillExists) {
           await fetchFoldersForSpace(selectedPromptSpace);
         } else {

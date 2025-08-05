@@ -8,7 +8,7 @@ interface UsePromptSpacesReturn {
   hasInitialized: boolean;
   setSelectedPromptSpace: (spaceId: string) => void;
   setHasInitialized: (value: boolean) => void;
-  fetchPromptSpaces: () => Promise<void>;
+  fetchPromptSpaces: () => Promise<PromptSpace[]>;
   handlePromptSpaceChange: (spaceId: string) => void;
   findDefaultSpace: () => string | null;
 }
@@ -71,21 +71,26 @@ export const usePromptSpaces = ({ onSpaceSelected }: UsePromptSpacesProps = {}):
     [selectedPromptSpace, onSpaceSelected],
   );
 
-  const fetchPromptSpaces = useCallback(async () => {
-    try {
-      chrome.runtime.sendMessage({ action: CHROME_ACTIONS.GET_PROMPT_SPACES }, (response: PromptSpacesApiResponse) => {
-        if (response && response.success && response.data) {
-          const spaces = convertApiResponseToSpaces(response);
-          setPromptSpaces(spaces);
-          selectInitialSpace(spaces, response.data);
-        } else {
-          setHasInitialized(true);
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching prompt spaces:', error);
-      setHasInitialized(true);
-    }
+  const fetchPromptSpaces = useCallback(async (): Promise<PromptSpace[]> => {
+    return new Promise((resolve, reject) => {
+      try {
+        chrome.runtime.sendMessage({ action: CHROME_ACTIONS.GET_PROMPT_SPACES }, (response: PromptSpacesApiResponse) => {
+          if (response && response.success && response.data) {
+            const spaces = convertApiResponseToSpaces(response);
+            setPromptSpaces(spaces);
+            selectInitialSpace(spaces, response.data);
+            resolve(spaces);
+          } else {
+            setHasInitialized(true);
+            resolve([]);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching prompt spaces:', error);
+        setHasInitialized(true);
+        reject(error);
+      }
+    });
   }, [convertApiResponseToSpaces, selectInitialSpace]);
 
   const handlePromptSpaceChange = useCallback((spaceId: string) => {
