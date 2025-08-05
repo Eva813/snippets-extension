@@ -1,23 +1,14 @@
 const DEFAULT_API_DOMAIN = 'http://localhost:3000';
 
-export async function fetchFolders(promptSpaceId?: string) {
+export async function fetchFolders(promptSpaceId: string) {
   try {
     const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
     if (!userLoggedIn) {
       return { success: false, error: 'User not logged in' };
     }
 
-    // If no promptSpaceId provided, try to get a default one
     if (!promptSpaceId) {
-      // First try to get from storage
-      const { promptSpaces } = await chrome.storage.local.get(['promptSpaces']);
-      if (promptSpaces?.ownedSpaces?.length > 0) {
-        promptSpaceId = promptSpaces.ownedSpaces[0].id;
-      } else if (promptSpaces?.sharedSpaces?.length > 0) {
-        promptSpaceId = promptSpaces.sharedSpaces[0].space.id;
-      } else {
-        return { success: false, error: 'No prompt space available' };
-      }
+      return { success: false, error: 'promptSpaceId is required' };
     }
 
     const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
