@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { withErrorBoundary, withSuspense } from '@extension/shared';
 
 // Components
@@ -32,6 +32,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
   // UI state
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredPromptId, setHoveredPromptId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const defaultPanelRef = useRef<HTMLDivElement>(null);
   const panelRef = containerRef || defaultPanelRef;
 
@@ -161,6 +162,35 @@ const SidePanel: React.FC<SidePanelProps> = ({
     openDashboard(EXTERNAL_URLS.DASHBOARD);
   }, []);
 
+  // Search functionality
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  // Filter folders based on search query
+  const filteredFolders = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return folders;
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+
+    return folders.filter(folder => {
+      // Check folder name
+      if (folder.name.toLowerCase().includes(lowerQuery)) {
+        return true;
+      }
+
+      // Check if any prompt in this folder matches
+      return folder.prompts.some(
+        prompt =>
+          prompt.name.toLowerCase().includes(lowerQuery) ||
+          prompt.content.toLowerCase().includes(lowerQuery) ||
+          prompt.shortcut.toLowerCase().includes(lowerQuery),
+      );
+    });
+  }, [folders, searchQuery]);
+
   // Keyboard navigation handler
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -227,6 +257,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         onReload={handleReload}
         displayMode={displayMode}
         toggleDisplayMode={toggleDisplayMode}
+        onSearchChange={handleSearchChange}
       />
 
       {/* Prompt Space Selection */}
@@ -242,11 +273,12 @@ const SidePanel: React.FC<SidePanelProps> = ({
       {/* Content Area */}
       <div role="main" aria-label="Snippets content">
         <ContentArea
-          folders={folders}
+          folders={filteredFolders}
           isLoading={isLoading}
           loadError={loadError}
           collapsedFolders={collapsedFolders}
           hoveredPromptId={hoveredPromptId}
+          searchQuery={searchQuery}
           onToggleCollapse={handleToggleCollapse}
           onSetHoveredPromptId={setHoveredPromptId}
           onInsertPrompt={handleInsertPrompt}

@@ -7,6 +7,7 @@ interface FolderListProps {
   collapsedFolders: Set<string>;
   toggleCollapse: (folderId: string) => void;
   hoveredPromptId: string | null;
+  searchQuery?: string;
   setHoveredPromptId: Dispatch<SetStateAction<string | null>>;
   insertPrompt: (folderId: string) => void;
 }
@@ -16,6 +17,7 @@ export default function FolderList({
   collapsedFolders,
   toggleCollapse,
   hoveredPromptId,
+  searchQuery,
   setHoveredPromptId,
   insertPrompt,
 }: FolderListProps) {
@@ -29,6 +31,7 @@ export default function FolderList({
               isCollapsed={collapsedFolders.has(folder.id)}
               toggleCollapse={toggleCollapse}
               hoveredPromptId={hoveredPromptId}
+              searchQuery={searchQuery}
               setHoveredPromptId={setHoveredPromptId}
               insertPrompt={insertPrompt}
             />

@@ -8,15 +8,18 @@ interface HeaderProps {
   onReload: () => Promise<void>;
   displayMode: 'push' | 'overlay';
   toggleDisplayMode: () => void;
+  onSearchChange: (query: string) => void;
 }
 
-const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggleDisplayMode }) => {
+const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggleDisplayMode, onSearchChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Constants
   const MIN_LOADING_TIME = 1000;
+  const SEARCH_DEBOUNCE_DELAY = 300;
 
   const handleReload = useCallback(async () => {
     if (isLoading) return;
@@ -44,11 +47,14 @@ const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggle
     }
   }, [isLoading, onReload]);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
   }, []);
@@ -64,10 +70,23 @@ const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggle
     return `${baseClasses} text-gray-300 hover:bg-slate-600/50 hover:text-white hover:opacity-80`;
   }, []);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value);
-    // TODO: Implement search functionality
-  }, []);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchValue(value);
+
+      // Clear previous search timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      // Set new debounced search
+      searchTimeoutRef.current = setTimeout(() => {
+        onSearchChange(value.trim());
+      }, SEARCH_DEBOUNCE_DELAY);
+    },
+    [onSearchChange, SEARCH_DEBOUNCE_DELAY],
+  );
 
   return (
     <header className="bg-primary px-4 py-2 text-white">
@@ -98,7 +117,7 @@ const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggle
       {/* Action Buttons */}
       <div className="flex items-center justify-between sm:mt-0 md:mt-2">
         <div className="flex items-center space-x-2">
-          <div className="bg-primary-400 rounded-lg p-1">
+          <div className="rounded-lg bg-primary-400 p-1">
             <div className="group relative">
               <button
                 onClick={handleReload}
@@ -119,7 +138,7 @@ const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggle
           </div>
 
           {/* Display Mode Buttons - Grouped */}
-          <div className="bg-primary-400 flex items-center space-x-2 rounded-lg p-1">
+          <div className="flex items-center space-x-2 rounded-lg bg-primary-400 p-1">
             <div className="group relative">
               <button
                 onClick={() => displayMode !== 'push' && toggleDisplayMode()}

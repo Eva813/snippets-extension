@@ -10,6 +10,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
   loadError,
   collapsedFolders,
   hoveredPromptId,
+  searchQuery,
   onToggleCollapse,
   onSetHoveredPromptId,
   onInsertPrompt,
@@ -27,6 +28,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
           collapsedFolders={collapsedFolders}
           toggleCollapse={onToggleCollapse}
           hoveredPromptId={hoveredPromptId}
+          searchQuery={searchQuery}
           setHoveredPromptId={onSetHoveredPromptId}
           insertPrompt={id => onInsertPrompt(id, {} as React.MouseEvent)}
         />
