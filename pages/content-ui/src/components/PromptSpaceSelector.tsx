@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { IoChevronDown } from 'react-icons/io5';
 
 interface PromptSpace {
@@ -25,17 +25,41 @@ const PromptSpaceSelector: React.FC<PromptSpaceSelectorProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedSpace = spaces.find(space => space.id === selectedSpaceId) ||
-    spaces[0] || { id: 'loading', name: 'Loading...', type: 'my' as const };
+  // 點擊外部關閉下拉選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
 
-  const handleSelect = (spaceId: string) => {
-    onSpaceChange(spaceId);
-    setIsOpen(false);
-    onFetchData?.(spaceId);
-  };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
 
-  const mySpaces = spaces.filter(space => space.type === 'my');
-  const sharedSpaces = spaces.filter(space => space.type === 'shared');
+    // 當 isOpen 為 false 時，不需要清理函式
+    return undefined;
+  }, [isOpen]);
+
+  // 使用 useMemo 快取計算結果，避免每次渲染時重新計算
+  const { mySpaces, sharedSpaces, selectedSpace } = useMemo(() => {
+    const my = spaces.filter(space => space.type === 'my');
+    const shared = spaces.filter(space => space.type === 'shared');
+    const selected = spaces.find(space => space.id === selectedSpaceId) ||
+      spaces[0] || { id: 'loading', name: 'Loading...', type: 'my' as const };
+
+    return { mySpaces: my, sharedSpaces: shared, selectedSpace: selected };
+  }, [spaces, selectedSpaceId]);
+
+  const handleSelect = useCallback(
+    (spaceId: string) => {
+      onSpaceChange(spaceId);
+      setIsOpen(false);
+      onFetchData?.(spaceId);
+    },
+    [onSpaceChange, onFetchData],
+  );
 
   return (
     <div className="relative border-b bg-white p-3" ref={dropdownRef}>
