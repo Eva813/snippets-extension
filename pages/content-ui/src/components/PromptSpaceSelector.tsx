@@ -59,7 +59,7 @@ const PromptSpaceSelector: React.FC<PromptSpaceSelectorProps> = ({
                     handleSelect(space.id);
                   }}
                   className={`block w-full px-3 py-2 text-left text-sm  hover:bg-gray-100 ${
-                    selectedSpaceId === space.id ? 'text-primary bg-light font-bold' : 'text-gray-900'
+                    selectedSpaceId === space.id ? 'bg-light text-primary font-bold' : 'text-gray-900'
                   }`}>
                   {space.name}
                 </button>
@@ -78,7 +78,7 @@ const PromptSpaceSelector: React.FC<PromptSpaceSelectorProps> = ({
                     handleSelect(space.id);
                   }}
                   className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-100 ${
-                    selectedSpaceId === space.id ? 'text-primary bg-light font-bold' : 'text-gray-900'
+                    selectedSpaceId === space.id ? 'bg-light text-primary font-bold' : 'text-gray-900'
                   }`}>
                   <span>{space.name}</span>
                   {space.isReadOnly && <span className="text-xs text-gray-400">view only</span>}
