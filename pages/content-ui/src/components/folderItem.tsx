@@ -27,17 +27,18 @@ export default function FolderItem({
   };
   return (
     <li className="mb-2">
-      <div className="flex w-full items-center justify-between rounded px-2 py-1 hover:bg-gray-100 dark:hover:text-black">
-        <strong className="flex cursor-pointer items-center text-lg">
+      <button
+        type="button"
+        className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 hover:bg-gray-100 focus:outline-none dark:hover:text-black"
+        onClick={() => toggleCollapse(folder.id)}>
+        <strong className="flex items-center text-lg">
           <FaFolder className="mr-2" size={18} />
           <span className="max-w-[180px] truncate">{folder.name}</span>
         </strong>
-        <button
-          onClick={() => toggleCollapse(folder.id)}
-          className="rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-gray-800">
+        <div className="rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-gray-800">
           {isCollapsed ? <FaCaretRight size={16} /> : <FaCaretDown size={16} />}
-        </button>
-      </div>
+        </div>
+      </button>
 
       {!isCollapsed && (
         <ul className="ml-4 mt-1">
