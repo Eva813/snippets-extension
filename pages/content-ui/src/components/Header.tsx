@@ -1,22 +1,24 @@
 import { FaArrowRightLong } from 'react-icons/fa6';
 import { IoReload } from 'react-icons/io5';
 import { GoSidebarCollapse } from 'react-icons/go';
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useRef, memo } from 'react';
 
-const Header = ({
-  goToDashboard,
-  onReload,
-  displayMode,
-  toggleDisplayMode,
-}: {
+interface HeaderProps {
   goToDashboard: () => void;
   onReload: () => Promise<void>;
   displayMode: 'push' | 'overlay';
   toggleDisplayMode: () => void;
-}) => {
-  const [isLoading, setIsLoading] = useState(false);
+}
 
-  const handleReload = async () => {
+const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggleDisplayMode }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Constants
+  const MIN_LOADING_TIME = 1000;
+
+  const handleReload = useCallback(async () => {
     if (isLoading) return;
 
     setIsLoading(true);
@@ -29,14 +31,43 @@ const Header = ({
       console.error('Error reloading folders:', error);
     } finally {
       const elapsedTime = Date.now() - startTime;
-      const minLoadingTime = 1000;
-      const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
+      const remainingTime = Math.max(0, MIN_LOADING_TIME - elapsedTime);
 
-      setTimeout(() => {
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
         setIsLoading(false);
       }, remainingTime);
     }
-  };
+  }, [isLoading, onReload]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Memoized button className calculation
+  const getDisplayModeButtonClassName = useCallback((mode: 'push' | 'overlay', isActive: boolean) => {
+    const baseClasses = 'flex items-center justify-center rounded-md p-1 text-base transition-all duration-200';
+
+    if (isActive) {
+      return `${baseClasses} cursor-not-allowed text-white opacity-80`;
+    }
+
+    return `${baseClasses} text-gray-300 hover:bg-slate-600/50 hover:text-white hover:opacity-80`;
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value);
+    // TODO: Implement search functionality
+  }, []);
 
   return (
     <header className="bg-primary px-4 py-2 text-white">
@@ -55,7 +86,11 @@ const Header = ({
           </svg>
           <input
             type="text"
+            value={searchValue}
+            onChange={handleSearchChange}
             placeholder="Search prompts..."
+            aria-label="Search prompts"
+            role="searchbox"
             className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white"
           />
         </div>
@@ -89,11 +124,7 @@ const Header = ({
               <button
                 onClick={() => displayMode !== 'push' && toggleDisplayMode()}
                 disabled={displayMode === 'push'}
-                className={`flex items-center justify-center rounded-md p-1 text-base transition-all duration-200 ${
-                  displayMode === 'push'
-                    ? 'cursor-not-allowed text-white opacity-80'
-                    : 'text-gray-300 hover:bg-slate-600/50 hover:text-white hover:opacity-80'
-                }`}
+                className={getDisplayModeButtonClassName('push', displayMode === 'push')}
                 title="push website to the side">
                 <GoSidebarCollapse size={17} />
               </button>
@@ -107,11 +138,7 @@ const Header = ({
               <button
                 onClick={() => displayMode !== 'overlay' && toggleDisplayMode()}
                 disabled={displayMode === 'overlay'}
-                className={`flex items-center justify-center rounded-md p-1 text-base transition-all duration-200 ${
-                  displayMode === 'overlay'
-                    ? 'cursor-not-allowed text-white opacity-80'
-                    : 'text-gray-300 hover:bg-slate-600/50 hover:text-white hover:opacity-80'
-                }`}
+                className={getDisplayModeButtonClassName('overlay', displayMode === 'overlay')}
                 title="overlay website">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                   <g clipPath="url(#clip0)">
@@ -145,6 +172,8 @@ const Header = ({
       </div>
     </header>
   );
-};
+});
+
+Header.displayName = 'Header';
 
 export default Header;
