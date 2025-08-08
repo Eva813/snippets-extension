@@ -51,21 +51,23 @@ export default function FolderItem({
                 className="mb-2"
                 onMouseEnter={() => prompt.id && setHoveredPromptId(prompt.id)}
                 onMouseLeave={() => setHoveredPromptId(null)}>
-                <div className="flex w-full items-center justify-between rounded px-2 py-1 hover:bg-gray-100 dark:hover:text-black">
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 hover:bg-gray-100 focus:outline-none dark:hover:text-black"
+                  onMouseDown={e => handlePromptInsert(prompt.id, e)}>
                   <span className="max-w-[160px] truncate">{prompt.name}</span>
                   <div className="relative ml-4 mr-auto inline-block">
-                    <button
+                    <div
                       className={`flex items-center justify-center transition-opacity duration-200 ${
                         hoveredPromptId === prompt.id ? 'visible opacity-100' : 'invisible opacity-0'
-                      }`}
-                      onMouseDown={e => handlePromptInsert(prompt.id, e)}>
+                      }`}>
                       <FaArrowAltCircleDown size={20} className="text-primary" />
-                    </button>
+                    </div>
                   </div>
                   <span className="inline-flex h-6 items-center rounded-full border border-blue-300 px-3 py-1 text-sm font-medium">
                     {prompt.shortcut}
                   </span>
-                </div>
+                </button>
               </li>
             ))
           )}
