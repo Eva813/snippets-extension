@@ -29,7 +29,8 @@ type RuntimeMessage =
   | { action: 'updateIcon'; hasFolders: boolean }
   | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
   | { action: 'userLoggedOut' }
-  | { action: 'getPromptByShortcut'; shortcut: string };
+  | { action: 'getPromptByShortcut'; shortcut: string }
+  | { action: 'addToPromptBear'; selectedText: string; pageUrl?: string; pageTitle?: string };
 
 // 全域狀態
 let popupData: PopupData | null = null;
@@ -62,6 +63,55 @@ function setupExtensionControls() {
     }
   });
 }
+
+// 創建 Context Menu（Chrome 會自動使用 manifest 中的 16px icon）
+chrome.contextMenus.create({
+  id: 'addToPromptBear',
+  title: 'Add to PromptBear',
+  contexts: ['selection'],
+});
+
+// Context Menu 點擊處理
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId === 'addToPromptBear') {
+    const selectedText = info.selectionText || '';
+    const pageUrl = tab?.url || '';
+    const pageTitle = tab?.title || '';
+
+    console.log('=== Add to PromptBear ===');
+    console.log('Selected text:', selectedText);
+    console.log('Page URL:', pageUrl);
+    console.log('Page title:', pageTitle);
+
+    try {
+      // 獲取 API domain 和登入狀態
+      const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
+
+      if (!userLoggedIn) {
+        console.warn('User not logged in, cannot add to PromptBear');
+        return;
+      }
+
+      const DEFAULT_API_DOMAIN = 'http://localhost:3000';
+      const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
+
+      // 編碼選取的文字
+      const encodedContent = encodeURIComponent(selectedText);
+      const encodedPageUrl = encodeURIComponent(pageUrl);
+      const encodedPageTitle = encodeURIComponent(pageTitle);
+
+      // 構建跳轉 URL（測試階段暫時跳轉到 folders/all）
+      const targetUrl = `${baseUrl}/folders/all?triggerNew=true&content=${encodedContent}&source=extension&pageUrl=${encodedPageUrl}&pageTitle=${encodedPageTitle}`;
+
+      console.log('Target URL:', targetUrl);
+
+      // 開啟新分頁跳轉到後台
+      chrome.tabs.create({ url: targetUrl });
+    } catch (error) {
+      console.error('Error in addToPromptBear:', error);
+    }
+  }
+});
 
 // 建立一個處理器映射物件
 const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (response?: any) => void) => void> = {
@@ -162,12 +212,17 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       RuntimeMessage,
       { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
     >;
-    chrome.action.setIcon({ path: 'icon-34.png' }, () => {
+
+    // 根據實際登入狀態設置正確的 icon
+    const isLoggedIn = data.status === 'loggedIn';
+    const iconPath = isLoggedIn ? 'icon-34.png' : 'icon-34-gray.png';
+
+    chrome.action.setIcon({ path: iconPath }, () => {
       if (chrome.runtime.lastError) {
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
       } else {
-        chrome.storage.local.set({ userLoggedIn: data.status === 'loggedIn', apiDomain: domain }, async () => {
-          if (data.status === 'loggedIn') {
+        chrome.storage.local.set({ userLoggedIn: isLoggedIn, apiDomain: domain }, async () => {
+          if (isLoggedIn) {
             const defaultSpaceId = await getDefaultSpaceIdFromCache();
             if (defaultSpaceId) {
               await fetchFolders(defaultSpaceId);
