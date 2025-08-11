@@ -2,7 +2,7 @@
 import 'webextension-polyfill';
 import { fetchFolders } from './utils/fetchFolders';
 import { fetchPromptSpaces } from './utils/fetchPromptSpaces';
-import { fetchSpaceFolders } from './utils/fetchSpaceFolders';
+import { fetchSpaceFolders, type FolderData } from './utils/fetchSpaceFolders';
 import { getDefaultSpaceIdFromApiData, getDefaultSpaceIdFromCache } from './utils/getDefaultSpaceId';
 
 // 定義類型
@@ -64,6 +64,51 @@ function setupExtensionControls() {
   });
 }
 
+// 智能選擇目標 Space 和 Folder
+interface SmartDestination {
+  targetSpaceId: string | null;
+  targetFolderId: string | null;
+}
+
+async function getSmartDestination(): Promise<SmartDestination> {
+  try {
+    // 1. 直接調用 API 獲取最新的 Spaces 資料
+    const spacesResult = await fetchPromptSpaces();
+    if (!spacesResult.success || !spacesResult.data) {
+      console.warn('Failed to fetch prompt spaces:', spacesResult.error);
+      return { targetSpaceId: null, targetFolderId: null };
+    }
+
+    // 2. 從 API 資料中選擇預設 Space ID
+    const targetSpaceId = getDefaultSpaceIdFromApiData(spacesResult.data);
+    if (!targetSpaceId) {
+      console.warn('No default space found in API data');
+      return { targetSpaceId: null, targetFolderId: null };
+    }
+
+    console.log('Selected default space ID:', targetSpaceId);
+
+    // 3. 獲取該 Space 的資料夾列表
+    const foldersResult = await fetchSpaceFolders(targetSpaceId);
+    if (!foldersResult.success || !foldersResult.data || foldersResult.data.length === 0) {
+      console.warn('No folders found in space:', targetSpaceId);
+      return { targetSpaceId, targetFolderId: null };
+    }
+
+    // 4. 選擇第一個資料夾
+    const firstFolder = foldersResult.data[0];
+    console.log('Selected target folder:', firstFolder.name, firstFolder.id);
+
+    return {
+      targetSpaceId,
+      targetFolderId: firstFolder.id,
+    };
+  } catch (error) {
+    console.error('Error in getSmartDestination:', error);
+    return { targetSpaceId: null, targetFolderId: null };
+  }
+}
+
 // 創建 Context Menu（Chrome 會自動使用 manifest 中的 16px icon）
 chrome.contextMenus.create({
   id: 'addToPromptBear',
@@ -100,8 +145,20 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       const encodedPageUrl = encodeURIComponent(pageUrl);
       const encodedPageTitle = encodeURIComponent(pageTitle);
 
-      // 構建跳轉 URL（測試階段暫時跳轉到 folders/all）
-      const targetUrl = `${baseUrl}/folders/all?triggerNew=true&content=${encodedContent}&source=extension&pageUrl=${encodedPageUrl}&pageTitle=${encodedPageTitle}`;
+      // 智能選擇目標 Space 和 Folder
+      const { targetSpaceId, targetFolderId } = await getSmartDestination();
+
+      // 構建跳轉 URL（符合後台實際架構）
+      let targetUrl: string;
+      if (targetFolderId) {
+        // 跳轉到具體的資料夾頁面
+        targetUrl = `${baseUrl}/prompts/folder/${targetFolderId}?triggerNew=true&content=${encodedContent}&source=extension&pageUrl=${encodedPageUrl}&pageTitle=${encodedPageTitle}`;
+        console.log('Smart destination found - Space:', targetSpaceId, 'Folder:', targetFolderId);
+      } else {
+        // 回退到根路由，利用後台的自動重導向邏輯
+        targetUrl = `${baseUrl}/prompts?triggerNew=true&content=${encodedContent}&source=extension&pageUrl=${encodedPageUrl}&pageTitle=${encodedPageTitle}`;
+        console.log('Fallback to /prompts - no specific folder found, will use auto-redirect');
+      }
 
       console.log('Target URL:', targetUrl);
 
