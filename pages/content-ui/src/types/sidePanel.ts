@@ -79,6 +79,7 @@ export interface ContentAreaProps {
   loadError: string | null;
   collapsedFolders: Set<string>;
   hoveredPromptId: string | null;
+  searchQuery?: string;
   onToggleCollapse: (folderId: string) => void;
   onSetHoveredPromptId: React.Dispatch<React.SetStateAction<string | null>>;
   onInsertPrompt: (id: string, event: React.MouseEvent) => void;

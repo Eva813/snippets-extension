@@ -81,8 +81,8 @@ const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({
           id={dropdownId}
           type="button"
           onClick={() => setOpen(!open)}
-          className="w-40 py-1 px-3 border border-gray-300 rounded bg-light text-left relative pr-8">
-          <span className="truncate block">{selected.join(', ') || 'choose'}</span>
+          className="bg-light relative w-40 rounded border border-gray-300 px-3 py-1 pr-8 text-left">
+          <span className="block truncate">{selected.join(', ') || 'choose'}</span>
           <FiChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
         </button>
       </span>
@@ -95,11 +95,11 @@ const FormMenuMultiSelect: React.FC<FormMenuMultiSelectProps> = ({
             ref={dropdownRef}
             style={dropdownStyle}
             id={id}
-            className="bg-white border shadow-md rounded p-2 max-h-60 overflow-auto">
+            className="max-h-60 overflow-auto rounded border bg-white p-2 shadow-md">
             {options.map((opt, i) => (
               <label
                 key={`${opt}-${i}`}
-                className="flex items-center space-x-2 py-1 hover:bg-gray-100 px-2 rounded cursor-pointer">
+                className="flex cursor-pointer items-center space-x-2 rounded px-2 py-1 hover:bg-gray-100">
                 <input
                   type="checkbox"
                   checked={selected.includes(opt)}
