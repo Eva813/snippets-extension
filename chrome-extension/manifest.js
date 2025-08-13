@@ -38,8 +38,8 @@ const manifest = {
     'https://linxly-nextjs.vercel.app/*',
     'http://localhost:3000/*',
   ],
-  permissions: ['storage', 'windows', 'activeTab', 'contextMenus'],
-  // optional_permissions: ['scripting', 'notifications', 'cookies', 'tabs', 'sidePanel'],
+  permissions: ['storage', 'windows', 'activeTab', 'contextMenus', 'tabs', 'notifications'],
+  // optional_permissions: ['notifications', 'cookies', 'sidePanel'],
   options_page: 'options/index.html',
   background: {
     service_worker: 'background.iife.js',

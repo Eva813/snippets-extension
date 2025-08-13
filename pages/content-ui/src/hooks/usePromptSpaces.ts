@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { PromptSpace, PromptSpacesApiResponse } from '../types/sidePanel';
 import { CHROME_ACTIONS, INITIAL_SPACE_ID } from '../constants/sidePanel';
 
@@ -21,6 +21,19 @@ export const usePromptSpaces = ({ onSpaceSelected }: UsePromptSpacesProps = {}):
   const [promptSpaces, setPromptSpaces] = useState<PromptSpace[]>([]);
   const [selectedPromptSpace, setSelectedPromptSpace] = useState<string>(INITIAL_SPACE_ID);
   const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Timer 相關 refs
+  const setDefaultSpaceTimerRef = useRef<number | null>(null);
+  const lastSpaceIdRef = useRef<string | null>(null);
+
+  // 清理 timer 的 effect
+  useEffect(() => {
+    return () => {
+      if (setDefaultSpaceTimerRef.current) {
+        clearTimeout(setDefaultSpaceTimerRef.current);
+      }
+    };
+  }, []);
 
   const convertApiResponseToSpaces = useCallback((response: PromptSpacesApiResponse): PromptSpace[] => {
     if (!response.success || !response.data) return [];
@@ -73,13 +86,10 @@ export const usePromptSpaces = ({ onSpaceSelected }: UsePromptSpacesProps = {}):
 
   const fetchPromptSpaces = useCallback(async () => {
     try {
-      const response = await new Promise<PromptSpacesApiResponse>((resolve) => {
-        chrome.runtime.sendMessage(
-          { action: CHROME_ACTIONS.GET_PROMPT_SPACES },
-          (res) => resolve(res)
-        );
+      const response = await new Promise<PromptSpacesApiResponse>(resolve => {
+        chrome.runtime.sendMessage({ action: CHROME_ACTIONS.GET_PROMPT_SPACES }, res => resolve(res));
       });
-      
+
       if (response && response.success && response.data) {
         const spaces = convertApiResponseToSpaces(response);
         setPromptSpaces(spaces);
@@ -94,8 +104,53 @@ export const usePromptSpaces = ({ onSpaceSelected }: UsePromptSpacesProps = {}):
   }, [convertApiResponseToSpaces, selectInitialSpace]);
 
   const handlePromptSpaceChange = useCallback((spaceId: string) => {
-    console.log('Changing prompt space to:', spaceId);
+    console.log('🔄 Changing prompt space to:', spaceId);
     setSelectedPromptSpace(spaceId);
+
+    // 🔥 新增：立即設定本地預設空間，不等待 10 秒
+    if (spaceId !== INITIAL_SPACE_ID && spaceId !== '__loading__') {
+      chrome.storage.local.set({ currentDefaultSpaceId: spaceId }, () => {
+        console.log('💾 Immediately saved current default space:', spaceId);
+      });
+    }
+
+    // 清除現有的計時器
+    if (setDefaultSpaceTimerRef.current) {
+      clearTimeout(setDefaultSpaceTimerRef.current);
+      setDefaultSpaceTimerRef.current = null;
+      console.log('⏰ Cleared existing setDefaultSpace timer');
+    }
+
+    // 啟動 API 更新計時器（用於後端同步）
+    if (spaceId !== INITIAL_SPACE_ID && spaceId !== '__loading__') {
+      console.log('⏱️ Starting 10-second timer for API sync:', spaceId);
+      lastSpaceIdRef.current = spaceId;
+
+      setDefaultSpaceTimerRef.current = setTimeout(() => {
+        // 雙重檢查：確保用戶還在同一個 space
+        if (lastSpaceIdRef.current === spaceId) {
+          console.log('🎯 Timer triggered: Syncing default space to API:', spaceId);
+
+          chrome.runtime.sendMessage(
+            {
+              action: CHROME_ACTIONS.SET_DEFAULT_SPACE,
+              spaceId: spaceId,
+            },
+            response => {
+              if (response?.success) {
+                console.log('✅ Successfully synced default space to API:', spaceId);
+              } else {
+                console.warn('⚠️ API sync failed, but local setting preserved:', response?.error);
+              }
+            },
+          );
+        } else {
+          console.log('⚠️ User switched to different space, skipping setDefaultSpace');
+        }
+
+        setDefaultSpaceTimerRef.current = null;
+      }, 10000); // 10 秒 = 10000ms
+    }
   }, []);
 
   return {
