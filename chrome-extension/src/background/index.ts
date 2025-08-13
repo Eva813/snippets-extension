@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'webextension-polyfill';
 import { fetchFolders } from './utils/fetchFolders';
-import { fetchPromptSpaces } from './utils/fetchPromptSpaces';
+import { fetchPromptSpaces, type PromptSpacesResponse, type PromptSpace } from './utils/fetchPromptSpaces';
 import { fetchSpaceFolders, type FolderData } from './utils/fetchSpaceFolders';
 import { getDefaultSpaceIdFromApiData, getDefaultSpaceIdFromCache } from './utils/getDefaultSpaceId';
 import { setDefaultSpace } from './utils/setDefaultSpace';
 import { createPrompt } from './utils/createPrompt';
-import { openLoginPage } from './config/api';
+import { openLoginPage, getApiDomain } from './config/api';
 
 // 定義類型
 interface PopupData {
@@ -106,8 +106,7 @@ let targetTabId: number | null | undefined = null;
  */
 async function openPromptPage(promptId: string, spaceId?: string): Promise<void> {
   try {
-    const { apiDomain } = await chrome.storage.local.get(['apiDomain']);
-    const baseUrl = apiDomain || 'http://localhost:3000';
+    const baseUrl = await getApiDomain();
     let promptUrl = `${baseUrl}/prompts/prompt/${promptId}`;
 
     // 如果有 spaceId，添加查詢參數
@@ -186,8 +185,8 @@ interface SmartDestination {
 /**
  * 合併所有可用的空間（owned + shared）
  */
-function getAllAvailableSpaces(spacesData: any): any[] {
-  return [...spacesData.ownedSpaces, ...spacesData.sharedSpaces.map((s: any) => s.space)];
+function getAllAvailableSpaces(spacesData: PromptSpacesResponse): PromptSpace[] {
+  return [...spacesData.ownedSpaces, ...spacesData.sharedSpaces.map(s => s.space)];
 }
 
 /**
@@ -200,7 +199,7 @@ function isCacheValid(timestamp: number | undefined, ttl: number): boolean {
 /**
  * 驗證指定的空間 ID 是否在可用空間列表中
  */
-function isSpaceValid(spaceId: string, availableSpaces: any[]): boolean {
+function isSpaceValid(spaceId: string, availableSpaces: PromptSpace[]): boolean {
   return availableSpaces.some(space => space.id === spaceId);
 }
 

@@ -28,8 +28,8 @@ function validateCreatePromptRequest(request: CreatePromptRequest): string | nul
   if (!request.pageTitle || request.pageTitle.length > VALIDATION_LIMITS.MAX_PAGE_TITLE_LENGTH) {
     return `Page title is required and must be less than ${VALIDATION_LIMITS.MAX_PAGE_TITLE_LENGTH} characters`;
   }
-  if (!request.pageUrl || request.pageUrl.length > VALIDATION_LIMITS.MAX_PAGE_URL_LENGTH) {
-    return `Page URL is required and must be less than ${VALIDATION_LIMITS.MAX_PAGE_URL_LENGTH} characters`;
+  if (request.pageUrl.length > VALIDATION_LIMITS.MAX_PAGE_URL_LENGTH) {
+    return `Page URL must be less than ${VALIDATION_LIMITS.MAX_PAGE_URL_LENGTH} characters`;
   }
   if (!request.promptSpaceId) {
     return 'Prompt space ID is required';

@@ -129,7 +129,11 @@ export const usePromptSpaces = ({ onSpaceSelected }: UsePromptSpacesProps = {}):
               action: CHROME_ACTIONS.SET_DEFAULT_SPACE,
               spaceId: spaceId,
             },
-            () => {},
+            response => {
+              if (chrome.runtime.lastError || !response?.success) {
+                console.error('Failed to set default space:', chrome.runtime.lastError?.message || response?.error);
+              }
+            },
           );
         }
 

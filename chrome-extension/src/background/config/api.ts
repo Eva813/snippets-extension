@@ -35,12 +35,8 @@ export async function getUserId(): Promise<string | null> {
     // First, try to get userId from storage
     const { userId } = await chrome.storage.local.get(['userId']);
     if (userId) {
-      console.log('✅ Found user ID in storage:', userId);
       return userId;
     }
-
-    // If no userId in storage, try to extract from cached prompt spaces
-    console.log('🔍 No user ID in storage, trying to extract from prompt spaces...');
 
     const { promptSpaces } = await chrome.storage.local.get(['promptSpaces']);
     if (promptSpaces && promptSpaces.ownedSpaces && promptSpaces.ownedSpaces.length > 0) {
@@ -48,15 +44,13 @@ export async function getUserId(): Promise<string | null> {
       if (extractedUserId) {
         // Cache the user ID for future use
         await chrome.storage.local.set({ userId: extractedUserId });
-        console.log('✅ Extracted and cached user ID from prompt spaces:', extractedUserId);
         return extractedUserId;
       }
     }
 
-    console.warn('⚠️ No user ID found in storage or prompt spaces data');
     return null;
   } catch (error) {
-    console.error('❌ Error getting user ID:', error);
+    console.error('Error getting user ID:', error);
     return null;
   }
 }
