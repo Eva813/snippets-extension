@@ -1,8 +1,8 @@
-const DEFAULT_API_DOMAIN = 'http://localhost:3000';
+import { getApiDomain, checkUserLoginStatus } from '../config/api';
 
 export async function fetchFolders(promptSpaceId: string) {
   try {
-    const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
+    const userLoggedIn = await checkUserLoginStatus();
     if (!userLoggedIn) {
       return { success: false, error: 'User not logged in' };
     }
@@ -11,7 +11,7 @@ export async function fetchFolders(promptSpaceId: string) {
       return { success: false, error: 'promptSpaceId is required' };
     }
 
-    const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
+    const baseUrl = await getApiDomain();
     const url = `${baseUrl}/api/v1/folders?promptSpaceId=${promptSpaceId}`;
     const resp = await fetch(url, {
       method: 'GET',

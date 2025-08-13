@@ -1,4 +1,4 @@
-const DEFAULT_API_DOMAIN = 'http://localhost:3000';
+import { getApiDomain, checkUserLoginStatus } from '../config/api';
 
 export interface PromptSpace {
   id: string;
@@ -27,12 +27,12 @@ export async function fetchPromptSpaces(): Promise<{
   error?: string;
 }> {
   try {
-    const { userLoggedIn, apiDomain } = await chrome.storage.local.get(['userLoggedIn', 'apiDomain']);
+    const userLoggedIn = await checkUserLoginStatus();
     if (!userLoggedIn) {
       return { success: false, error: 'User not logged in' };
     }
 
-    const baseUrl = apiDomain || DEFAULT_API_DOMAIN;
+    const baseUrl = await getApiDomain();
     const resp = await fetch(`${baseUrl}/api/v1/prompt-spaces`, {
       method: 'GET',
       headers: { 'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS },
@@ -55,6 +55,12 @@ export async function fetchPromptSpaces(): Promise<{
 
     // Store prompt spaces in chrome storage
     await chrome.storage.local.set({ promptSpaces: data });
+
+    // Extract and cache user ID from owned spaces
+    if (data.ownedSpaces && data.ownedSpaces.length > 0) {
+      const userId = data.ownedSpaces[0].userId;
+      await chrome.storage.local.set({ userId });
+    }
 
     return {
       success: true,

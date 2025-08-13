@@ -9,6 +9,7 @@ export const CHROME_ACTIONS = {
   UPDATE_ICON: 'updateIcon',
   SIDE_PANEL_INSERT_PROMPT: 'sidePanelInsertPrompt',
   CREATE_WINDOW: 'createWindow',
+  SET_DEFAULT_SPACE: 'setDefaultSpace',
 } as const;
 
 // Error messages

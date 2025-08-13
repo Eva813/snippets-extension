@@ -38,8 +38,8 @@ const manifest = {
     'https://linxly-nextjs.vercel.app/*',
     'http://localhost:3000/*',
   ],
-  permissions: ['storage', 'windows', 'activeTab'],
-  // optional_permissions: ['scripting', 'notifications', 'cookies', 'tabs', 'sidePanel'],
+  permissions: ['storage', 'windows', 'activeTab', 'contextMenus', 'tabs', 'notifications'],
+  // optional_permissions: ['notifications', 'cookies', 'sidePanel'],
   options_page: 'options/index.html',
   background: {
     service_worker: 'background.iife.js',
@@ -52,7 +52,8 @@ const manifest = {
   icons: {
     128: 'icon-128.png',
     48: 'icon-48.png',
-    34: 'icon-34-gray.png',
+    34: 'icon-34.png',
+    16: 'icon-34.png', // Context Menu 使用的 icon
   },
   content_scripts: [
     {
