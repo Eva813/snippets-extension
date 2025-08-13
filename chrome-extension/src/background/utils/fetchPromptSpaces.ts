@@ -60,7 +60,6 @@ export async function fetchPromptSpaces(): Promise<{
     if (data.ownedSpaces && data.ownedSpaces.length > 0) {
       const userId = data.ownedSpaces[0].userId;
       await chrome.storage.local.set({ userId });
-      console.log('✅ Cached user ID from prompt spaces:', userId);
     }
 
     return {

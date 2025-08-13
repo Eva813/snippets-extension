@@ -77,6 +77,23 @@ const SidePanel: React.FC<SidePanelProps> = ({
       setIsLoading(true);
       setLoadError(null);
 
+      // 0. 通知 background script 清除快取
+      try {
+        await new Promise<void>(resolve => {
+          chrome.runtime.sendMessage({ action: 'invalidatePromptSpacesCache' }, response => {
+            if (response?.success) {
+              console.log('🧹 Successfully cleared prompt spaces cache');
+            } else {
+              console.warn('⚠️ Failed to clear cache, but continuing with reload');
+            }
+            resolve();
+          });
+        });
+      } catch (cacheError) {
+        console.warn('⚠️ Error clearing cache:', cacheError);
+        // Continue with reload even if cache clearing fails
+      }
+
       // 1. Reload prompt spaces list (may have new/deleted spaces)
       try {
         await fetchPromptSpaces();

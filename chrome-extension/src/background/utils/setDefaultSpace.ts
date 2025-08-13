@@ -47,24 +47,16 @@ export async function setDefaultSpace(spaceId: string): Promise<{
 
     // Update the prompt spaces cache to reflect the new default
     const { promptSpaces } = await chrome.storage.local.get(['promptSpaces']);
-    if (promptSpaces) {
-      // Reset all defaultSpace flags
-      if (promptSpaces.ownedSpaces) {
-        promptSpaces.ownedSpaces.forEach((space: any) => {
-          space.defaultSpace = space.id === spaceId;
-        });
-      }
-      if (promptSpaces.sharedSpaces) {
-        promptSpaces.sharedSpaces.forEach((sharedSpace: any) => {
-          sharedSpace.space.defaultSpace = sharedSpace.space.id === spaceId;
-        });
-      }
+    if (promptSpaces && promptSpaces.ownedSpaces) {
+      // Reset all defaultSpace flags for owned spaces only
+      promptSpaces.ownedSpaces.forEach((space: SetDefaultSpaceResponse) => {
+        space.defaultSpace = space.id === spaceId;
+      });
 
       // Update the cache
       await chrome.storage.local.set({ promptSpaces });
     }
 
-    console.log('✅ Successfully set default space:', spaceId);
     return {
       success: true,
       data,

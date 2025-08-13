@@ -34,7 +34,68 @@ type RuntimeMessage =
   | { action: 'userLoggedOut' }
   | { action: 'getPromptByShortcut'; shortcut: string }
   | { action: 'addToPromptBear'; selectedText: string; pageUrl?: string; pageTitle?: string }
-  | { action: 'setDefaultSpace'; spaceId: string };
+  | { action: 'setDefaultSpace'; spaceId: string }
+  | { action: 'invalidatePromptSpacesCache' };
+
+// 常數定義
+const PROMPT_SPACES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const EMPTY_DESTINATION: SmartDestination = { targetSpaceId: null, targetFolderId: null };
+const PAGE_TITLE_CONFIG = {
+  MAX_LENGTH: 100,
+  FALLBACK: 'Untitled',
+} as const;
+
+/**
+ * 清理和縮短頁面標題
+ */
+function sanitizePageTitle(title: string): string {
+  if (!title || !title.trim()) {
+    return PAGE_TITLE_CONFIG.FALLBACK;
+  }
+
+  let cleanTitle = title.trim();
+
+  // 移除常見的網站後綴和行銷用語
+  const suffixesToRemove = [
+    / - YouTube$/i,
+    / \| Facebook$/i,
+    / \| Twitter$/i,
+    / \| LinkedIn$/i,
+    / - Wikipedia$/i,
+    / \| Medium$/i,
+    / - GitHub$/i,
+    / \| Stack Overflow$/i,
+    / - Google Search$/i,
+    / - Google$/i,
+    / \| Reddit$/i,
+    / - Amazon\.com$/i,
+    / \| 首頁$/i,
+    / \| 官網$/i,
+    / - 官方網站$/i,
+  ];
+
+  suffixesToRemove.forEach(suffix => {
+    cleanTitle = cleanTitle.replace(suffix, '');
+  });
+
+  // 移除多餘的標點符號和空白
+  cleanTitle = cleanTitle
+    .replace(/\s+/g, ' ')
+    .replace(/[|\-–—]\s*$/, '')
+    .trim();
+
+  // 如果清理後為空，使用原標題的前段
+  if (!cleanTitle) {
+    cleanTitle = title.trim();
+  }
+
+  // 截斷到最大長度
+  if (cleanTitle.length > PAGE_TITLE_CONFIG.MAX_LENGTH) {
+    cleanTitle = cleanTitle.substring(0, PAGE_TITLE_CONFIG.MAX_LENGTH - 3) + '...';
+  }
+
+  return cleanTitle || PAGE_TITLE_CONFIG.FALLBACK;
+}
 
 // 全域狀態
 let popupData: PopupData | null = null;
@@ -45,8 +106,6 @@ let targetTabId: number | null | undefined = null;
  */
 async function openPromptPage(promptId: string, spaceId?: string): Promise<void> {
   try {
-    console.log('🔗 Opening prompt page:', { promptId, spaceId });
-
     const { apiDomain } = await chrome.storage.local.get(['apiDomain']);
     const baseUrl = apiDomain || 'http://localhost:3000';
     let promptUrl = `${baseUrl}/prompts/prompt/${promptId}`;
@@ -56,15 +115,12 @@ async function openPromptPage(promptId: string, spaceId?: string): Promise<void>
       promptUrl += `?spaceId=${spaceId}`;
     }
 
-    console.log('🔗 Final prompt URL:', promptUrl);
-
     // 檢查 chrome.tabs 是否可用
     if (!chrome?.tabs?.create) {
       throw new Error('chrome.tabs.create is not available in this context');
     }
 
-    const tab = await chrome.tabs.create({ url: promptUrl });
-    console.log('✅ Tab created successfully, tab ID:', tab.id);
+    await chrome.tabs.create({ url: promptUrl });
 
     // 顯示成功通知
     if (chrome.notifications?.create) {
@@ -125,97 +181,106 @@ interface SmartDestination {
   targetFolderId: string | null;
 }
 
+// 輔助函式
+
+/**
+ * 合併所有可用的空間（owned + shared）
+ */
+function getAllAvailableSpaces(spacesData: any): any[] {
+  return [...spacesData.ownedSpaces, ...spacesData.sharedSpaces.map((s: any) => s.space)];
+}
+
+/**
+ * 檢查快取是否仍然有效
+ */
+function isCacheValid(timestamp: number | undefined, ttl: number): boolean {
+  return timestamp !== undefined && Date.now() - timestamp < ttl;
+}
+
+/**
+ * 驗證指定的空間 ID 是否在可用空間列表中
+ */
+function isSpaceValid(spaceId: string, availableSpaces: any[]): boolean {
+  return availableSpaces.some(space => space.id === spaceId);
+}
+
 async function getSmartDestination(): Promise<SmartDestination> {
   console.log('🎯 Starting smart destination selection...');
 
   try {
-    // 1. 首先檢查是否有最近由 side panel 設定的預設空間
-    const { currentDefaultSpaceId } = await chrome.storage.local.get(['currentDefaultSpaceId']);
+    // === STEP 1: Get User Preferences ===
+    const { currentDefaultSpaceId: userSelectedSpaceId } = await chrome.storage.local.get(['currentDefaultSpaceId']);
 
-    // 2. 強制重新獲取最新的 Spaces 資料（不使用快取）
-    console.log('🔄 Fetching latest prompt spaces to ensure up-to-date default...');
-    const spacesResult = await fetchPromptSpaces();
-    if (!spacesResult.success || !spacesResult.data) {
-      console.error('❌ Failed to fetch prompt spaces:', spacesResult.error);
-      return { targetSpaceId: null, targetFolderId: null };
+    // === STEP 2: Get Spaces Data (with Smart Caching) ===
+    const { promptSpaces, promptSpacesTimestamp } = await chrome.storage.local.get([
+      'promptSpaces',
+      'promptSpacesTimestamp',
+    ]);
+
+    const isRecentCache = isCacheValid(promptSpacesTimestamp, PROMPT_SPACES_CACHE_TTL);
+
+    let spacesResult;
+    if (isRecentCache && promptSpaces) {
+      // 使用快取，立即回應
+      spacesResult = { success: true, data: promptSpaces };
+    } else {
+      // 重新獲取並更新快取
+      console.log('🔄 Fetching latest prompt spaces (cache', promptSpacesTimestamp ? 'expired' : 'missing', ')...');
+      spacesResult = await fetchPromptSpaces();
+      if (spacesResult.success && spacesResult.data) {
+        // 更新快取
+        await chrome.storage.local.set({
+          promptSpaces: spacesResult.data,
+          promptSpacesTimestamp: Date.now(),
+        });
+      }
     }
 
-    console.log(
-      '✅ Successfully fetched spaces:',
-      spacesResult.data.ownedSpaces.length,
-      'owned,',
-      spacesResult.data.sharedSpaces.length,
-      'shared',
-    );
+    if (!spacesResult.success || !spacesResult.data) {
+      console.error('❌ Failed to get prompt spaces:', spacesResult.error);
+      return EMPTY_DESTINATION;
+    }
 
+    // === STEP 3: Select Target Space ===
     let targetSpaceId: string | null = null;
 
-    // 3. 優先使用 side panel 設定的預設空間（如果有效）
-    if (currentDefaultSpaceId) {
-      const allSpaces = [...spacesResult.data.ownedSpaces, ...spacesResult.data.sharedSpaces.map(s => s.space)];
-      const isValidSpace = allSpaces.some(space => space.id === currentDefaultSpaceId);
+    // 優先使用 side panel 設定的預設空間（如果有效）
+    if (userSelectedSpaceId) {
+      const allAvailableSpaces = getAllAvailableSpaces(spacesResult.data);
 
-      if (isValidSpace) {
-        targetSpaceId = currentDefaultSpaceId;
-        console.log(
-          '🎯 Using side panel selected default space:',
-          getSpaceNameById(spacesResult.data, currentDefaultSpaceId),
-          '(ID:',
-          currentDefaultSpaceId,
-          ')',
-        );
+      if (isSpaceValid(userSelectedSpaceId, allAvailableSpaces)) {
+        targetSpaceId = userSelectedSpaceId;
       } else {
         console.warn('⚠️ Side panel selected space no longer exists, falling back to API default');
       }
     }
 
-    // 4. 如果沒有有效的 side panel 設定，使用 API 回傳的預設空間
+    // 回退：使用 API 回傳的預設空間
     if (!targetSpaceId) {
       targetSpaceId = getDefaultSpaceIdFromApiData(spacesResult.data);
-      if (targetSpaceId) {
-        const selectedSpaceName = getSpaceNameById(spacesResult.data, targetSpaceId);
-        console.log('🎯 Using API default space:', selectedSpaceName || 'Unknown', '(ID:', targetSpaceId, ')');
-      }
     }
 
     if (!targetSpaceId) {
-      console.warn('⚠️ No default space found in latest data');
-      return { targetSpaceId: null, targetFolderId: null };
+      console.warn('⚠️ No default space found');
+      return EMPTY_DESTINATION;
     }
 
-    // 5. 獲取該 Space 的資料夾列表
+    // === STEP 4: Select Target Folder ===
     const foldersResult = await fetchSpaceFolders(targetSpaceId);
     if (!foldersResult.success || !foldersResult.data || foldersResult.data.length === 0) {
       console.warn('⚠️ No folders found in space:', targetSpaceId, '- returning space only');
       return { targetSpaceId, targetFolderId: null };
     }
 
-    // 6. 選擇最佳資料夾（通常是第一個）
     const selectedFolder = selectBestFolder(foldersResult.data);
-    console.log('✅ Selected target folder:', selectedFolder.name, '(ID:', selectedFolder.id, ')');
-
-    console.log('🎉 Smart destination selection completed successfully');
     return {
       targetSpaceId,
       targetFolderId: selectedFolder.id,
     };
   } catch (error) {
     console.error('❌ Critical error in getSmartDestination:', error);
-    return { targetSpaceId: null, targetFolderId: null };
+    return EMPTY_DESTINATION;
   }
-}
-
-// 根據 ID 獲取 Space 名稱
-function getSpaceNameById(spacesData: any, spaceId: string): string | null {
-  // 在 owned spaces 中尋找
-  const ownedSpace = spacesData.ownedSpaces?.find((space: any) => space.id === spaceId);
-  if (ownedSpace) return ownedSpace.name;
-
-  // 在 shared spaces 中尋找
-  const sharedSpace = spacesData.sharedSpaces?.find((sharedSpace: any) => sharedSpace.space.id === spaceId);
-  if (sharedSpace) return sharedSpace.space.name;
-
-  return null;
 }
 
 // 選擇最佳資料夾
@@ -237,7 +302,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === 'addToPromptBear') {
     const selectedText = info.selectionText || '';
     const pageUrl = tab?.url || '';
-    const pageTitle = tab?.title || '';
+    const pageTitle = sanitizePageTitle(tab?.title || '');
 
     console.log('=== Add to PromptBear (New API) ===');
     console.log('Selected text length:', selectedText.length);
@@ -259,8 +324,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         return;
       }
 
-      console.log('🔍 Starting smart destination selection...');
-
       // 智能選擇目標 Space 和 Folder
       const { targetSpaceId, targetFolderId } = await getSmartDestination();
 
@@ -269,13 +332,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         // TODO: 可以在這裡顯示錯誤通知
         return;
       }
-
-      console.log('✅ Smart destination selected:', {
-        targetSpaceId,
-        targetFolderId: targetFolderId || 'auto-select',
-      });
-
-      console.log('🚀 Creating prompt via API...');
 
       // 使用新的 API 直接創建 prompt
       const result = await createPrompt({
@@ -293,11 +349,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           shortcut: result.data.shortcut,
         });
 
-        // 跳轉到新創建的 prompt 頁面，包含 spaceId 參數
-        console.log('🔗 Opening new prompt in PromptBear:', result.data.id, 'in space:', targetSpaceId);
         await openPromptPage(result.data.id, targetSpaceId);
       } else {
-        console.error('❌ Failed to create prompt:', result.error);
+        console.error('Failed to create prompt:', result.error);
 
         // 根據錯誤類型提供不同的處理
         if (result.error?.includes('not logged in') || result.error?.includes('user ID')) {
@@ -509,6 +563,16 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       }
     } catch (error) {
       console.error('❌ Error in setDefaultSpace handler:', error);
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
+    }
+  },
+  invalidatePromptSpacesCache: async (_, sendResponse) => {
+    try {
+      await chrome.storage.local.remove(['promptSpaces', 'promptSpacesTimestamp']);
+      console.log('🧹 Prompt spaces cache cleared by side panel reload');
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('❌ Error clearing prompt spaces cache:', error);
       sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
     }
   },

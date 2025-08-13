@@ -98,60 +98,58 @@ export const usePromptSpaces = ({ onSpaceSelected }: UsePromptSpacesProps = {}):
         setHasInitialized(true);
       }
     } catch (error) {
-      console.error('Error fetching prompt spaces:', error);
       setHasInitialized(true);
     }
   }, [convertApiResponseToSpaces, selectInitialSpace]);
 
-  const handlePromptSpaceChange = useCallback((spaceId: string) => {
-    console.log('🔄 Changing prompt space to:', spaceId);
-    setSelectedPromptSpace(spaceId);
-
-    // 🔥 新增：立即設定本地預設空間，不等待 10 秒
+  // 輔助函式：本地儲存
+  const saveToLocalStorage = useCallback((spaceId: string) => {
     if (spaceId !== INITIAL_SPACE_ID && spaceId !== '__loading__') {
-      chrome.storage.local.set({ currentDefaultSpaceId: spaceId }, () => {
-        console.log('💾 Immediately saved current default space:', spaceId);
-      });
+      chrome.storage.local.set({ currentDefaultSpaceId: spaceId });
     }
+  }, []);
 
-    // 清除現有的計時器
+  // 輔助函式：API 同步排程
+  const scheduleApiSync = useCallback((spaceId: string) => {
+    // 清除現有計時器
     if (setDefaultSpaceTimerRef.current) {
       clearTimeout(setDefaultSpaceTimerRef.current);
       setDefaultSpaceTimerRef.current = null;
-      console.log('⏰ Cleared existing setDefaultSpace timer');
     }
 
-    // 啟動 API 更新計時器（用於後端同步）
+    // 設定新計時器
     if (spaceId !== INITIAL_SPACE_ID && spaceId !== '__loading__') {
-      console.log('⏱️ Starting 10-second timer for API sync:', spaceId);
       lastSpaceIdRef.current = spaceId;
 
       setDefaultSpaceTimerRef.current = setTimeout(() => {
         // 雙重檢查：確保用戶還在同一個 space
         if (lastSpaceIdRef.current === spaceId) {
-          console.log('🎯 Timer triggered: Syncing default space to API:', spaceId);
-
           chrome.runtime.sendMessage(
             {
               action: CHROME_ACTIONS.SET_DEFAULT_SPACE,
               spaceId: spaceId,
             },
-            response => {
-              if (response?.success) {
-                console.log('✅ Successfully synced default space to API:', spaceId);
-              } else {
-                console.warn('⚠️ API sync failed, but local setting preserved:', response?.error);
-              }
-            },
+            () => {},
           );
-        } else {
-          console.log('⚠️ User switched to different space, skipping setDefaultSpace');
         }
 
         setDefaultSpaceTimerRef.current = null;
       }, 10000); // 10 秒 = 10000ms
     }
   }, []);
+
+  const handlePromptSpaceChange = useCallback(
+    (spaceId: string) => {
+      setSelectedPromptSpace(spaceId);
+
+      // 立即儲存到本地（讓 context menu 可以立即使用）
+      saveToLocalStorage(spaceId);
+
+      // 設定延遲 API 同步（避免頻繁呼叫）
+      scheduleApiSync(spaceId);
+    },
+    [saveToLocalStorage, scheduleApiSync],
+  );
 
   return {
     promptSpaces,
