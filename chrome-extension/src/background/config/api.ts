@@ -1,11 +1,16 @@
 /**
  * API 設定管理
  * 統一管理所有 API domain 設定
+ * 根據環境變數自動切換開發/生產域名
  */
 
+// 檢查是否為開發環境
+const isDev = process.env.__DEV__ === 'true';
+
 export const API_CONFIG = {
-  // 開發環境優先使用 localhost
-  DEFAULT_DOMAIN: 'http://localhost:3000',
+  // 根據環境動態設定預設域名
+  DEFAULT_DOMAIN: isDev ? 'http://localhost:3000' : 'https://linxly-nextjs.vercel.app',
+  DEVELOPMENT_DOMAIN: 'http://localhost:3000',
   PRODUCTION_DOMAIN: 'https://linxly-nextjs.vercel.app',
 } as const;
 
