@@ -5,13 +5,17 @@
  */
 
 // 檢查是否為開發環境
-const isDev = process.env.__DEV__ === 'true';
+const isDev = import.meta.env.DEV;
+
+// 定義域名常量（避免重複）
+const DEVELOPMENT_DOMAIN = 'http://localhost:3000';
+const PRODUCTION_DOMAIN = 'https://linxly-nextjs.vercel.app';
 
 export const API_CONFIG = {
   // 根據環境動態設定預設域名
-  DEFAULT_DOMAIN: isDev ? 'http://localhost:3000' : 'https://linxly-nextjs.vercel.app',
-  DEVELOPMENT_DOMAIN: 'http://localhost:3000',
-  PRODUCTION_DOMAIN: 'https://linxly-nextjs.vercel.app',
+  DEFAULT_DOMAIN: isDev ? DEVELOPMENT_DOMAIN : PRODUCTION_DOMAIN,
+  DEVELOPMENT_DOMAIN,
+  PRODUCTION_DOMAIN,
 } as const;
 
 /**
