@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "default_locale": "en",
+  "name": "__MSG_extensionName__",
+  "commands": {
+    "toggle_side_panel": {
+      "suggested_key": {
+        "default": "Alt+E",
+        "mac": "Alt+E"
+      },
+      "description": "Toggle the side panel."
+    }
+  },
+  "version": "1.2.2",
+  "description": "__MSG_extensionDescription__",
+  "host_permissions": ["https://linxly-nextjs.vercel.app/*", "http://localhost:3000/*"],
+  "permissions": ["storage", "windows", "activeTab", "contextMenus", "tabs", "notifications"],
+  "options_page": "options/index.html",
+  "background": {
+    "service_worker": "background.iife.js",
+    "type": "module"
+  },
+  "action": {
+    "default_icon": "icon-34.png"
+  },
+  "icons": {
+    "16": "icon-34.png",
+    "34": "icon-34.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content/index.iife.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*/*"],
+      "js": ["content-ui/index.iife.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js", "*.css", "*.svg", "icon-128.png", "icon-34.png", "formLoader.html"],
+      "matches": ["*://*/*"]
+    }
+  ],
+  "externally_connectable": {
+    "matches": ["https://linxly-nextjs.vercel.app/*", "http://localhost:3000/*"]
+  }
+}

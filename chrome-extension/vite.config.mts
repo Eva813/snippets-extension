@@ -26,6 +26,9 @@ export default defineConfig({
     isDev && watchRebuildPlugin({ reload: true, id: 'chrome-extension-hmr' }),
   ],
   publicDir: resolve(rootDir, 'public'),
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
+  },
   build: {
     lib: {
       formats: ['iife'],
