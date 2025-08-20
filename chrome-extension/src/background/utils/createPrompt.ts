@@ -10,7 +10,8 @@ export interface CreatePromptRequest {
 export interface CreatePromptResponse {
   id: string;
   name: string;
-  content: string;
+  content: string; // HTML (向後相容)
+  contentJSON: unknown; // JSON (新格式)
   shortcut: string;
   seqNo: number;
 }

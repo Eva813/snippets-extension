@@ -3,14 +3,20 @@
  * 統一處理所有類型的內容插入
  */
 
-import { parseHtmlToText, generateElementPath, isEditableElement } from '../utils/utils';
+import { generateElementPath, isEditableElement } from '../utils/utils';
 import { findTextRangeNodes } from '../utils/findTextRangeNodes';
 import { insertIntoRange } from '../utils/insertIntoRange';
 import { getDeepActiveElement } from '../utils/getDeepActiveElement';
+import {
+  getContentForInsertion,
+  type SupportedContent,
+} from '../../../../chrome-extension/src/background/utils/tiptapConverter';
 
 export interface InsertionOptions {
-  /** 要插入的 HTML 內容 */
-  content: string;
+  /** 要插入的 HTML 內容 (向後相容) */
+  content?: string;
+  /** 要插入的 JSON 內容 (新格式) */
+  contentJSON?: SupportedContent;
   /** 目標元素（可選，默認使用當前活動元素） */
   targetElement?: HTMLElement;
   /** 插入位置資訊（可選，用於替換特定範圍的文字） */
@@ -33,16 +39,39 @@ const isDev = import.meta.env.MODE === 'development';
  * 處理所有類型的元素（input、textarea、contentEditable）
  */
 export async function insertContent(options: InsertionOptions): Promise<InsertionResult> {
-  const { content, targetElement, position, saveCursorPosition = true } = options;
+  const { content, contentJSON, targetElement, position, saveCursorPosition = true } = options;
+
+  console.log('🔧 insertContent called with options:', {
+    hasContent: !!content,
+    hasContentJSON: !!contentJSON,
+    targetElement: targetElement?.tagName,
+    position,
+    saveCursorPosition,
+  });
 
   // 1. 確定目標元素
   const element = targetElement || getDeepActiveElement();
   if (!element || !isEditableElement(element)) {
+    console.log('❌ insertContent: No editable element found');
     return { success: false, error: '找不到可編輯的目標元素' };
   }
 
-  // 2. 轉換內容
-  const plainTextContent = parseHtmlToText(content);
+  console.log('✅ insertContent: Target element found:', element.tagName);
+
+  // 2. 智能內容轉換 - 優先使用 JSON 格式
+  console.log('🔄 insertContent: Converting content...');
+  const plainTextContent = getContentForInsertion(contentJSON, content);
+
+  console.log('📝 insertContent: Final content for insertion:', {
+    plainTextContent,
+    length: plainTextContent.length,
+  });
+
+  // 檢查是否有內容可插入
+  if (!plainTextContent) {
+    console.log('❌ insertContent: No content to insert');
+    return { success: false, error: '沒有內容可插入' };
+  }
 
   try {
     let newCursorPosition: number;

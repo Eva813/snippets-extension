@@ -16,8 +16,17 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
     return;
   }
 
-  // Check if prompt.content contains 'data-prompt'
-  const hasFormField = prompt.content.includes('data-prompt');
+  // 檢查是否包含表單欄位 - 支援 JSON 和 HTML 格式
+  let hasFormField = false;
+  if (prompt.contentJSON) {
+    // JSON 格式：檢查是否包含 formtext 或 formmenu 節點
+    const jsonStr = JSON.stringify(prompt.contentJSON);
+    hasFormField = jsonStr.includes('"type":"formtext"') || jsonStr.includes('"type":"formmenu"');
+  } else {
+    // HTML 格式：檢查是否包含 data-prompt 屬性
+    hasFormField = prompt.content.includes('data-prompt');
+  }
+
   const title = `${prompt.shortcut} - ${prompt.name}`;
 
   if (!hasFormField) {
@@ -27,6 +36,7 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
         action: CHROME_ACTIONS.SIDE_PANEL_INSERT_PROMPT,
         prompt: {
           content: prompt.content,
+          contentJSON: prompt.contentJSON, // 🔧 修復：添加 contentJSON
           shortcut: prompt.shortcut,
           name: prompt.name,
         },
@@ -35,12 +45,12 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
     );
   } else {
     // Has form fields, create popup via background
-    const content = prompt.content;
     chrome.runtime.sendMessage(
       {
         action: CHROME_ACTIONS.CREATE_WINDOW,
         title,
-        content,
+        content: prompt.content,
+        contentJSON: prompt.contentJSON, // 🔧 修復：添加 contentJSON
       },
       response => {
         if (import.meta.env.MODE === 'development') {

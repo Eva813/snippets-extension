@@ -11,17 +11,19 @@ import { openLoginPage, getApiDomain } from './config/api';
 // 定義類型
 interface PopupData {
   title: string;
-  content: string | Record<string, unknown>;
+  content: string | Record<string, unknown>; // HTML (向後相容)
+  contentJSON?: unknown; // JSON (新格式)
 }
 
 interface PromptData {
-  content: string;
+  content: string; // HTML (向後相容)
+  contentJSON?: unknown; // JSON (新格式)
   shortcut: string;
   name: string;
 }
 
 type RuntimeMessage =
-  | { action: 'createWindow'; title: string; content: string }
+  | { action: 'createWindow'; title: string; content: string; contentJSON?: unknown }
   | { action: 'getPopupData' }
   | { action: 'submitForm'; finalOutput: string }
   | { action: 'sidePanelInsertPrompt'; prompt: PromptData }
@@ -502,13 +504,34 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
   },
   getPromptByShortcut: async (message, sendResponse) => {
     const { shortcut } = message as { action: 'getPromptByShortcut'; shortcut: string };
+    console.log('🔍 Background: getPromptByShortcut called for:', shortcut);
 
     try {
       // 從本地快取中查找 prompts
       const { prompts } = await chrome.storage.local.get('prompts');
+      console.log('📋 Background: Local prompts cache:', {
+        hasPrompts: !!prompts,
+        promptsType: typeof prompts,
+        promptsKeys: prompts ? Object.keys(prompts) : [],
+        targetPrompt: prompts?.[shortcut],
+      });
+
       if (prompts && typeof prompts === 'object') {
-        sendResponse({ success: true, prompt: prompts[shortcut] });
-        return;
+        const foundPrompt = prompts[shortcut];
+        if (foundPrompt) {
+          console.log('✅ Background: Found prompt in cache:', {
+            shortcut,
+            name: foundPrompt.name,
+            hasContent: !!foundPrompt.content,
+            hasContentJSON: !!foundPrompt.contentJSON,
+            contentPreview: foundPrompt.content?.slice(0, 100),
+            contentJSONPreview: foundPrompt.contentJSON ? JSON.stringify(foundPrompt.contentJSON).slice(0, 100) : 'N/A',
+          });
+          sendResponse({ success: true, prompt: foundPrompt });
+          return;
+        } else {
+          console.log('❌ Background: Prompt not found in cache for shortcut:', shortcut);
+        }
       }
 
       // 如果本地沒有 prompts，觸發 fetchFolders
@@ -584,6 +607,7 @@ function handleCreatePopupWindow(
   popupData = {
     title: message.title,
     content: message.content,
+    contentJSON: message.contentJSON,
   };
 
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
@@ -609,20 +633,43 @@ function handleFormSubmission(
   message: Extract<RuntimeMessage, { action: 'submitForm' }>,
   sendResponse: (response?: any) => void,
 ) {
+  console.log('📨 Background: handleFormSubmission 收到:', {
+    action: message.action,
+    hasFinalOutput: !!message.finalOutput,
+    finalOutputLength: message.finalOutput?.length || 0,
+    finalOutputPreview: message.finalOutput?.substring(0, 100),
+  });
+
   if (!targetTabId) {
-    console.error('No target tab id stored');
+    console.error('❌ Background: No target tab id stored');
     sendResponse({ success: false, error: 'No target tab id stored' });
     return;
   }
 
-  chrome.tabs.sendMessage(targetTabId, { action: 'insertPrompt', prompt: message.finalOutput }, response => {
-    if (chrome.runtime.lastError) {
-      console.error('Message send error:', chrome.runtime.lastError);
-      sendResponse({ success: false, error: chrome.runtime.lastError.message });
-      return;
-    }
-    sendResponse({ success: true, response });
+  console.log('🚀 Background: 發送表單結果到 content script:', {
+    targetTabId,
+    prompt: message.finalOutput,
+    promptLength: message.finalOutput?.length || 0,
   });
+
+  chrome.tabs.sendMessage(
+    targetTabId,
+    {
+      action: 'insertPrompt',
+      prompt: message.finalOutput,
+      promptJSON: null, // Form submissions generate HTML, not JSON
+      title: 'Form Submission Result',
+    },
+    response => {
+      if (chrome.runtime.lastError) {
+        console.error('❌ Background: Message send error:', chrome.runtime.lastError);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+        return;
+      }
+      console.log('📨 Background: 收到 content script 回應:', response);
+      sendResponse({ success: true, response });
+    },
+  );
 }
 
 function handleSidePanelInsert(
@@ -635,12 +682,22 @@ function handleSidePanelInsert(
       return;
     }
 
-    const { content, shortcut, name } = message.prompt;
+    const { content, contentJSON, shortcut, name } = message.prompt;
     const title = `${shortcut} - ${name}`;
 
-    chrome.tabs.sendMessage(tabs[0].id, { action: 'insertPrompt', prompt: content, title }, response => {
-      sendResponse({ success: true, response });
-    });
+    chrome.tabs.sendMessage(
+      tabs[0].id,
+      {
+        action: 'insertPrompt',
+        prompt: content, // 保持向後相容
+        promptJSON: contentJSON, // 新增 JSON 格式
+        title,
+      },
+      response => {
+        console.log('📨 Background: Received response from content script', response);
+        sendResponse({ success: true, response });
+      },
+    );
   });
 }
 

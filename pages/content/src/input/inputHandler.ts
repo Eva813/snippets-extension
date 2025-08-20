@@ -5,6 +5,7 @@ import { isEditableElement } from '../utils/utils';
 import { insertContent as insertContentService } from '../services/insertionService';
 import type { Prompt, CursorInfo } from '@src/types';
 import { updateCursorPosition } from '@src/cursor/cursorTracker';
+import type { SupportedContent } from '../../../../chrome-extension/src/background/utils/tiptapConverter';
 
 // 建立 debounce
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +25,14 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): (..
 
 const debouncedUpdateCursorPosition = debounce(updateCursorPosition, 300);
 
+// 為快捷鍵檢測創建 debounced 版本，使用較長的延遲以減少不必要的檢查
+const debouncedShortcutCheck = debounce(async (element: HTMLElement, cursorInfo: CursorInfo) => {
+  const prompt = await findShortcutNearCursor(cursorInfo);
+  if (prompt) {
+    await processPromptInsertion(prompt, element, cursorInfo);
+  }
+}, 500);
+
 export function initializeInputHandler() {
   document.addEventListener('input', handleInput);
 }
@@ -33,22 +42,19 @@ export function clearInputHandler(): void {
 }
 
 // 處理輸入事件 - 偵測快捷鍵並進行插入
-async function handleInput(event: Event) {
+function handleInput(event: Event) {
   const target = event.target as HTMLElement;
   const element = getDeepActiveElement();
   if (!isEditableElement(element)) {
     return;
   }
+
+  // 更新游標位置 (較短的 debounce)
   debouncedUpdateCursorPosition(target);
 
-  // 獲取游標資訊並尋找快捷鍵
+  // 獲取游標資訊並進行 debounced 快捷鍵檢測 (較長的 debounce)
   const cursorInfo = getCursorInfo(target);
-  const prompt = await findShortcutNearCursor(cursorInfo);
-
-  // 如果找到匹配的程式碼片段，則處理插入
-  if (prompt) {
-    await processPromptInsertion(prompt, element as HTMLElement, cursorInfo);
-  }
+  debouncedShortcutCheck(element as HTMLElement, cursorInfo);
 }
 
 // 在游標位置附近查找快捷鍵
@@ -93,12 +99,24 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Prompt | 
   return null;
 }
 async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
+  console.log('🔍 Checking prompt candidate:', candidate);
+
   // 先從本地快取查找
   const prompt = getPromptByShortcut(candidate);
   if (prompt) {
+    console.log('✅ Found local prompt:', {
+      shortcut: candidate,
+      name: prompt.name,
+      hasContent: !!prompt.content,
+      hasContentJSON: !!prompt.contentJSON,
+      contentPreview: prompt.content?.slice(0, 100),
+      contentJSONPreview: prompt.contentJSON ? JSON.stringify(prompt.contentJSON).slice(0, 100) : 'N/A',
+    });
+
     return {
       shortcut: candidate,
       content: prompt.content,
+      contentJSON: prompt.contentJSON,
       name: prompt.name,
     };
   }
@@ -116,11 +134,26 @@ async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
     });
 
     if (response?.prompt) {
+      console.log('✅ Found background prompt:', {
+        shortcut: candidate,
+        name: response.prompt.name,
+        hasContent: !!response.prompt.content,
+        hasContentJSON: !!response.prompt.contentJSON,
+        contentPreview: response.prompt.content?.slice(0, 100),
+        contentJSONPreview: response.prompt.contentJSON
+          ? JSON.stringify(response.prompt.contentJSON).slice(0, 100)
+          : 'N/A',
+        fullPromptData: response.prompt,
+      });
+
       return {
         shortcut: candidate,
         content: response.prompt.content,
+        contentJSON: response.prompt.contentJSON,
         name: response.prompt.name,
       };
+    } else {
+      console.log('❌ No prompt found in background response:', response);
     }
   } catch (error) {
     console.error('取得提示失敗:', error);
@@ -130,7 +163,16 @@ async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
 }
 
 async function processPromptInsertion(prompt: Prompt, element: HTMLElement, cursorInfo: CursorInfo) {
-  const hasFormField = prompt.content.includes('data-prompt');
+  // 檢查是否包含表單欄位 - 支援 JSON 和 HTML 格式
+  let hasFormField = false;
+  if (prompt.contentJSON) {
+    // JSON 格式：檢查是否包含 formtext 或 formmenu 節點
+    const jsonStr = JSON.stringify(prompt.contentJSON);
+    hasFormField = jsonStr.includes('"type":"formtext"') || jsonStr.includes('"type":"formmenu"');
+  } else {
+    // HTML 格式：檢查是否包含 data-prompt 屬性
+    hasFormField = prompt.content.includes('data-prompt');
+  }
 
   if (!hasFormField) {
     const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
@@ -141,11 +183,26 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
       end: cursorInfo.start,
     };
 
+    console.log('⚡ Shortcut: Direct insertion (no form)', {
+      shortcut: prompt.shortcut,
+      name: prompt.name,
+      hasContent: !!prompt.content,
+      hasContentJSON: !!prompt.contentJSON,
+      position,
+      targetElement: element.tagName,
+    });
+
     const result = await insertContentService({
       content: prompt.content,
+      contentJSON: prompt.contentJSON as SupportedContent,
       targetElement: element,
       position,
       saveCursorPosition: true,
+    });
+
+    console.log('📤 Shortcut: Direct insertion result', {
+      success: result.success,
+      error: result.error,
     });
 
     if (!result.success) {
@@ -165,5 +222,19 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
   await chrome.storage.local.set({ shortcutInfo });
 
   const title = `${prompt.shortcut} - ${prompt.name}`;
-  chrome.runtime.sendMessage({ action: 'createWindow', title, content: prompt.content });
+  console.log('🚀 Shortcut: Sending createWindow message', {
+    shortcut: prompt.shortcut,
+    name: prompt.name,
+    hasContent: !!prompt.content,
+    hasContentJSON: !!prompt.contentJSON,
+    contentJSONType: typeof prompt.contentJSON,
+    contentPreview: prompt.content?.slice(0, 100),
+  });
+
+  chrome.runtime.sendMessage({
+    action: 'createWindow',
+    title,
+    content: prompt.content,
+    contentJSON: prompt.contentJSON,
+  });
 }
