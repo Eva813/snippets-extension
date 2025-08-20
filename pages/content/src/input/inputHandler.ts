@@ -6,6 +6,8 @@ import { insertContent as insertContentService } from '../services/insertionServ
 import type { Prompt, CursorInfo } from '@src/types';
 import { updateCursorPosition } from '@src/cursor/cursorTracker';
 import type { SupportedContent } from '../../../../chrome-extension/src/background/utils/tiptapConverter';
+import { logger } from '@extension/shared/lib/logging/logger';
+import { hasFormField } from '@extension/shared/lib/utils/formFieldDetector';
 
 // 建立 debounce
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,7 +33,7 @@ const debouncedShortcutCheck = debounce(async (element: HTMLElement, cursorInfo:
   if (prompt) {
     await processPromptInsertion(prompt, element, cursorInfo);
   }
-}, 500);
+}, 750);
 
 export function initializeInputHandler() {
   document.addEventListener('input', handleInput);
@@ -67,30 +69,35 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Prompt | 
   // 取得最後一行的文字
   const lastLineText = lastNewLineIndex >= 0 ? textToCheck.substring(lastNewLineIndex + 1) : textToCheck;
 
+  // 用 Set 來追蹤已經檢查過的候選者，避免重複檢查
+  const checkedCandidates = new Set<string>();
+
   // 策略 1: 優先檢查常見的前綴格式 (如 /, #, ! 等)
   const prefixMatch = lastLineText.match(/[/#!@][a-zA-Z0-9_-]+$/);
   if (prefixMatch) {
     const prefixCandidate = prefixMatch[0];
+    checkedCandidates.add(prefixCandidate);
     const result = await checkPromptCandidate(prefixCandidate);
     if (result) return result;
   }
 
   // 策略 2: 檢查以空白分隔的最後一個單詞
   const lastWord = lastLineText.trim().split(/\s+/).pop() || '';
-  if (lastWord) {
+  if (lastWord && !checkedCandidates.has(lastWord)) {
+    checkedCandidates.add(lastWord);
     const result = await checkPromptCandidate(lastWord);
     if (result) return result;
   }
 
-  // 策略 3: 漸進式檢查 (限制在合理範圍，如 5 個字元)，只檢查最後幾個字元，而不是整行
-  const maxLength = Math.min(5, lastLineText.trim().length);
+  // 策略 3: 漸進式檢查 (限制在合理範圍，如 3 個字元)，減少無效查找
+  const maxLength = Math.min(3, lastLineText.trim().length);
   const trimmedEnd = lastLineText.trim().slice(-maxLength);
 
-  // 從最短的可能快捷鍵開始檢查 (至少 1 個字元)
-  for (let i = 1; i <= maxLength; i++) {
+  // 從最短的可能快捷鍵開始檢查
+  for (let i = MIN_SHORTCUT_LENGTH; i <= maxLength; i++) {
     const candidate = trimmedEnd.slice(-i);
-    if (candidate !== lastWord) {
-      // 避免重複檢查
+    if (!checkedCandidates.has(candidate)) {
+      checkedCandidates.add(candidate);
       const result = await checkPromptCandidate(candidate);
       if (result) return result;
     }
@@ -98,27 +105,36 @@ async function findShortcutNearCursor(cursorInfo: CursorInfo): Promise<Prompt | 
 
   return null;
 }
+// 去重和負面結果快取
+const recentChecks = new Map<string, { timestamp: number; result: Prompt | null }>();
+const CACHE_TTL = 2000; // 2秒快取
+const MIN_SHORTCUT_LENGTH = 2; // 最小快捷鍵長度
+
 async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
-  console.log('🔍 Checking prompt candidate:', candidate);
+  // 檢查最小長度
+  if (!candidate || candidate.length < MIN_SHORTCUT_LENGTH) {
+    return null;
+  }
+
+  // 檢查去重快取
+  const cached = recentChecks.get(candidate);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.result;
+  }
 
   // 先從本地快取查找
   const prompt = getPromptByShortcut(candidate);
   if (prompt) {
-    console.log('✅ Found local prompt:', {
-      shortcut: candidate,
-      name: prompt.name,
-      hasContent: !!prompt.content,
-      hasContentJSON: !!prompt.contentJSON,
-      contentPreview: prompt.content?.slice(0, 100),
-      contentJSONPreview: prompt.contentJSON ? JSON.stringify(prompt.contentJSON).slice(0, 100) : 'N/A',
-    });
-
-    return {
+    const result = {
       shortcut: candidate,
       content: prompt.content,
       contentJSON: prompt.contentJSON,
       name: prompt.name,
     };
+
+    // 更新快取
+    recentChecks.set(candidate, { timestamp: Date.now(), result });
+    return result;
   }
 
   try {
@@ -127,54 +143,45 @@ async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
       console.warn('Extension is not enabled or background service is not running');
       return null;
     }
+
     // 如果本地沒有，再向背景發送訊息
     const response = await chrome.runtime.sendMessage({
       action: 'getPromptByShortcut',
       shortcut: candidate,
     });
 
+    let result: Prompt | null = null;
     if (response?.prompt) {
-      console.log('✅ Found background prompt:', {
-        shortcut: candidate,
-        name: response.prompt.name,
-        hasContent: !!response.prompt.content,
-        hasContentJSON: !!response.prompt.contentJSON,
-        contentPreview: response.prompt.content?.slice(0, 100),
-        contentJSONPreview: response.prompt.contentJSON
-          ? JSON.stringify(response.prompt.contentJSON).slice(0, 100)
-          : 'N/A',
-        fullPromptData: response.prompt,
-      });
-
-      return {
+      result = {
         shortcut: candidate,
         content: response.prompt.content,
         contentJSON: response.prompt.contentJSON,
         name: response.prompt.name,
       };
-    } else {
-      console.log('❌ No prompt found in background response:', response);
     }
+
+    // 快取結果（包括負面結果）
+    recentChecks.set(candidate, { timestamp: Date.now(), result });
+
+    // 清理過期的快取
+    const now = Date.now();
+    for (const [key, value] of recentChecks.entries()) {
+      if (now - value.timestamp > CACHE_TTL) {
+        recentChecks.delete(key);
+      }
+    }
+
+    return result;
   } catch (error) {
     console.error('取得提示失敗:', error);
+    // 快取錯誤結果
+    recentChecks.set(candidate, { timestamp: Date.now(), result: null });
+    return null;
   }
-
-  return null;
 }
 
 async function processPromptInsertion(prompt: Prompt, element: HTMLElement, cursorInfo: CursorInfo) {
-  // 檢查是否包含表單欄位 - 支援 JSON 和 HTML 格式
-  let hasFormField = false;
-  if (prompt.contentJSON) {
-    // JSON 格式：檢查是否包含 formtext 或 formmenu 節點
-    const jsonStr = JSON.stringify(prompt.contentJSON);
-    hasFormField = jsonStr.includes('"type":"formtext"') || jsonStr.includes('"type":"formmenu"');
-  } else {
-    // HTML 格式：檢查是否包含 data-prompt 屬性
-    hasFormField = prompt.content.includes('data-prompt');
-  }
-
-  if (!hasFormField) {
+  if (!hasFormField(prompt)) {
     const shortcutStart = cursorInfo.textBeforeCursor.lastIndexOf(prompt.shortcut);
     if (shortcutStart === -1) return;
 
@@ -182,15 +189,6 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
       start: shortcutStart,
       end: cursorInfo.start,
     };
-
-    console.log('⚡ Shortcut: Direct insertion (no form)', {
-      shortcut: prompt.shortcut,
-      name: prompt.name,
-      hasContent: !!prompt.content,
-      hasContentJSON: !!prompt.contentJSON,
-      position,
-      targetElement: element.tagName,
-    });
 
     const result = await insertContentService({
       content: prompt.content,
@@ -200,13 +198,8 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
       saveCursorPosition: true,
     });
 
-    console.log('📤 Shortcut: Direct insertion result', {
-      success: result.success,
-      error: result.error,
-    });
-
     if (!result.success) {
-      console.error('Insert failed:', result.error);
+      logger.error('Insert failed:', result.error);
     }
     return;
   }
@@ -222,19 +215,27 @@ async function processPromptInsertion(prompt: Prompt, element: HTMLElement, curs
   await chrome.storage.local.set({ shortcutInfo });
 
   const title = `${prompt.shortcut} - ${prompt.name}`;
-  console.log('🚀 Shortcut: Sending createWindow message', {
-    shortcut: prompt.shortcut,
-    name: prompt.name,
-    hasContent: !!prompt.content,
-    hasContentJSON: !!prompt.contentJSON,
-    contentJSONType: typeof prompt.contentJSON,
-    contentPreview: prompt.content?.slice(0, 100),
-  });
 
-  chrome.runtime.sendMessage({
-    action: 'createWindow',
-    title,
-    content: prompt.content,
-    contentJSON: prompt.contentJSON,
-  });
+  try {
+    // 檢查背景服務連線狀態
+    if (!chrome.runtime?.id) {
+      logger.error('Extension background service is not running');
+      return;
+    }
+
+    // 發送創建視窗訊息並等待回應
+    const response = await chrome.runtime.sendMessage({
+      action: 'createWindow',
+      title,
+      content: prompt.content,
+      contentJSON: prompt.contentJSON,
+    });
+
+    if (!response?.success) {
+      logger.error('Failed to create form window:', response?.error || 'Unknown error');
+    }
+  } catch (error) {
+    const errorMessage = (error as Error)?.message || '';
+    logger.error('Failed to send createWindow message:', errorMessage);
+  }
 }

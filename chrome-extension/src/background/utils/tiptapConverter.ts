@@ -1,13 +1,28 @@
 /**
- * TipTap JSON 轉換工具
+ * 後台 TipTap JSON 轉換工具
  * 將 TipTap JSON 格式轉換為純文字或 HTML，與後台格式同步
  */
 
 import { generateHTML } from '@tiptap/html';
-import { Node as TipTapNode } from '@tiptap/core';
 import TipTapStarterKit from '@tiptap/starter-kit';
 import TipTapTextStyle from '@tiptap/extension-text-style';
 import TipTapTextAlign from '@tiptap/extension-text-align';
+import { createFormNode, formTextRenderStrategy, formMenuRenderStrategy } from '../form';
+import { FORM_NODE_TYPES } from '@extension/shared/lib/form/constants';
+
+// 開發環境 logging 工具
+const isDev = process.env.NODE_ENV === 'development' || typeof process === 'undefined' || process.env.__DEV__;
+const devLog = {
+  log: (...args: unknown[]): void => {
+    if (isDev) console.log(...args);
+  },
+  warn: (...args: unknown[]): void => {
+    if (isDev) console.warn(...args);
+  },
+  error: (...args: unknown[]): void => {
+    if (isDev) console.error(...args);
+  },
+};
 
 // TipTap JSON 內容的型別定義
 interface TipTapJSONContent {
@@ -21,18 +36,6 @@ interface TipTapJSONContent {
   }>;
 }
 
-// Form 節點的屬性型別定義
-interface FormAttribute {
-  name: string;
-  value: unknown;
-}
-
-interface FormPromptData {
-  attributes: FormAttribute[];
-  commandName?: string;
-  type?: string;
-}
-
 // TipTap 文件的根節點型別
 interface TipTapDocument {
   type: 'doc';
@@ -42,92 +45,11 @@ interface TipTapDocument {
 // 聯合型別：支援的內容格式
 export type SupportedContent = TipTapDocument | TipTapJSONContent | string | null | undefined;
 
-// FormText 自訂節點 - 處理文字輸入表單欄位
-const FormTextNode = TipTapNode.create({
-  name: 'formtext',
-  group: 'inline',
-  inline: true,
+// FormText 節點 - 使用工廠模式創建
+const FormTextNode = createFormNode(FORM_NODE_TYPES.TEXT, formTextRenderStrategy);
 
-  addAttributes() {
-    return {
-      promptData: { default: {} },
-    };
-  },
-
-  parseHTML() {
-    return [{ tag: 'span[data-type="formtext"]' }];
-  },
-
-  renderHTML({ node }) {
-    const promptData = (node.attrs.promptData as FormPromptData) || { attributes: [] };
-
-    // 處理實際的 attributes 陣列格式
-    const attributes = promptData.attributes || [];
-
-    // 提取 name 和 default 值用於顯示
-    const nameAttr = attributes.find((attr: FormAttribute) => attr.name === 'name');
-    const defaultAttr = attributes.find((attr: FormAttribute) => attr.name === 'default');
-
-    const name = (nameAttr?.value as string) || 'field';
-    const defaultValue = (defaultAttr?.value as string) || '';
-    const displayText = `[${name}:${defaultValue}]`;
-
-    return [
-      'span',
-      {
-        'data-type': 'formtext',
-        'data-prompt': JSON.stringify({ attributes: attributes }),
-      },
-      displayText,
-    ];
-  },
-});
-
-// FormMenu 自訂節點 - 處理選單表單欄位
-const FormMenuNode = TipTapNode.create({
-  name: 'formmenu',
-  group: 'inline',
-  inline: true,
-
-  addAttributes() {
-    return {
-      promptData: { default: {} },
-    };
-  },
-
-  parseHTML() {
-    return [{ tag: 'span[data-type="formmenu"]' }];
-  },
-
-  renderHTML({ node }) {
-    const promptData = (node.attrs.promptData as FormPromptData) || { attributes: [] };
-
-    // 處理實際的 attributes 陣列格式
-    const attributes = promptData.attributes || [];
-
-    // 提取相關值用於顯示
-    const nameAttr = attributes.find((attr: FormAttribute) => attr.name === 'name');
-    const defaultAttr = attributes.find((attr: FormAttribute) => attr.name === 'default');
-    const optionsAttr = attributes.find((attr: FormAttribute) => attr.name === 'options');
-
-    const name = (nameAttr?.value as string) || 'menu';
-    const defaultValue = (defaultAttr?.value as string) || '';
-    const options = (optionsAttr?.value as string[]) || [];
-
-    // 顯示預設值或第一個選項
-    const displayValue = defaultValue || (Array.isArray(options) && options[0]) || '';
-    const displayText = `[${name}:${displayValue}]`;
-
-    return [
-      'span',
-      {
-        'data-type': 'formmenu',
-        'data-prompt': JSON.stringify({ attributes: attributes }),
-      },
-      displayText,
-    ];
-  },
-});
+// FormMenu 節點 - 使用工廠模式創建
+const FormMenuNode = createFormNode(FORM_NODE_TYPES.MENU, formMenuRenderStrategy);
 
 // 與後台同步的 TipTap 擴展配置
 const extensions = [
@@ -138,7 +60,7 @@ const extensions = [
   }),
   FormTextNode,
   FormMenuNode,
-  // 注意：不包含 FontSize（版本不匹配）
+  // 注意：不包含 FontSize
 ];
 
 /**
@@ -146,13 +68,13 @@ const extensions = [
  * 重用現有邏輯的簡化版本
  */
 function parseHtmlToText(html: string): string {
-  console.log('🔍 parseHtmlToText called with HTML:', { html, length: html.length });
+  devLog.log('🔍 parseHtmlToText called with HTML:', { html, length: html.length });
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
-  console.log('📋 Created tempDiv with childNodes:', tempDiv.childNodes.length);
+  devLog.log('📋 Created tempDiv with childNodes:', tempDiv.childNodes.length);
 
   function traverse(node: globalThis.Node, parentTag?: string, depth: number = 0): string {
-    console.log('🔍 Traversing node:', {
+    devLog.log('🔍 Traversing node:', {
       nodeType: node.nodeType,
       nodeName: node.nodeName,
       textContent: node.textContent?.slice(0, 50),
@@ -160,7 +82,7 @@ function parseHtmlToText(html: string): string {
 
     if (node.nodeType === globalThis.Node.TEXT_NODE) {
       const text = node.textContent || '';
-      console.log('📝 Processing text node:', { text: text.slice(0, 50), trimmed: text.trim().slice(0, 50) });
+      devLog.log('📝 Processing text node:', { text: text.slice(0, 50), trimmed: text.trim().slice(0, 50) });
       if (!text.trim()) return '';
       return text.trim();
     } else if (node.nodeType === globalThis.Node.ELEMENT_NODE) {
@@ -196,13 +118,13 @@ function parseHtmlToText(html: string): string {
 
   function traverseChildren(node: globalThis.Node, parentTag?: string, depth: number = 0): string {
     const childResults = Array.from(node.childNodes).map(child => traverse(child, parentTag, depth));
-    console.log('👶 Child results:', childResults);
+    devLog.log('👶 Child results:', childResults);
     return childResults.join('');
   }
 
   const raw = traverse(tempDiv);
   const final = raw.replace(/\n{3,}/g, '\n\n').trim();
-  console.log('📤 parseHtmlToText final result:', {
+  devLog.log('📤 parseHtmlToText final result:', {
     raw: raw.slice(0, 100),
     final: final.slice(0, 100),
     finalLength: final.length,
@@ -232,46 +154,46 @@ function isTipTapDocument(content: unknown): content is TipTapDocument {
  * @returns 純文字字串
  */
 export function convertTipTapToPlainText(jsonContent: SupportedContent): string {
-  console.log('🔍 convertTipTapToPlainText called with:', jsonContent);
+  devLog.log('🔍 convertTipTapToPlainText called with:', jsonContent);
 
   try {
     // 處理空值
     if (!jsonContent) {
-      console.log('⚠️ convertTipTapToPlainText: jsonContent is empty');
+      devLog.log('⚠️ convertTipTapToPlainText: jsonContent is empty');
       return '';
     }
 
     // 格式驗證
     if (isTipTapDocument(jsonContent)) {
-      console.log('✅ Valid TipTap document detected');
+      devLog.log('✅ Valid TipTap document detected');
 
       // 檢查內容完整性
       if (!jsonContent.content || !Array.isArray(jsonContent.content)) {
-        console.warn('❌ TipTap JSON 缺少有效的 content 陣列:', jsonContent);
+        devLog.warn('❌ TipTap JSON 缺少有效的 content 陣列:', jsonContent);
         return '';
       }
 
       // 生成 HTML 然後轉為純文字
-      console.log('🔄 Generating HTML from TipTap JSON...');
+      devLog.log('🔄 Generating HTML from TipTap JSON...');
       const html = generateHTML(jsonContent, extensions);
-      console.log('📄 Generated HTML:', html);
+      devLog.log('📄 Generated HTML:', html);
 
       const plainText = parseHtmlToText(html);
-      console.log('📝 Converted to plain text:', plainText);
+      devLog.log('📝 Converted to plain text:', plainText);
 
       return plainText;
     }
 
     // 如果是字串，直接使用現有的轉換邏輯
     if (typeof jsonContent === 'string') {
-      console.log('📝 Processing as HTML string');
+      devLog.log('📝 Processing as HTML string');
       return parseHtmlToText(jsonContent);
     }
 
-    console.warn('❌ 無效的 TipTap JSON 格式:', jsonContent);
+    devLog.warn('❌ 無效的 TipTap JSON 格式:', jsonContent);
     return '';
   } catch (error) {
-    console.error('💥 TipTap JSON 轉純文字失敗:', {
+    devLog.error('💥 TipTap JSON 轉純文字失敗:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       content: jsonContent,
       timestamp: new Date().toISOString(),
@@ -279,7 +201,7 @@ export function convertTipTapToPlainText(jsonContent: SupportedContent): string 
 
     // 錯誤時嘗試 fallback 處理
     if (typeof jsonContent === 'string') {
-      console.log('🔄 Fallback to HTML processing');
+      devLog.log('🔄 Fallback to HTML processing');
       return parseHtmlToText(jsonContent);
     }
 
@@ -295,47 +217,47 @@ export function convertTipTapToPlainText(jsonContent: SupportedContent): string 
  * @returns HTML 字串
  */
 export function convertTipTapToHTML(jsonContent: SupportedContent): string {
-  console.log('🔧 convertTipTapToHTML 調用:', jsonContent);
+  devLog.log('🔧 convertTipTapToHTML 調用:', jsonContent);
 
   try {
     // 處理空值
     if (!jsonContent) {
-      console.log('⚠️ convertTipTapToHTML: 內容為空');
+      devLog.log('⚠️ convertTipTapToHTML: 內容為空');
       return '<p></p>';
     }
 
     // 格式驗證
     if (isTipTapDocument(jsonContent)) {
-      console.log('✅ 有效的 TipTap 文件格式');
+      devLog.log('✅ 有效的 TipTap 文件格式');
 
       // 檢查內容完整性
       if (!jsonContent.content || !Array.isArray(jsonContent.content)) {
-        console.warn('❌ TipTap JSON 缺少有效的 content 陣列:', jsonContent);
+        devLog.warn('❌ TipTap JSON 缺少有效的 content 陣列:', jsonContent);
         return '<p></p>';
       }
 
-      console.log('🔄 開始生成 HTML，content 長度:', jsonContent.content.length);
-      console.log('📋 使用的 extensions:', extensions.length, '個');
+      devLog.log('🔄 開始生成 HTML，content 長度:', jsonContent.content.length);
+      devLog.log('📋 使用的 extensions:', extensions.length, '個');
 
       // 直接生成 HTML
       const html = generateHTML(jsonContent, extensions);
-      console.log('📤 generateHTML 結果:', html);
+      devLog.log('📤 generateHTML 結果:', html);
 
       const result = html.trim() || '<p></p>';
-      console.log('✅ convertTipTapToHTML 最終結果:', result);
+      devLog.log('✅ convertTipTapToHTML 最終結果:', result);
       return result;
     }
 
     // 如果是字串，直接返回（假設已經是 HTML）
     if (typeof jsonContent === 'string') {
-      console.log('📝 處理為 HTML 字串');
+      devLog.log('📝 處理為 HTML 字串');
       return jsonContent.trim() || '<p></p>';
     }
 
-    console.warn('❌ 無效的 TipTap JSON 格式:', jsonContent);
+    devLog.warn('❌ 無效的 TipTap JSON 格式:', jsonContent);
     return '<p></p>';
   } catch (error) {
-    console.error('💥 TipTap JSON 轉 HTML 失敗:', {
+    devLog.error('💥 TipTap JSON 轉 HTML 失敗:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       content: jsonContent,
@@ -356,7 +278,7 @@ export function convertTipTapToHTML(jsonContent: SupportedContent): string {
  * @returns 純文字字串
  */
 export function getContentForInsertion(contentJSON?: SupportedContent, content?: string): string {
-  console.log('🎯 getContentForInsertion called with:', {
+  devLog.log('🎯 getContentForInsertion called with:', {
     contentJSON: !!contentJSON,
     contentJSONType: typeof contentJSON,
     content: !!content,
@@ -365,27 +287,27 @@ export function getContentForInsertion(contentJSON?: SupportedContent, content?:
 
   // 優先使用 JSON 格式 (對應後台策略)
   if (contentJSON) {
-    console.log('⚡ Processing JSON content...');
+    devLog.log('⚡ Processing JSON content...');
     const plainText = convertTipTapToPlainText(contentJSON);
-    console.log('📤 JSON conversion result:', { plainText, length: plainText.length });
+    devLog.log('📤 JSON conversion result:', { plainText, length: plainText.length });
 
     if (plainText) {
-      console.log('✅ Using JSON-converted plain text');
+      devLog.log('✅ Using JSON-converted plain text');
       return plainText;
     } else {
-      console.log('⚠️ JSON conversion returned empty, will fallback to HTML');
+      devLog.log('⚠️ JSON conversion returned empty, will fallback to HTML');
     }
   }
 
   // Fallback 到 HTML 格式
   if (content) {
-    console.log('🔄 Fallback to HTML content');
+    devLog.log('🔄 Fallback to HTML content');
     const htmlText = parseHtmlToText(content);
-    console.log('📤 HTML conversion result:', { htmlText, length: htmlText.length });
+    devLog.log('📤 HTML conversion result:', { htmlText, length: htmlText.length });
     return htmlText;
   }
 
-  console.log('❌ No content available for insertion');
+  devLog.log('❌ No content available for insertion');
   return '';
 }
 
@@ -398,7 +320,7 @@ export function getContentForInsertion(contentJSON?: SupportedContent, content?:
  * @returns HTML 字串
  */
 export function getContentForPreview(contentJSON?: SupportedContent, content?: string): string {
-  console.log('⚡ getContentForPreview 調用:', {
+  devLog.log('⚡ getContentForPreview 調用:', {
     hasContentJSON: !!contentJSON,
     contentJSONType: typeof contentJSON,
     hasContent: !!content,
@@ -406,23 +328,23 @@ export function getContentForPreview(contentJSON?: SupportedContent, content?: s
 
   // 優先使用 JSON 格式 (對應後台策略)
   if (contentJSON) {
-    console.log('🔍 使用 JSON 格式轉換...', contentJSON);
+    devLog.log('🔍 使用 JSON 格式轉換...', contentJSON);
     const html = convertTipTapToHTML(contentJSON);
-    console.log('📋 JSON 轉換結果:', html);
+    devLog.log('📋 JSON 轉換結果:', html);
     if (html && html !== '<p></p>') {
-      console.log('✅ 使用 JSON 轉換的 HTML');
+      devLog.log('✅ 使用 JSON 轉換的 HTML');
       return html;
     } else {
-      console.log('⚠️ JSON 轉換結果為空或預設值，嘗試 fallback');
+      devLog.log('⚠️ JSON 轉換結果為空或預設值，嘗試 fallback');
     }
   }
 
   // Fallback 到 HTML 格式
   if (content) {
-    console.log('🔄 使用 HTML 格式 (fallback):', content);
+    devLog.log('🔄 使用 HTML 格式 (fallback):', content);
     return content.trim() || '<p></p>';
   }
 
-  console.log('❌ 沒有可用的內容，返回預設值');
+  devLog.log('❌ 沒有可用的內容，返回預設值');
   return '<p></p>';
 }

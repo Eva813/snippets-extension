@@ -2,34 +2,6 @@ import { getDeepActiveElement } from './utils/getDeepActiveElement';
 import { insertContent } from './services/insertionService';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  // 使用醒目的樣式記錄調試信息
-  console.log(
-    '%c🚀 CONTENT SCRIPT: Message Received',
-    'background: #4CAF50; color: white; padding: 2px 5px; border-radius: 3px;',
-    {
-      action: message.action,
-      hasPrompt: !!message.prompt,
-      hasPromptJSON: !!message.promptJSON,
-      promptJSONType: typeof message.promptJSON,
-      promptLength: message.prompt?.length || 0,
-      promptPreview: message.prompt?.slice(0, 100),
-      title: message.title,
-    },
-  );
-
-  // 特別記錄表單提交的情況
-  if (message.prompt && message.prompt.length > 0) {
-    console.log(
-      '%c📄 CONTENT: Form Submission Data Received',
-      'background: #FF9800; color: white; padding: 2px 5px; border-radius: 3px;',
-      {
-        contentLength: message.prompt.length,
-        contentPreview: message.prompt.slice(0, 200),
-        fullContent: message.prompt,
-      },
-    );
-  }
-
   if (message.action !== 'insertPrompt') {
     sendResponse({ success: false, error: 'Unknown action' });
     return false;
@@ -64,18 +36,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       positionInfo = undefined;
     }
 
-    console.log(
-      '%c🎯 CONTENT: Calling insertContent',
-      'background: #2196F3; color: white; padding: 2px 5px; border-radius: 3px;',
-      {
-        hasContent: !!message.prompt,
-        hasContentJSON: !!message.promptJSON,
-        targetElement: activeElement?.tagName,
-        positionInfo,
-        contentLength: message.prompt?.length || 0,
-      },
-    );
-
     const insertResult = await insertContent({
       content: message.prompt,
       contentJSON: message.promptJSON,
@@ -83,17 +43,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       position: positionInfo,
       saveCursorPosition: true,
     });
-
-    console.log(
-      '%c📤 CONTENT: Insert Result',
-      'background: #9C27B0; color: white; padding: 2px 5px; border-radius: 3px;',
-      {
-        success: insertResult.success,
-        error: insertResult.error,
-        hasResult: !!insertResult,
-        resultDetails: insertResult,
-      },
-    );
 
     // 只在使用快捷鍵插入時清除 shortcutInfo
     if (storageResult.shortcutInfo) {

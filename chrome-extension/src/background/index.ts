@@ -504,33 +504,16 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
   },
   getPromptByShortcut: async (message, sendResponse) => {
     const { shortcut } = message as { action: 'getPromptByShortcut'; shortcut: string };
-    console.log('🔍 Background: getPromptByShortcut called for:', shortcut);
 
     try {
       // 從本地快取中查找 prompts
       const { prompts } = await chrome.storage.local.get('prompts');
-      console.log('📋 Background: Local prompts cache:', {
-        hasPrompts: !!prompts,
-        promptsType: typeof prompts,
-        promptsKeys: prompts ? Object.keys(prompts) : [],
-        targetPrompt: prompts?.[shortcut],
-      });
 
       if (prompts && typeof prompts === 'object') {
         const foundPrompt = prompts[shortcut];
         if (foundPrompt) {
-          console.log('✅ Background: Found prompt in cache:', {
-            shortcut,
-            name: foundPrompt.name,
-            hasContent: !!foundPrompt.content,
-            hasContentJSON: !!foundPrompt.contentJSON,
-            contentPreview: foundPrompt.content?.slice(0, 100),
-            contentJSONPreview: foundPrompt.contentJSON ? JSON.stringify(foundPrompt.contentJSON).slice(0, 100) : 'N/A',
-          });
           sendResponse({ success: true, prompt: foundPrompt });
           return;
-        } else {
-          console.log('❌ Background: Prompt not found in cache for shortcut:', shortcut);
         }
       }
 
