@@ -39,6 +39,28 @@ const FormTextNode = createFormNode(FORM_NODE_TYPES.TEXT, formTextRenderStrategy
 // FormMenu 節點 - 使用工廠模式創建
 const FormMenuNode = createFormNode(FORM_NODE_TYPES.MENU, formMenuRenderStrategy);
 
+/**
+ * 為什麼需要 FormTextNode 和 FormMenuNode？
+ *
+ * generateHTML() 函數需要對應的 Node 定義來處理 TipTap JSON 中的自定義節點：
+ *
+ * 1. 轉換流程：
+ *    TipTap JSON: {"type": "formtext", "attrs": {"promptData": {...}}}
+ *    ↓ generateHTML 查找 FormTextNode 定義
+ *    ↓ 調用 FormTextNode.renderHTML() 使用 formTextRenderStrategy
+ *    ↓ 生成 HTML: <span data-type="formtext">[name:value]</span>
+ *    ↓ parseHtmlToText 轉換為純文字: [name:value]
+ *
+ * 2. 沒有對應 Node 定義的後果：
+ *    - generateHTML 遇到未知節點類型會忽略或報錯
+ *    - 表單節點無法正確轉換為可讀文字格式
+ *
+ * 3. Node 定義提供的關鍵功能：
+ *    - renderHTML(): 定義如何將節點轉換為 HTML 元素
+ *    - parseHTML(): 定義如何從 HTML 解析回 TipTap 節點
+ *    - 屬性處理：處理節點的 attrs 數據
+ */
+
 // 與後台同步的 TipTap 擴展配置
 const extensions = [
   TipTapStarterKit,
@@ -143,6 +165,7 @@ export function convertTipTapToPlainText(jsonContent: SupportedContent): string 
 
       // 生成 HTML 然後轉為純文字
       const html = generateHTML(jsonContent, extensions);
+      console.log('🔄 convertTipTapToHTML 結果:', { html });
       const plainText = parseHtmlToText(html);
       return plainText;
     }
