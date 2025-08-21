@@ -8,7 +8,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (!message.prompt && !message.promptJSON) {
-    console.log('❌ Content: No prompt data available');
     sendResponse({ success: false, error: 'Invalid prompt data' });
     return false;
   }

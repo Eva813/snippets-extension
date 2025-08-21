@@ -10,46 +10,79 @@ type LogArgument = string | number | boolean | null | undefined | Error | Record
 export interface Logger {
   log: (...args: LogArgument[]) => void;
   warn: (...args: LogArgument[]) => void;
-  error: (message: string, ...args: LogArgument[]) => void;
+  error: (...args: LogArgument[]) => void;
 }
 
 /**
+ * 安全的跨環境開發模式檢測
+ * 支援 Node.js 和瀏覽器環境
+ */
+function getDevMode(): boolean {
+  // Node.js 環境檢查
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.NODE_ENV === 'development' || Boolean(process.env.__DEV__);
+  }
+
+  // 瀏覽器環境檢查 - 檢查常見的開發標識
+  if (typeof window !== 'undefined' && window.location) {
+    const hostname = window.location.hostname;
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.endsWith('.local')
+    );
+  }
+
+  // 默認為生產環境（安全策略）
+  return false;
+}
+
+const isDev = getDevMode();
+
+/**
  * 創建一個條件化的 logger
- * @param isDev - 是否為開發環境
+ * @param isDevMode - 是否為開發環境
  * @returns Logger 實例
  */
-export function createLogger(isDev: boolean): Logger {
+export function createLogger(isDevMode: boolean): Logger {
   return {
     log: (...args: LogArgument[]) => {
-      if (isDev) {
+      if (isDevMode) {
         console.log(...args);
       }
     },
     warn: (...args: LogArgument[]) => {
-      if (isDev) {
+      if (isDevMode) {
         console.warn(...args);
       }
     },
-    error: (message: string, ...args: LogArgument[]) => {
-      // 錯誤在生產環境也需要記錄
-      console.error(message, ...args);
+    error: (...args: LogArgument[]) => {
+      if (isDevMode) {
+        console.error(...args);
+      }
     },
   };
 }
 
 /**
- * 默認 logger，總是輸出錯誤，開發資訊則根據全域變數判斷
- * 使用時建議用 createLogger 來明確控制環境
+ * 默認 logger，只在開發環境輸出
+ * 生產環境完全靜默，確保 console 乾淨
  */
 export const logger: Logger = {
-  log: () => {
-    // 在共用包中預設不輸出 log，讓使用方決定
+  log: (...args: LogArgument[]) => {
+    if (isDev) {
+      console.log(...args);
+    }
   },
-  warn: () => {
-    // 在共用包中預設不輸出 warn，讓使用方決定
+  warn: (...args: LogArgument[]) => {
+    if (isDev) {
+      console.warn(...args);
+    }
   },
-  error: (message: string, ...args: LogArgument[]) => {
-    // 錯誤總是輸出
-    console.error(message, ...args);
+  error: (...args: LogArgument[]) => {
+    if (isDev) {
+      console.error(...args);
+    }
   },
 };

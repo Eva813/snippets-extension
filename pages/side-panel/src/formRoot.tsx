@@ -5,8 +5,8 @@ import ReactDOM from 'react-dom/client';
 // import type { HTMLReactParserOptions } from 'html-react-parser';
 // import parse, { Element } from 'html-react-parser';
 import { renderCustomElement } from '@src/components/renderers/renderCustomElement';
-import { parseContent } from '@src/lib/utils';
-import type { SupportedContent } from '../../../chrome-extension/src/background/utils/tiptapConverter';
+import { parseContentForFormDisplay } from '@src/lib/utils';
+import type { SupportedContent } from '@extension/shared/lib/tiptap/tiptapConverter';
 
 interface PopupData {
   title: string;
@@ -37,15 +37,11 @@ const FormRoot = () => {
   useEffect(() => {
     const fetchPopupData = async () => {
       chrome.runtime.sendMessage({ action: 'getPopupData' }, (response: { data?: PopupData }) => {
-        console.log('🔍 FormRoot: 收到 popup 數據:', response);
         if (response?.data) {
-          console.log('✅ FormRoot: popupData 設置:', response.data);
-          console.log('📋 FormRoot: contentJSON:', response.data.contentJSON);
-          console.log('📋 FormRoot: content:', response.data.content);
           setPopupData(response.data);
           document.title = response.data.title || 'Default Title';
         } else {
-          console.error('❌ FormRoot: 未收到 popup 資料');
+          console.error('FormRoot: 未收到 popup 資料');
         }
       });
     };
@@ -62,10 +58,8 @@ const FormRoot = () => {
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    console.log('📝 handleInputChange 調用:', { id, value });
     setFormData(prev => {
       const newFormData = { ...prev, [id]: value };
-      console.log('📋 更新後的 formData:', newFormData);
       return newFormData;
     });
   }, []);
@@ -126,27 +120,17 @@ const FormRoot = () => {
 
   // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹 - 支援 JSON 和 HTML 格式
   const parsedHtmlTree = useMemo(() => {
-    console.log('🔧 FormRoot: 開始解析內容...');
     if (!popupData) {
-      console.log('❌ FormRoot: popupData 為空');
       return null;
     }
 
-    console.log('🎯 FormRoot: 調用 parseContent，參數:', {
-      contentJSON: popupData.contentJSON,
-      content: popupData.content,
-    });
-
-    const root = parseContent(popupData.contentJSON, popupData.content);
-    console.log('📤 FormRoot: parseContent 結果:', root);
+    const root = parseContentForFormDisplay(popupData.contentJSON, popupData.content);
 
     if (!root) {
-      console.log('❌ FormRoot: parseContent 返回 null');
       return null;
     }
 
     const nodes = Array.from(root.childNodes).map((child, i) => renderNode(child, `root-${i}`));
-    console.log('🎨 FormRoot: 渲染的節點數量:', nodes.length);
     return nodes;
   }, [popupData, renderNode]);
 
@@ -156,8 +140,6 @@ const FormRoot = () => {
 
   // 這個函數用來根據 react preview 與 formData 產生最終輸出的文字
   const generateFinalText = (reactNode: React.ReactNode, formData: Record<string, string>): string => {
-    console.log('🔧 generateFinalText 調用:', { reactNode, formData });
-
     const renderNodeToText = (node: React.ReactNode): string => {
       if (typeof node === 'string') return node;
 
@@ -167,9 +149,7 @@ const FormRoot = () => {
 
       // 處理 <input> 和 <select>：轉成對應的表單資料值
       if (type === 'input' || type === 'select') {
-        console.log('🎯 找到表單元素:', { type, id: props.id, formData });
         const value = formData[props.id] ?? '';
-        console.log('📝 表單元素值:', { id: props.id, value });
         return ` ${value} `;
       }
 
@@ -200,14 +180,8 @@ const FormRoot = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('📝 FormRoot: handleSubmit 調用');
-    console.log('📋 FormRoot: 當前 formData:', formData);
-    console.log('🎯 FormRoot: parsedHtmlTree:', parsedHtmlTree);
-
     // 使用 generateFinalText 產生最終的文字內容
     const finalOutput = generateFinalText(parsedHtmlTree, formData);
-    console.log('📤 FormRoot: generateFinalText 結果:', finalOutput);
-    console.log('📏 FormRoot: finalOutput 長度:', finalOutput.length);
 
     chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, () => {
       window.close();

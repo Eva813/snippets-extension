@@ -53,7 +53,7 @@ Chrome Extension
 
 ### 1. TipTap 轉換器系統
 
-**文件**: `chrome-extension/src/background/utils/tiptapConverter.ts`
+**文件**: `packages/shared/lib/tiptap/tiptapConverter.ts` (已遷移)
 
 #### 關鍵功能
 ```typescript

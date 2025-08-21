@@ -219,6 +219,22 @@ importers:
         version: link:../tsconfig
 
   packages/shared:
+    dependencies:
+      '@tiptap/core':
+        specifier: ^2.26.1
+        version: 2.26.1(@tiptap/pm@2.26.1)
+      '@tiptap/extension-text-align':
+        specifier: ^2.26.1
+        version: 2.26.1(@tiptap/core@2.26.1(@tiptap/pm@2.26.1))
+      '@tiptap/extension-text-style':
+        specifier: ^2.26.1
+        version: 2.26.1(@tiptap/core@2.26.1(@tiptap/pm@2.26.1))
+      '@tiptap/html':
+        specifier: ^2.26.1
+        version: 2.26.1(@tiptap/core@2.26.1(@tiptap/pm@2.26.1))(@tiptap/pm@2.26.1)
+      '@tiptap/starter-kit':
+        specifier: ^2.26.1
+        version: 2.26.1
     devDependencies:
       '@extension/storage':
         specifier: workspace:*
@@ -226,6 +242,9 @@ importers:
       '@extension/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@types/node':
+        specifier: ^22.5.5
+        version: 22.16.3
 
   packages/storage:
     devDependencies:

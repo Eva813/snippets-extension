@@ -20,8 +20,16 @@
     "prettier": "prettier . --write --ignore-path ../../.prettierignore",
     "type-check": "tsc --noEmit"
   },
+  "dependencies": {
+    "@tiptap/extension-text-align": "^2.26.1",
+    "@tiptap/extension-text-style": "^2.26.1",
+    "@tiptap/html": "^2.26.1",
+    "@tiptap/starter-kit": "^2.26.1",
+    "@tiptap/core": "^2.26.1"
+  },
   "devDependencies": {
     "@extension/storage": "workspace:*",
-    "@extension/tsconfig": "workspace:*"
+    "@extension/tsconfig": "workspace:*",
+    "@types/node": "^22.5.5"
   }
 }

@@ -7,10 +7,7 @@ import { generateElementPath, isEditableElement } from '../utils/utils';
 import { findTextRangeNodes } from '../utils/findTextRangeNodes';
 import { insertIntoRange } from '../utils/insertIntoRange';
 import { getDeepActiveElement } from '../utils/getDeepActiveElement';
-import {
-  getContentForInsertion,
-  type SupportedContent,
-} from '../../../../chrome-extension/src/background/utils/tiptapConverter';
+import { getContentForInsertion, type SupportedContent } from '@extension/shared/lib/tiptap/tiptapConverter';
 
 export interface InsertionOptions {
   /** 要插入的 HTML 內容 (向後相容) */
@@ -41,35 +38,17 @@ const isDev = import.meta.env.MODE === 'development';
 export async function insertContent(options: InsertionOptions): Promise<InsertionResult> {
   const { content, contentJSON, targetElement, position, saveCursorPosition = true } = options;
 
-  console.log('🔧 insertContent called with options:', {
-    hasContent: !!content,
-    hasContentJSON: !!contentJSON,
-    targetElement: targetElement?.tagName,
-    position,
-    saveCursorPosition,
-  });
-
   // 1. 確定目標元素
   const element = targetElement || getDeepActiveElement();
   if (!element || !isEditableElement(element)) {
-    console.log('❌ insertContent: No editable element found');
     return { success: false, error: '找不到可編輯的目標元素' };
   }
 
-  console.log('✅ insertContent: Target element found:', element.tagName);
-
   // 2. 智能內容轉換 - 優先使用 JSON 格式
-  console.log('🔄 insertContent: Converting content...');
   const plainTextContent = getContentForInsertion(contentJSON, content);
-
-  console.log('📝 insertContent: Final content for insertion:', {
-    plainTextContent,
-    length: plainTextContent.length,
-  });
 
   // 檢查是否有內容可插入
   if (!plainTextContent) {
-    console.log('❌ insertContent: No content to insert');
     return { success: false, error: '沒有內容可插入' };
   }
 

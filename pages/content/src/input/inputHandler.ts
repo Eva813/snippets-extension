@@ -5,7 +5,7 @@ import { isEditableElement } from '../utils/utils';
 import { insertContent as insertContentService } from '../services/insertionService';
 import type { Prompt, CursorInfo } from '@src/types';
 import { updateCursorPosition } from '@src/cursor/cursorTracker';
-import type { SupportedContent } from '../../../../chrome-extension/src/background/utils/tiptapConverter';
+import type { SupportedContent } from '@extension/shared/lib/tiptap/tiptapConverter';
 import { logger } from '@extension/shared/lib/logging/logger';
 import { hasFormField } from '@extension/shared/lib/utils/formFieldDetector';
 

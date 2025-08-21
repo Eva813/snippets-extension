@@ -44,7 +44,7 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
       },
       response => {
         if (import.meta.env.MODE === 'development') {
-          console.log('Window creation response:', response);
+          console.log('Window creation response ,dev:', response);
         }
       },
     );
