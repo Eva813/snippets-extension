@@ -110,8 +110,14 @@ function parseHtmlToText(html: string): string {
         }
         case 'br':
           return '\n';
-        default:
-          return traverseChildren(node, tagName, depth);
+        default: {
+          // 對於未知標籤，只返回開放標籤，不強制關閉
+          // 這樣可以避免相鄰標籤被錯誤嵌套
+          const childContent = traverseChildren(node, tagName, depth);
+
+          // 返回開放標籤加上子內容
+          return `<${tagName}>${childContent}`;
+        }
       }
     }
     return '';
@@ -122,10 +128,34 @@ function parseHtmlToText(html: string): string {
     return childResults.join('');
   }
 
-  const raw = traverse(tempDiv);
+  // 直接處理 tempDiv 的子節點，避免包裝 div 標籤
+  const childResults = Array.from(tempDiv.childNodes).map(child => traverse(child));
+  const raw = childResults.join('');
   const final = raw.replace(/\n{3,}/g, '\n\n').trim();
   return final;
 }
+
+// function parseHtmlToText(html: string): string {
+//     // 直接處理原始 HTML 字符串，不使用 DOM 解析
+//     // 這樣可以保留所有原始內容，包括不完整的標籤如 <234234
+
+//     let result = html;
+
+//     // 將 <p> 標籤轉換為換行
+//     result = result.replace(/<\/p>/gi, '\n');
+//     result = result.replace(/<p[^>]*>/gi, '');
+
+//     // 將 <br> 標籤轉換為換行
+//     result = result.replace(/<br\s*\/?>/gi, '\n');
+
+//     // 清理多餘的換行（3個或以上變成2個）
+//     result = result.replace(/\n{3,}/g, '\n\n');
+
+//     // 清理前後空白
+//     result = result.trim();
+
+//     return result;
+//   }
 
 /**
  * 型別守衛：檢查是否為有效的 TipTap 文件格式
