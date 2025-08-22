@@ -645,11 +645,9 @@ function handleFormSubmission(
     },
     response => {
       if (chrome.runtime.lastError) {
-        console.error('❌ Background: Message send error:', chrome.runtime.lastError);
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
         return;
       }
-      console.log('📨 Background: 收到 content script 回應:', response);
       sendResponse({ success: true, response });
     },
   );
