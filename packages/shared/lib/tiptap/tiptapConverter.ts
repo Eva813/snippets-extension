@@ -75,6 +75,13 @@ const extensions = [
 ];
 
 /**
+ * 內聯格式化標籤列表
+ * 這些標籤應該被剝離，只保留文字內容
+ * 優先要對應 tipTap 編輯器有的功能
+ */
+const FORMATTING_INLINE_TAGS = new Set(['strong', 'em', 'b', 'i', 'u', 'mark', 'sub', 'sup', 'small']);
+
+/**
  * 簡單的 HTML 轉純文字函數（用於此模組內部）
  * 重用現有邏輯的簡化版本
  */
@@ -112,11 +119,14 @@ function parseHtmlToText(html: string): string {
         case 'br':
           return '\n';
         default: {
-          // 對於未知標籤，只返回開放標籤，不強制關閉
-          // 這樣可以避免相鄰標籤被錯誤嵌套
           const childContent = traverseChildren(node, tagName, depth);
 
-          // 返回開放標籤加上子內容
+          // 如果是格式化標籤，只返回內容（剝離標籤）
+          if (FORMATTING_INLINE_TAGS.has(tagName)) {
+            return childContent;
+          }
+
+          // 用戶標記保持原樣（開放標籤 + 內容）
           return `<${tagName}>${childContent}`;
         }
       }
@@ -196,7 +206,6 @@ export function convertTipTapToPlainText(jsonContent: SupportedContent): string 
 
       // 生成 HTML 然後轉為純文字
       const html = generateHTML(jsonContent, extensions);
-      console.log('🔄 convertTipTapToHTML 結果:', { html });
       const plainText = parseHtmlToText(html);
       return plainText;
     }
