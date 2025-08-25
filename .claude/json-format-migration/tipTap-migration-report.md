@@ -110,7 +110,7 @@ export interface InsertionOptions {
 #### 關鍵實現
 ```typescript
 // 雙格式支援的內容解析
-const root = parseContent(popupData.contentJSON, popupData.content);
+const root = parseContentForFormDisplay(popupData.contentJSON, popupData.content);
 
 // 表單數據到最終文字的轉換
 const generateFinalText = (reactNode: React.ReactNode, formData: Record<string, string>): string

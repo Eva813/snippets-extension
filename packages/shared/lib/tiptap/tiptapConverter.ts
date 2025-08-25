@@ -11,6 +11,7 @@ import { createFormNode } from './formNodeFactory';
 import { formTextRenderStrategy, formMenuRenderStrategy } from './renderStrategies';
 import { FORM_NODE_TYPES } from '../form/constants';
 import { logger } from '../logging/logger';
+import { sanitizeHTMLWithFallback } from '../utils/sanitizer';
 
 // TipTap JSON 內容的型別定義
 interface TipTapJSONContent {
@@ -302,9 +303,9 @@ export function getContentForPreview(contentJSON?: SupportedContent, content?: s
     }
   }
 
-  // Fallback 到 HTML 格式
+  // Fallback 到 HTML 格式 - 使用安全清理防止 XSS
   if (content) {
-    return content.trim() || '<p></p>';
+    return sanitizeHTMLWithFallback(content, '<p></p>');
   }
 
   return '<p></p>';

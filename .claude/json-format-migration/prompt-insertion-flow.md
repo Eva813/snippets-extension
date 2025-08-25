@@ -154,11 +154,11 @@ popupData = {
 
 #### 2️⃣ 表單內容解析
 - **檔案**: `pages/side-panel/src/formRoot.tsx:128`
-- **函式**: `parseContent(popupData.contentJSON, popupData.content)`
+- **函式**: `parseContentForFormDisplay(popupData.contentJSON, popupData.content)`
 
 ```javascript
 // formRoot.tsx:128
-const root = parseContent(popupData.contentJSON, popupData.content);
+const root = parseContentForFormDisplay(popupData.contentJSON, popupData.content);
 ```
 
 #### 3️⃣ 表單提交處理

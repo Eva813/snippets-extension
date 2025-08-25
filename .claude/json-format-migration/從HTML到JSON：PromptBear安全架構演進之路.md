@@ -306,40 +306,25 @@ interface InsertPromptMessage {
 
 #### 表單元素檢測
 
+實際的表單檢測採用了簡化且高效的字串匹配策略：
+
 ```typescript
-export function analyzeFormElements(prompt: PromptApiResponse): FormElement[] {
-  // 使用統一的內容獲取函數
-  const html = getDisplayableContent(prompt);
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  
-  const formElements: FormElement[] = [];
-  const spans = doc.querySelectorAll('span[data-type]');
-  
-  spans.forEach((span, index) => {
-    const type = span.getAttribute('data-type');
-    const promptDataStr = span.getAttribute('data-prompt');
-    
-    if (type && promptDataStr) {
-      try {
-        const promptData = JSON.parse(promptDataStr);
-        formElements.push({
-          id: `form-element-${index}`,
-          type: type as FormElementType,
-          name: promptData.name || '',
-          default: promptData.default || '',
-          options: promptData.options || [],
-          promptData: promptData
-        });
-      } catch (error) {
-        console.warn('Failed to parse form element data:', error);
-      }
-    }
-  });
-  
-  return formElements;
+export function hasFormField(prompt: Prompt): boolean {
+  if (prompt.contentJSON) {
+    // JSON 格式：動態檢測所有已註冊的 form 節點類型
+    const jsonStr = JSON.stringify(prompt.contentJSON);
+    return getAllFormNodeTypes().some(type => jsonStr.includes(`"type":"${type}"`));
+  } else {
+    // HTML 格式：檢查是否包含 data-prompt 屬性
+    return prompt.content.includes('data-prompt');
+  }
 }
 ```
+
+這種方式避免了複雜的 DOM 解析，提供了更好的效能：
+- **JSON 格式**：透過字串匹配檢測已註冊的表單節點類型
+- **HTML 格式**：簡單檢查 `data-prompt` 屬性的存在
+- **高效能**：無需建立 DOM 樹或執行複雜查詢
 
 #### 動態表單渲染
 
