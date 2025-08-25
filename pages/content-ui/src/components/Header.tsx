@@ -91,7 +91,7 @@ const Header = memo<HeaderProps>(({ goToDashboard, onReload, displayMode, toggle
   return (
     <header className="bg-primary px-4 py-2 text-white">
       <div className="flex w-full items-center">
-        <div className="bg-primary-400 flex w-full items-center rounded-md px-4 py-2">
+        <div className="flex w-full items-center rounded-md bg-primary-400 px-4 py-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="mr-2 size-5 text-white"

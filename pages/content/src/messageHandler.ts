@@ -7,7 +7,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
   }
 
-  if (!message.prompt) {
+  if (!message.prompt && !message.promptJSON) {
     sendResponse({ success: false, error: 'Invalid prompt data' });
     return false;
   }
@@ -37,6 +37,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     const insertResult = await insertContent({
       content: message.prompt,
+      contentJSON: message.promptJSON,
       targetElement: activeElement as HTMLElement,
       position: positionInfo,
       saveCursorPosition: true,

@@ -1,4 +1,4 @@
-import type { ValueOf } from '@extension/shared';
+import type { ValueOf } from '@extension/shared/lib/utils';
 
 type ColorType = 'success' | 'info' | 'error' | 'warning' | keyof typeof COLORS;
 
