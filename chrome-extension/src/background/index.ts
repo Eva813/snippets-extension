@@ -7,6 +7,7 @@ import { getDefaultSpaceIdFromApiData, getDefaultSpaceIdFromCache } from './util
 import { setDefaultSpace } from './utils/setDefaultSpace';
 import { createPrompt } from './utils/createPrompt';
 import { openLoginPage, getApiDomain } from './config/api';
+import { logger } from '../../../packages/shared/lib/logging/logger';
 
 // 定義類型
 interface PopupData {
@@ -133,8 +134,6 @@ async function openPromptPage(promptId: string, spaceId?: string): Promise<void>
       });
     }
   } catch (error) {
-    console.error('❌ Failed to open prompt page:', error);
-
     // 顯示錯誤通知
     if (chrome.notifications?.create) {
       chrome.notifications.create({
@@ -206,8 +205,6 @@ function isSpaceValid(spaceId: string, availableSpaces: PromptSpace[]): boolean 
 }
 
 async function getSmartDestination(): Promise<SmartDestination> {
-  console.log('🎯 Starting smart destination selection...');
-
   try {
     // === STEP 1: Get User Preferences ===
     const { currentDefaultSpaceId: userSelectedSpaceId } = await chrome.storage.local.get(['currentDefaultSpaceId']);
@@ -226,7 +223,6 @@ async function getSmartDestination(): Promise<SmartDestination> {
       spacesResult = { success: true, data: promptSpaces };
     } else {
       // 重新獲取並更新快取
-      console.log('🔄 Fetching latest prompt spaces (cache', promptSpacesTimestamp ? 'expired' : 'missing', ')...');
       spacesResult = await fetchPromptSpaces();
       if (spacesResult.success && spacesResult.data) {
         // 更新快取
@@ -238,7 +234,6 @@ async function getSmartDestination(): Promise<SmartDestination> {
     }
 
     if (!spacesResult.success || !spacesResult.data) {
-      console.error('❌ Failed to get prompt spaces:', spacesResult.error);
       return EMPTY_DESTINATION;
     }
 
@@ -252,7 +247,7 @@ async function getSmartDestination(): Promise<SmartDestination> {
       if (isSpaceValid(userSelectedSpaceId, allAvailableSpaces)) {
         targetSpaceId = userSelectedSpaceId;
       } else {
-        console.warn('⚠️ Side panel selected space no longer exists, falling back to API default');
+        logger.warn('⚠️ Side panel selected space no longer exists, falling back to API default');
       }
     }
 
@@ -262,14 +257,13 @@ async function getSmartDestination(): Promise<SmartDestination> {
     }
 
     if (!targetSpaceId) {
-      console.warn('⚠️ No default space found');
       return EMPTY_DESTINATION;
     }
 
     // === STEP 4: Select Target Folder ===
     const foldersResult = await fetchSpaceFolders(targetSpaceId);
     if (!foldersResult.success || !foldersResult.data || foldersResult.data.length === 0) {
-      console.warn('⚠️ No folders found in space:', targetSpaceId, '- returning space only');
+      logger.warn('⚠️ No folders found in space:', targetSpaceId, '- returning space only');
       return { targetSpaceId, targetFolderId: null };
     }
 
@@ -279,7 +273,7 @@ async function getSmartDestination(): Promise<SmartDestination> {
       targetFolderId: selectedFolder.id,
     };
   } catch (error) {
-    console.error('❌ Critical error in getSmartDestination:', error);
+    logger.error('❌ Critical error in getSmartDestination:', error instanceof Error ? error.message : String(error));
     return EMPTY_DESTINATION;
   }
 }
@@ -305,23 +299,19 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const pageUrl = tab?.url || '';
     const pageTitle = sanitizePageTitle(tab?.title || '');
 
-    console.log('=== Add to PromptBear (New API) ===');
-    console.log('Selected text length:', selectedText.length);
-    console.log('Page URL:', pageUrl);
-    console.log('Page title:', pageTitle);
+    logger.log('=== Add to PromptBear (New API) ===');
 
     try {
       // 檢查用戶登入狀態
       const { userLoggedIn } = await chrome.storage.local.get(['userLoggedIn']);
       if (!userLoggedIn) {
-        console.warn('❌ User not logged in, cannot add to PromptBear');
+        logger.warn('❌ User not logged in, cannot add to PromptBear');
         // TODO: 可以在這裡顯示登入提示
         return;
       }
 
       // 預檢查：驗證基本條件
       if (!selectedText.trim()) {
-        console.error('❌ No text selected, cannot proceed');
         return;
       }
 
@@ -329,8 +319,6 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       const { targetSpaceId, targetFolderId } = await getSmartDestination();
 
       if (!targetSpaceId) {
-        console.error('❌ Failed to determine target space - user may need to login to PromptBear first');
-        // TODO: 可以在這裡顯示錯誤通知
         return;
       }
 
@@ -344,30 +332,24 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       });
 
       if (result.success && result.data) {
-        console.log('🎉 Successfully created prompt!', {
-          id: result.data.id,
-          name: result.data.name,
-          shortcut: result.data.shortcut,
-        });
-
         await openPromptPage(result.data.id, targetSpaceId);
       } else {
-        console.error('Failed to create prompt:', result.error);
+        logger.error('Failed to create prompt:', result.error);
 
         // 根據錯誤類型提供不同的處理
         if (result.error?.includes('not logged in') || result.error?.includes('user ID')) {
-          console.warn('🔐 Authentication issue, user may need to re-login');
+          logger.warn('🔐 Authentication issue, user may need to re-login');
           // TODO: 提示用戶重新登入
         } else if (result.error?.includes('not found')) {
-          console.warn('🔍 Space or folder not found, may need to refresh spaces list');
+          logger.warn('🔍 Space or folder not found, may need to refresh spaces list');
           // TODO: 可以嘗試重新獲取 spaces 並重試
         } else {
-          console.error('💥 Unexpected error:', result.error);
+          logger.error('💥 Unexpected error:', result.error);
           // TODO: 顯示通用錯誤提示
         }
       }
     } catch (error) {
-      console.error('❌ Critical error in addToPromptBear:', error);
+      logger.error('❌ Critical error in addToPromptBear:', error instanceof Error ? error.message : String(error));
       // 這裡可以添加用戶錯誤提示，例如：
       // - 顯示 Chrome notification
       // - 記錄錯誤統計
@@ -416,7 +398,6 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       // 先清除本地快取，確保取得最新資料
       await chrome.storage.local.remove(['folders', 'prompts']);
       const result = await fetchFolders(defaultSpaceId);
-      console.log('Fetched folders (force refresh):', result);
       if (result.success && result.folders) {
         sendResponse({ success: true, data: result.folders });
       } else {
@@ -435,7 +416,6 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       }
 
       const result = await fetchPromptSpaces();
-      console.log('Fetched prompt spaces:', result);
       if (result.success && result.data) {
         sendResponse({ success: true, data: result.data });
       } else {
@@ -455,7 +435,6 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
 
       const { promptSpaceId } = message as Extract<RuntimeMessage, { action: 'getSpaceFolders' }>;
       const result = await fetchSpaceFolders(promptSpaceId);
-      console.log('Fetched space folders:', result);
       if (result.success && result.data) {
         sendResponse({ success: true, data: result.data });
       } else {
@@ -551,33 +530,28 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       }
 
       const { spaceId } = message as Extract<RuntimeMessage, { action: 'setDefaultSpace' }>;
-      console.log('🎯 Setting default space to:', spaceId);
 
       // 立即儲存到本地作為當前預設空間
       await chrome.storage.local.set({ currentDefaultSpaceId: spaceId });
-      console.log('💾 Saved current default space to local storage');
 
       const result = await setDefaultSpace(spaceId);
       if (result.success) {
-        console.log('✅ Successfully set default space');
         sendResponse({ success: true, data: result.data });
       } else {
-        console.error('❌ Failed to set default space:', result.error);
+        logger.error('❌ Failed to set default space:', result.error);
         // 如果 API 失敗，仍然保留本地設定，以便 addToPromptBear 可以使用
         sendResponse({ success: true, warning: 'Local setting saved, but API call failed' });
       }
     } catch (error) {
-      console.error('❌ Error in setDefaultSpace handler:', error);
       sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
     }
   },
   invalidatePromptSpacesCache: async (_, sendResponse) => {
     try {
       await chrome.storage.local.remove(['promptSpaces', 'promptSpacesTimestamp']);
-      console.log('🧹 Prompt spaces cache cleared by side panel reload');
       sendResponse({ success: true });
     } catch (error) {
-      console.error('❌ Error clearing prompt spaces cache:', error);
+      logger.error('❌ Error clearing prompt spaces cache:', error as Error);
       sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
     }
   },
@@ -616,24 +590,10 @@ function handleFormSubmission(
   message: Extract<RuntimeMessage, { action: 'submitForm' }>,
   sendResponse: (response?: any) => void,
 ) {
-  console.log('📨 Background: handleFormSubmission 收到:', {
-    action: message.action,
-    hasFinalOutput: !!message.finalOutput,
-    finalOutputLength: message.finalOutput?.length || 0,
-    finalOutputPreview: message.finalOutput?.substring(0, 100),
-  });
-
   if (!targetTabId) {
-    console.error('❌ Background: No target tab id stored');
     sendResponse({ success: false, error: 'No target tab id stored' });
     return;
   }
-
-  console.log('🚀 Background: 發送表單結果到 content script:', {
-    targetTabId,
-    prompt: message.finalOutput,
-    promptLength: message.finalOutput?.length || 0,
-  });
 
   chrome.tabs.sendMessage(
     targetTabId,
@@ -675,7 +635,6 @@ function handleSidePanelInsert(
         title,
       },
       response => {
-        console.log('📨 Background: Received response from content script', response);
         sendResponse({ success: true, response });
       },
     );
@@ -704,7 +663,7 @@ function initializeEventListeners(): void {
       return true;
     }
 
-    console.warn(`未處理的 action: ${message.action}`);
+    logger.warn(`未處理的 action: ${message.action}`);
     return false;
   });
 }

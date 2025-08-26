@@ -15,12 +15,25 @@ export interface Logger {
 
 /**
  * 安全的跨環境開發模式檢測
- * 支援 Node.js 和瀏覽器環境
+ * 支援 Node.js、瀏覽器和 Chrome Extension 環境
  */
 function getDevMode(): boolean {
   // Node.js 環境檢查
   if (typeof process !== 'undefined' && process.env) {
     return process.env.NODE_ENV === 'development' || Boolean(process.env.__DEV__);
+  }
+
+  // Chrome Extension 環境檢查
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest) {
+    try {
+      const manifest = chrome.runtime.getManifest();
+      // 檢查是否為 unpacked extension (開發模式)
+      // 開發模式的 extension 沒有 update_url，生產模式（從 Chrome Web Store 安裝）有 update_url
+      return !('update_url' in manifest);
+    } catch (error) {
+      // 如果無法取得 manifest，默認為開發模式（安全策略）
+      return true;
+    }
   }
 
   // 瀏覽器環境檢查 - 檢查常見的開發標識
