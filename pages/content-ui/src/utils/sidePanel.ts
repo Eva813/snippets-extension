@@ -1,5 +1,6 @@
 import type { Folder } from '../types/sidePanel';
 import { CHROME_ACTIONS, ERROR_MESSAGES, CSS_CLASSES } from '../constants/sidePanel';
+import { hasFormField } from '@extension/shared/lib/utils/formFieldDetector';
 
 /**
  * Insert a prompt by ID
@@ -16,17 +17,16 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
     return;
   }
 
-  // Check if prompt.content contains 'data-prompt'
-  const hasFormField = prompt.content.includes('data-prompt');
   const title = `${prompt.shortcut} - ${prompt.name}`;
 
-  if (!hasFormField) {
+  if (!hasFormField(prompt)) {
     // No form fields, send message to background
     chrome.runtime.sendMessage(
       {
         action: CHROME_ACTIONS.SIDE_PANEL_INSERT_PROMPT,
         prompt: {
           content: prompt.content,
+          contentJSON: prompt.contentJSON,
           shortcut: prompt.shortcut,
           name: prompt.name,
         },
@@ -35,16 +35,16 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
     );
   } else {
     // Has form fields, create popup via background
-    const content = prompt.content;
     chrome.runtime.sendMessage(
       {
         action: CHROME_ACTIONS.CREATE_WINDOW,
         title,
-        content,
+        content: prompt.content,
+        contentJSON: prompt.contentJSON,
       },
       response => {
         if (import.meta.env.MODE === 'development') {
-          console.log('Window creation response:', response);
+          console.log('Window creation response ,dev:', response);
         }
       },
     );

@@ -1,6 +1,6 @@
 {
   "name": "promptbear-chrome-extension",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "PromptBear - A productivity Chrome extension for managing and inserting text snippets with custom shortcuts",
   "license": "MIT",
   "repository": {
@@ -31,6 +31,10 @@
     "update-version": "bash update_version.sh"
   },
   "dependencies": {
+    "@tiptap/extension-text-align": "^2.26.1",
+    "@tiptap/extension-text-style": "^2.26.1",
+    "@tiptap/html": "^2.26.1",
+    "@tiptap/starter-kit": "^2.26.1",
     "eslint-plugin-tailwindcss": "^3.17.4",
     "react": "18.3.1",
     "react-dom": "18.3.1"
@@ -58,12 +62,12 @@
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
+    "run-script-os": "^1.1.6",
     "tailwindcss": "^3.4.14",
     "tslib": "^2.6.3",
-    "typescript": "5.5.4",
     "turbo": "^2.3.3",
-    "vite": "6.0.5",
-    "run-script-os": "^1.1.6"
+    "typescript": "5.5.4",
+    "vite": "6.0.5"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json}": [

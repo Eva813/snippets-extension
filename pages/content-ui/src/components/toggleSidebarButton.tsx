@@ -21,7 +21,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ visible, onTo
   return (
     <button
       data-testid="sidebar-toggle-btn"
-      className={`toggle-sidebar-btn right bg-primary flex h-8 w-5 items-center justify-center rounded-l-md ${
+      className={`toggle-sidebar-btn right flex h-8 w-5 items-center justify-center rounded-l-md bg-primary ${
         visible ? 'visible' : ''
       }`}
       onClick={handleToggle}>

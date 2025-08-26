@@ -4,8 +4,8 @@
  * 根據環境變數自動切換開發/生產域名
  */
 
-// 檢查是否為開發環境
-const isDev = import.meta.env.DEV;
+// 檢查是否為開發環境 - 使用專案統一的環境變數
+const isDev = process.env.NODE_ENV === 'development';
 
 // 定義域名常量（避免重複）
 const DEVELOPMENT_DOMAIN = 'http://localhost:3000';

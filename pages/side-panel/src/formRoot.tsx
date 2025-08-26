@@ -5,10 +5,13 @@ import ReactDOM from 'react-dom/client';
 // import type { HTMLReactParserOptions } from 'html-react-parser';
 // import parse, { Element } from 'html-react-parser';
 import { renderCustomElement } from '@src/components/renderers/renderCustomElement';
-import { parseHtml } from '@src/lib/utils';
+import { parseContentForFormDisplay } from '@src/lib/utils';
+import type { SupportedContent } from '@extension/shared/lib/tiptap/tiptapConverter';
+
 interface PopupData {
   title: string;
-  content: string;
+  content: string; // HTML (向後相容)
+  contentJSON?: SupportedContent; // JSON (新格式)
 }
 
 const VOID_TAGS = new Set([
@@ -38,7 +41,7 @@ const FormRoot = () => {
           setPopupData(response.data);
           document.title = response.data.title || 'Default Title';
         } else {
-          console.error('未收到 popup 資料');
+          console.error('FormRoot: 未收到 popup 資料');
         }
       });
     };
@@ -55,7 +58,10 @@ const FormRoot = () => {
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
+    setFormData(prev => {
+      const newFormData = { ...prev, [id]: value };
+      return newFormData;
+    });
   }, []);
 
   // 遞迴渲染 DOM ➝ React 元素
@@ -112,12 +118,20 @@ const FormRoot = () => {
     [handleInputChange, initFormData],
   );
 
-  // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹
+  // 利用 useMemo 僅在 popupData 改變時解析 HTML 樹 - 支援 JSON 和 HTML 格式
   const parsedHtmlTree = useMemo(() => {
-    if (!popupData) return null;
-    const root = parseHtml(popupData.content);
-    if (!root) return null;
-    return Array.from(root.childNodes).map((child, i) => renderNode(child, `root-${i}`));
+    if (!popupData) {
+      return null;
+    }
+
+    const root = parseContentForFormDisplay(popupData.contentJSON, popupData.content);
+
+    if (!root) {
+      return null;
+    }
+
+    const nodes = Array.from(root.childNodes).map((child, i) => renderNode(child, `root-${i}`));
+    return nodes;
   }, [popupData, renderNode]);
 
   if (!popupData) {
@@ -165,8 +179,10 @@ const FormRoot = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     // 使用 generateFinalText 產生最終的文字內容
     const finalOutput = generateFinalText(parsedHtmlTree, formData);
+
     chrome.runtime.sendMessage({ action: 'submitForm', finalOutput }, () => {
       window.close();
     });
