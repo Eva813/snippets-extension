@@ -75,19 +75,49 @@ const extensions = [
 ];
 
 /**
- * 內聯格式化標籤列表
- * 這些標籤應該被剝離，只保留文字內容
- * 優先要對應 tipTap 編輯器有的功能
- */
-const FORMATTING_INLINE_TAGS = new Set(['strong', 'em', 'b', 'i', 'u', 'mark', 'sub', 'sup', 'small']);
-
-/**
- * 簡單的 HTML 轉純文字函數（用於此模組內部）
- * 重用現有邏輯的簡化版本
+ * 改進的 HTML 轉純文字函數
+ * 使用 DOM 遍歷 + 智能處理用戶內容，自動解碼HTML實體
+ *
+ * 特殊處理：
+ * - 瀏覽器會將某些用戶輸入當作無效HTML而過濾，如：
+ *   - </.anything (無效結束標籤)
+ *   - <?anything (XML處理指令)
+ * - 我們在DOM解析前先保護這些內容，解析後再還原
  */
 function parseHtmlToText(html: string): string {
+  // 預處理：保護會被瀏覽器HTML解析器過濾的用戶內容
+  //
+  // 問題1：當用戶輸入如 "</.sdfsdf" 時，瀏覽器的innerHTML會將 "</"
+  // 視為無效的結束標籤開始符號而忽略或過濾該內容
+  //
+  // 問題2：當用戶輸入如 "<?anything" 時，瀏覽器會將 "<?"
+  // 視為XML處理指令而特殊處理或過濾該內容
+  //
+  // 解決方案：DOM解析前將這些模式替換為安全的佔位符，
+  // 處理完成後再還原為原始用戶輸入
+  //
+  // 使用時間戳確保佔位符唯一性，避免與用戶內容衝突
+  const timestamp = Date.now();
+  const PROTECTED_END_DOT = `__PROTECTED_END_DOT_${timestamp}__`;
+  const PROTECTED_QUESTION = `__PROTECTED_QUESTION_${timestamp}__`;
+
+  // 更精確的正則：只在段落標籤內進行替換，避免跨段落匹配
+  let protectedHtml = html.replace(/<p([^>]*)>(.*?)<\/\./g, `<p$1>$2${PROTECTED_END_DOT}`);
+  protectedHtml = protectedHtml.replace(/<p([^>]*)>(.*?)<\?/g, `<p$1>$2${PROTECTED_QUESTION}`);
+
+  // 類型安全檢查：確保DOM API可用
+  if (typeof document === 'undefined') {
+    throw new Error('DOM API not available in this environment');
+  }
+
   const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = html;
+  try {
+    tempDiv.innerHTML = protectedHtml;
+  } catch (error) {
+    // 如果DOM解析失敗，回退到簡單的字符串處理
+    console.warn('DOM parsing failed, falling back to string processing:', error);
+    throw new Error('Failed to parse HTML content');
+  }
 
   function traverse(node: globalThis.Node, parentTag?: string, depth: number = 0): string {
     if (node.nodeType === globalThis.Node.TEXT_NODE) {
@@ -104,10 +134,12 @@ function parseHtmlToText(html: string): string {
           if (parentTag === 'li') {
             return content;
           }
+          // 空段落產生空行效果
           if (!content.trim()) {
-            return '\n';
+            return '\n\n';
           }
-          return content + '\n';
+          // 有內容段落只換行
+          return content.trim() + '\n';
         }
         case 'ul':
           return traverseChildren(node, tagName, depth + 1);
@@ -118,15 +150,22 @@ function parseHtmlToText(html: string): string {
         }
         case 'br':
           return '\n';
+        case 'strong':
+        case 'b':
+        case 'em':
+        case 'i':
+        case 'u':
+        case 's':
+        case 'span':
+          // 格式化標籤只提取內容，不保留標籤結構
+          return traverseChildren(node, tagName, depth);
         default: {
           const childContent = traverseChildren(node, tagName, depth);
-
-          // 如果是格式化標籤，只返回內容（剝離標籤）
-          if (FORMATTING_INLINE_TAGS.has(tagName)) {
-            return childContent;
+          // 空的未知元素（如<wer>, <ifram>）重建為文本
+          if (!childContent.trim()) {
+            return `<${tagName}>`;
           }
-
-          // 用戶標記保持原樣（開放標籤 + 內容）
+          // 有內容的未知元素保持結構
           return `<${tagName}>${childContent}`;
         }
       }
@@ -142,31 +181,16 @@ function parseHtmlToText(html: string): string {
   // 直接處理 tempDiv 的子節點，避免包裝 div 標籤
   const childResults = Array.from(tempDiv.childNodes).map(child => traverse(child));
   const raw = childResults.join('');
-  const final = raw.replace(/\n{3,}/g, '\n\n').trim();
+
+  // 還原被保護的用戶內容
+  // 將安全佔位符還原為原始的用戶輸入
+  const restored = raw
+    .replace(new RegExp(PROTECTED_END_DOT, 'g'), '</.')
+    .replace(new RegExp(PROTECTED_QUESTION, 'g'), '<?');
+
+  const final = restored.replace(/\n{3,}/g, '\n\n').trim();
   return final;
 }
-
-// function parseHtmlToText(html: string): string {
-//     // 直接處理原始 HTML 字符串，不使用 DOM 解析
-//     // 這樣可以保留所有原始內容，包括不完整的標籤如 <234234
-
-//     let result = html;
-
-//     // 將 <p> 標籤轉換為換行
-//     result = result.replace(/<\/p>/gi, '\n');
-//     result = result.replace(/<p[^>]*>/gi, '');
-
-//     // 將 <br> 標籤轉換為換行
-//     result = result.replace(/<br\s*\/?>/gi, '\n');
-
-//     // 清理多餘的換行（3個或以上變成2個）
-//     result = result.replace(/\n{3,}/g, '\n\n');
-
-//     // 清理前後空白
-//     result = result.trim();
-
-//     return result;
-//   }
 
 /**
  * 型別守衛：檢查是否為有效的 TipTap 文件格式
