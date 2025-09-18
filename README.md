@@ -1,249 +1,239 @@
-<div align="center">
+# PromptBear Chrome Extension
 
-<picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/99cb6303-64e4-4bed-bf3f-35735353e6de" />
-    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/a5dbf71c-c509-4c4f-80f4-be88a1943b0a" />
-    <img alt="Logo" src="https://github.com/user-attachments/assets/99cb6303-64e4-4bed-bf3f-35735353e6de" />
-</picture>
+<div align="center">
 
 ![](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![](https://img.shields.io/badge/Typescript-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![](https://badges.aleen42.com/src/vitejs.svg)
+![](https://img.shields.io/badge/Chrome_Extension-MV3-green?style=flat-square)
 
-![GitHub action badge](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/actions/workflows/build-zip.yml/badge.svg)
-![GitHub action badge](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/actions/workflows/lint.yml/badge.svg)
-
-<img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://github.com/Jonghakseo/chrome-extension-boilerplate-react-viteFactions&count_bg=%23#222222&title_bg=%23#454545&title=😀&edge_flat=true" alt="hits"/>
-<a href="https://discord.gg/4ERQ6jgV9a" target="_blank"><img src="https://discord.com/api/guilds/1263404974830915637/widget.png"/></a>
-
-> This boilerplate
-> has [Legacy version](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/tree/legacy)
+**Language**: [English](README.md) | [繁體中文](README.zh-TW.md)
 
 </div>
 
-> [!NOTE]
-> This project is listed in the [Awesome Vite](https://github.com/vitejs/awesome-vite)
+## Introduction
 
-> [!TIP]
-> Share storage state between all pages
->
-> https://github.com/user-attachments/assets/3b8e189f-6443-490e-a455-4f9570267f8c
+PromptBear is a powerful productivity Chrome extension designed for managing and inserting text snippets (code snippets). It allows users to quickly insert predefined text content into any webpage through custom shortcuts, significantly boosting work efficiency.
 
-## Table of Contents
+### Core Features
 
-- [Intro](#intro)
-- [Features](#features)
-- [Structure](#structure)
-    - [ChromeExtension](#structure-chrome-extension)
-    - [Packages](#structure-packages)
-    - [Pages](#structure-pages)
-- [Getting started](#getting-started)
-    - [Chrome](#getting-started-chrome)
-    - [Firefox](#getting-started-firefox)
-- [Install dependency](#install-dependency)
-    - [For root](#install-dependency-for-root)
-    - [For module](#install-dependency-for-module)
-- [Community](#community)
-- [Reference](#reference)
-- [Star History](#star-history)
-- [Contributors](#contributors)
+- **Smart Text Insertion**: Support for quick text snippet insertion on any webpage
+- **Custom Shortcuts**: Set unique keyboard combinations for each snippet
+- **Folder Management**: Organize your code snippets and text templates systematically
+- **Shared Folders**: Share snippets with team members with permission management
+- **Smart Forms**: Support dynamic forms with variable input during insertion
+- **Cloud Sync**: Seamless integration with PromptBear platform for cloud storage and sync
+- **Context Menu**: Right-click to add selected text directly to PromptBear platform
+- **Sidebar Management**: Convenient sidebar interface for managing all snippets
 
-## Intro
+### 🎯 Use Cases
 
-This boilerplate helps you create Chrome/Firefox extensions using React and Typescript. It improves
-the build speed and development experience by using Vite and Turborepo.
+- **Programming**: Quick insertion of common code templates and function snippets
+- **Customer Service**: Standardized customer service reply templates
+- **Email Templates**: Common email formats and signatures
+- **Social Media**: Preset reply content and hashtags
 
-## Features
+## 🏗️ Technical Architecture
 
-- [React18](https://reactjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwindcss](https://tailwindcss.com/)
-- [Vite](https://vitejs.dev/) with [Rollup](https://rollupjs.org/)
-- [Turborepo](https://turbo.build/repo)
-- [Prettier](https://prettier.io/)
-- [ESLint](https://eslint.org/)
-- [Chrome Extensions Manifest Version 3](https://developer.chrome.com/docs/extensions/mv3/intro/)
-- [Custom i18n package](/packages/i18n/)
-- [Custom HMR (Hot Module Rebuild) plugin](/packages/hmr/)
-- [End-to-end testing with WebdriverIO](https://webdriver.io/)
+This project adopts a modern frontend technology stack based on Chrome Extension Manifest V3 specification:
 
-## Getting started
+### Core Technologies
 
-1. When you're using Windows run this:
-   - `git config --global core.eol lf`
-   - `git config --global core.autocrlf input`
+- **Framework**: React 18.3.1 + TypeScript 5.5.4
+- **Build Tool**: Vite 6.0.5 + Turborepo 2.3.3
+- **UI Framework**: Tailwind CSS 3.4.14
+- **Content Editor**: TipTap 2.26.1 (Rich text editing)
+- **Package Manager**: pnpm 9.15.1 (Monorepo management)
 
-   **This will set the EOL (End of line) character to be the same as on Linux/macOS. Without this, our bash script won't work, and you will have conflicts with developers on Linux/macOS.**
-2. Clone this repository.( ```git clone https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite``` )
-3. Check your node version is >= than in `.nvmrc` file, recommend to use [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#intro)
-4. Edit `/packages/i18n/locales/`{your locale(s)}/`messages.json`
-5. In the objects `extensionDescription` and `extensionName`, change the `message` fields (leave `description` alone)
-6. In `/.package.json`, change the `version` to the desired version of your extension.
-7. Install pnpm globally: `npm install -g pnpm` (check your node version >= 22.12.0))
-8. Run `pnpm install`
+### Project Structure
 
-Then, depending on the target browser:
+```
+snippets-extension/
+├── chrome-extension/          # Extension core
+│   ├── src/background/        # Background Script (Service Worker)
+│   ├── manifest.js           # Manifest configuration
+│   └── public/               # Static assets (icons, etc.)
+├── pages/                    # Various page components
+│   ├── content/              # Content Script (core insertion logic)
+│   ├── content-ui/           # Sidebar UI interface
+│   ├── popup/                # Popup window
+│   ├── options/              # Settings page
+│   ├── side-panel/           # Side panel
+│   └── ...                   # Other pages
+├── packages/                 # Shared packages
+│   ├── shared/               # Shared utilities and types
+│   ├── storage/              # Storage management
+│   ├── i18n/                 # Internationalization
+│   └── ...                   # Other packages
+└── tests/                    # E2E tests
+```
 
-### For Chrome: <a name="getting-started-chrome"></a>
+## 📦 Installation & Development
 
-1. Run:
-    - Dev: `pnpm dev` (on Windows, you should run as administrator; see [issue#456](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/issues/456))
-    - Prod: `pnpm build`
-2. Open in browser - `chrome://extensions`
-3. Check - <kbd>Developer mode</kbd>
-4. Click - <kbd>Load unpacked</kbd> in the upper left corner
-5. Select the `dist` directory from the boilerplate project
+### System Requirements
 
-### For Firefox: <a name="getting-started-firefox"></a>
+- Node.js >= 20
+- pnpm >= 9.15.1
+- Chrome/Firefox browser
 
-1. Run:
-    - Dev: `pnpm dev:firefox`
-    - Prod: `pnpm build:firefox`
-2. Open in browser - `about:debugging#/runtime/this-firefox`
-3. Click - <kbd>Load Temporary Add-on...</kbd> in the upper right corner
-4. Select the `./dist/manifest.json` file from the boilerplate project
+### Development Environment Setup
 
-> [!NOTE]
-> In Firefox, you load add-ons in temporary mode. That means they'll disappear after each browser close. You have to load the add-on on every browser launch.
+1. **Clone the repository**
+```bash
+git clone https://github.com/Eva813/snippets-extension.git
+cd snippets-extension
+```
 
-## Install dependency for turborepo: <a name="install-dependency"></a>
+2. **Install dependencies**
+```bash
+# Install pnpm (if not already installed)
+npm install -g pnpm
 
-### For root: <a name="install-dependency-for-root"></a>
+# Install project dependencies
+pnpm install
+```
 
-1. Run `pnpm i <package> -w`
+3. **Development mode**
+```bash
+# Chrome development
+pnpm dev
 
-### For module: <a name="install-dependency-for-module"></a>
+# Firefox development
+pnpm dev:firefox
+```
 
-1. Run `pnpm i <package> -F <module name>`
+4. **Load the extension**
 
-`package` - Name of the package you want to install e.g. `nodemon` \
-`module-name` - You can find it inside each `package.json` under the key `name`, e.g. `@extension/content-script`, you can use only `content-script` without `@extension/` prefix
+**Chrome:**
+1. Open `chrome://extensions`
+2. Enable "Developer mode"
+3. Click "Load unpacked"
+4. Select the `dist` folder
 
-## Environment variables
+**Firefox:**
+1. Open `about:debugging#/runtime/this-firefox`
+2. Click "Load Temporary Add-on"
+3. Select the `dist/manifest.json` file
 
-To add an environment variable:
+### Production Build
 
-1. Copy `.example.env` to `.env` (in the same directory)
-2. Add a new record inside `.env`, prefixed with `VITE_`, e.g. `VITE_MY_API_KEY=...`
-3. Edit `./vite-env.d.ts` and in the `ImportMetaEnv` interface, add your variable with the appropriate type, e.g.
+```bash
+# Chrome build
+pnpm build
 
-   `readonly VITE_MY_API_KEY: string;`
-4. Then you can read the variable via `import.meta.env.VITE_MY_API_KEY` (learn more at [Env Variables and Modes](https://vite.dev/guide/env-and-mode))
+# Firefox build
+pnpm build:firefox
 
-#### If you want to set it for each package independently:
+# Build and package ZIP
+pnpm zip
+```
 
-1. Create `.env` inside that package
-2. Open related `vite.config.mts` and add `envDir: '.'` at the end of this config
-3. Rest steps like above
+## Main Feature Modules
 
-#### Remember you can't use global and local at the same time for the same package(It will be overwritten)
+### 1. Content Script System
+- **Location**: `pages/content/`
+- **Function**: Responsible for inserting text snippets into webpages
+- **Core Files**:
+  - `input/inputHandler.ts`: Handle various input fields
+  - `cursor/cursorTracker.ts`: Cursor position tracking
+  - `prompt/promptManager.ts`: Snippet cache management
 
-## Boilerplate structure <a name="structure"></a>
+### 2. Background Script
+- **Location**: `chrome-extension/src/background/`
+- **Function**: Extension's core logic and API communication
+- **Main Features**:
+  - User login status management
+  - API request handling
+  - Context menu functionality
+  - Snippet data synchronization
 
-### Chrome extension <a name="structure-chrome-extension"></a>
+### 3. Sidebar UI
+- **Location**: `pages/content-ui/`
+- **Function**: Provides visual snippet management interface
+- **Features**:
+  - Folder browsing
+  - Snippet search
+  - Shared folder management
+  - Real-time insertion preview
 
-The extension lives in the `chrome-extension` directory and includes the following files:
+### 4. Sharing System
+- **Function**: Support team collaboration with snippet sharing
+- **Permission Management**: View/edit permission control
+- **API Integration**: Seamless integration with PromptBear platform
 
-- [`manifest.js`](chrome-extension/manifest.js) - script that outputs the `manifest.json`
-- [`src/background`](chrome-extension/src/background) - [background script](https://developer.chrome.com/docs/extensions/mv3/background_pages/) 
-  (`background.service_worker` in manifest.json)
-- [`public`](chrome-extension/public/) - icons referenced in the manifest; content CSS for user's page injection
+## 🛠️ Development Commands
 
-> [!IMPORTANT]
-> To facilitate development, the boilerplate is configured to "Read and change all your data on all websites".
-> In production, it's best practice to limit the premissions to only the strictly necessary websites. See
-> [Declaring permissions](https://developer.chrome.com/docs/extensions/develop/concepts/declare-permissions)
-> and edit `manifest.js` accordingly.
+```bash
+# Development
+pnpm dev                    # Start Chrome development mode
+pnpm dev:firefox           # Start Firefox development mode
 
-### Pages <a name="structure-pages"></a>
+# Build
+pnpm build                 # Production build (Chrome)
+pnpm build:firefox         # Production build (Firefox)
+pnpm zip                   # Build and package ZIP
 
-Code that is transpiled to be part of the extension lives in the [pages](pages/) directory.
+# Code Quality
+pnpm lint                  # ESLint check
+pnpm lint:fix              # Auto-fix ESLint issues
+pnpm prettier              # Prettier formatting
+pnpm type-check            # TypeScript type checking
 
-- [`content`](pages/content/) - [content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts)
-  (`content_scripts` in manifest.json)
-- [`content-ui`](pages/content-ui) - React UI rendered in the current page (you can see it at the very bottom when you get started)
-  (`content_scripts` in manifest.json)
-- [`content-runtime`](pages/content-runtime/src/) - [injected content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#functionality);
-  this can be injected from `popup` like standard `content`
-- [`devtools`](pages/devtools/) - [extend the browser DevTools](https://developer.chrome.com/docs/extensions/how-to/devtools/extend-devtools#creating)
-  (`devtools_page` in manifest.json)
-- [`devtools-panel`](pages/devtools-panel/) - [DevTools panel](https://developer.chrome.com/docs/extensions/reference/api/devtools/panels)
-  for [devtools](pages/devtools/src/index.ts)
-- [`new-tab`](pages/new-tab/) - [override the default New Tab page](https://developer.chrome.com/docs/extensions/develop/ui/override-chrome-pages)
-  (`chrome_url_overrides.newtab` in manifest.json)
-- [`options`](pages/options/) - [options page](https://developer.chrome.com/docs/extensions/develop/ui/options-page)
-  (`options_page` in manifest.json)
-- [`popup`](pages/popup/) - [popup](https://developer.chrome.com/docs/extensions/reference/api/action#popup) shown when clicking the extension in the toolbar
-  (`action.default_popup` in manifest.json)
-- [`side-panel`](pages/side-panel/) - [sidepanel (Chrome 114+)](https://developer.chrome.com/docs/extensions/reference/api/sidePanel)
-  (`side_panel.default_path` in manifest.json)
+# Testing
+pnpm e2e                   # E2E testing
+pnpm e2e:firefox           # Firefox E2E testing
 
-### Packages <a name="structure-packages"></a>
+# Cleanup
+pnpm clean                 # Clean all build files
+pnpm clean:install         # Reinstall dependencies
+```
 
-Some shared packages:
+## API Integration
 
-- `dev-utils` - utilities for Chrome extension development (manifest-parser, logger)
-- `i18n` - custom internationalization package; provides i18n function with type safety and other validation
-- `hmr` - custom HMR plugin for Vite, injection script for reload/refresh, HMR dev-server
-- `shared` - shared code for the entire project (types, constants, custom hooks, components etc.)
-- `storage` - helpers for easier integration with [storage](https://developer.chrome.com/docs/extensions/reference/api/storage), e.g. local/session storages
-- `tailwind-config` - shared Tailwind config for entire project
-- `tsconfig` - shared tsconfig for the entire project
-- `ui` - function to merge your Tailwind config with the global one; you can save components here
-- `vite-config` - shared Vite config for the entire project
-- `zipper` - run `pnpm zip` to pack the `dist` folder into `extension-YYYYMMDD-HHmmss.zip` inside the newly created `dist-zip`
-- `e2e` - run `pnpm e2e` for end-to-end tests of your zipped extension on different browsers
+This extension integrates with the PromptBear platform (`https://linxly-nextjs.vercel.app`):
 
-## Troubleshooting
+### Main API Endpoints
+- **User Authentication**: `/api/auth/*`
+- **Snippet Management**: `/api/v1/prompts/*`
+- **Folder Management**: `/api/v1/folders/*`
+- **Sharing Features**: `/api/v1/shared-folders/*`
 
-### Hot module reload seems to have frozen
+### Environment Configuration
+Create a `.env` file to set environment variables:
+```bash
+VITE_API_DOMAIN=https://linxly-nextjs.vercel.app
+VITE_VERCEL_PREVIEW_BYPASS=your_bypass_token
+```
 
-If saving source files doesn't cause the extension HMR code to trigger a reload of the browser page, try this:
+## 🚢 Deployment & Publishing
 
-1. Ctrl+C the development server and restart it (`pnpm run dev`)
-2. If you get a [`grpc` error](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/issues/612),
-   [kill the `turbo` process](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/issues/612#issuecomment-2518982339) and run `pnpm dev` again.
+### Automated Deployment
+The project is configured with GitHub Actions automated workflows:
 
-## Community
+1. **Version Release**: `pnpm update-version` to update version number
+2. **Build & Package**: Automatically build Chrome and Firefox versions
+3. **Store Upload**: Automatically upload to extension stores (requires API key configuration)
 
-To chat with other community members, you can join the [Discord](https://discord.gg/4ERQ6jgV9a) server.
-You can ask questions on that server, and you can also help others.
+### Manual Deployment
+```bash
+# 1. Update version number
+pnpm update-version
 
-Also, suggest new features or share any challenges you've faced while developing Chrome extensions!
+# 2. Build and package
+pnpm zip
 
-## Reference
+# 3. Upload to Chrome Web Store or Firefox Add-ons
+```
 
-- [Chrome Extensions](https://developer.chrome.com/docs/extensions)
-- [Vite Plugin](https://vitejs.dev/guide/api-plugin.html)
-- [Rollup](https://rollupjs.org/guide/en/)
-- [Turborepo](https://turbo.build/repo/docs)
-- [Rollup-plugin-chrome-extension](https://www.extend-chrome.dev/rollup-plugin)
+### Code Standards
+- Use TypeScript strict mode
+- Follow ESLint and Prettier configurations
+- Run `pnpm lint` and `pnpm type-check` before committing
+- Add appropriate tests for new features
 
-## Star History <a name="star-history"></a>
-
-<a href="https://star-history.com/#Jonghakseo/chrome-extension-boilerplate-react-vite&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Jonghakseo/chrome-extension-boilerplate-react-vite&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Jonghakseo/chrome-extension-boilerplate-react-vite&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Jonghakseo/chrome-extension-boilerplate-react-vite&type=Date" />
- </picture>
-</a>
-
-## Contributors <a name="contributors"></a>
-
-This Boilerplate is made possible thanks to all of its contributors.
-
-<a href="https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite/graphs/contributors">
-  <img width="500px" src="https://contrib.rocks/image?repo=Jonghakseo/chrome-extension-boilerplate-react-vite" alt="All Contributors"/>
-</a>
-
----
-
-## Special Thanks To
-
-| <a href="https://jb.gg/OpenSourceSupport"><img width="40" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="JetBrains Logo (Main) logo."></a> | <a href="https://www.linkedin.com/in/j-acks0n"><img width="40" style="border-radius:50%" src='https://avatars.githubusercontent.com/u/23139754' alt='Jackson Hong'/></a> |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ---
 
-Made by [Jonghakseo](https://jonghakseo.github.io/)
+**Developed and maintained by [Eva813](https://github.com/Eva813)**
+
+> 💡 **Tip**: This extension aims to enhance the productivity of developers and content creators. If you have any suggestions for improvement or encounter issues, feel free to contact us anytime!
