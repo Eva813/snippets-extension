@@ -6,6 +6,7 @@ import Header from './components/Header';
 import ToggleSidebarButton from '@src/components/toggleSidebarButton';
 import PromptSpaceSelector from './components/PromptSpaceSelector';
 import ContentArea from './components/contentArea';
+import SharedWithMeModal from './components/sharedWithMeModal';
 
 // Hooks
 import { usePromptSpaces } from './hooks/usePromptSpaces';
@@ -33,6 +34,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [hoveredPromptId, setHoveredPromptId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSharedWithMeModalOpen, setIsSharedWithMeModalOpen] = useState(false);
   const defaultPanelRef = useRef<HTMLDivElement>(null);
   const panelRef = containerRef || defaultPanelRef;
 
@@ -184,6 +186,17 @@ const SidePanel: React.FC<SidePanelProps> = ({
     setSearchQuery(query);
   }, []);
 
+  // Shared folder handlers
+  const handleSharedFoldersClick = useCallback(() => {
+    setIsSharedWithMeModalOpen(true);
+  }, []);
+
+  const handleSharedWithMeModalClose = useCallback(() => {
+    setIsSharedWithMeModalOpen(false);
+  }, []);
+
+  // Shared folder selection is now handled internally by the modal
+
   // Filter folders based on search query
   const filteredFolders = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -275,6 +288,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         displayMode={displayMode}
         toggleDisplayMode={toggleDisplayMode}
         onSearchChange={handleSearchChange}
+        onSharedWithMeClick={handleSharedFoldersClick}
       />
 
       {/* Prompt Space Selection */}
@@ -302,6 +316,9 @@ const SidePanel: React.FC<SidePanelProps> = ({
           onRetry={handleRetry}
         />
       </div>
+
+      {/* Shared with me Modal */}
+      <SharedWithMeModal isOpen={isSharedWithMeModalOpen} onClose={handleSharedWithMeModalClose} />
     </div>
   );
 };

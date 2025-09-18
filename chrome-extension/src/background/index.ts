@@ -6,6 +6,8 @@ import { fetchSpaceFolders, type FolderData } from './utils/fetchSpaceFolders';
 import { getDefaultSpaceIdFromApiData, getDefaultSpaceIdFromCache } from './utils/getDefaultSpaceId';
 import { setDefaultSpace } from './utils/setDefaultSpace';
 import { createPrompt } from './utils/createPrompt';
+import { fetchSharedFolders } from './utils/fetchSharedFolders';
+import { fetchSharedFolderDetails, fetchPublicFolder } from './utils/fetchSharedFolderDetails';
 import { openLoginPage, getApiDomain } from './config/api';
 import { logger } from '../../../packages/shared/lib/logging/logger';
 
@@ -38,7 +40,11 @@ type RuntimeMessage =
   | { action: 'getPromptByShortcut'; shortcut: string }
   | { action: 'addToPromptBear'; selectedText: string; pageUrl?: string; pageTitle?: string }
   | { action: 'setDefaultSpace'; spaceId: string }
-  | { action: 'invalidatePromptSpacesCache' };
+  | { action: 'invalidatePromptSpacesCache' }
+  | { action: 'getSharedFolders' }
+  | { action: 'getSharedFolderDetails'; folderId: string }
+  | { action: 'refreshSharedFolders' }
+  | { action: 'getPublicFolder'; shareToken: string };
 
 // 常數定義
 const PROMPT_SPACES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -358,6 +364,76 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
+// Helper function to search shared prompts by shortcut
+async function getSharedPromptByShortcut(shortcut: string): Promise<any> {
+  try {
+    // 1. First try to get from cache
+    const { sharedPromptsCache, sharedPromptsCacheTimestamp } = await chrome.storage.local.get([
+      'sharedPromptsCache',
+      'sharedPromptsCacheTimestamp',
+    ]);
+
+    // Check if cache is valid (less than 5 minutes old)
+    const cacheValidDuration = 5 * 60 * 1000; // 5 minutes
+    const isCacheValid = sharedPromptsCacheTimestamp && Date.now() - sharedPromptsCacheTimestamp < cacheValidDuration;
+
+    if (isCacheValid && sharedPromptsCache && sharedPromptsCache[shortcut]) {
+      return sharedPromptsCache[shortcut];
+    }
+
+    // 2. If cache is invalid or doesn't contain the shortcut, refresh shared prompts
+    const sharedFoldersResult = await fetchSharedFolders();
+    if (!sharedFoldersResult.success || !sharedFoldersResult.data) {
+      return null;
+    }
+
+    // 3. Build flattened prompts cache from all shared folders
+    const flattenedPrompts: Record<string, any> = {};
+
+    for (const folder of sharedFoldersResult.data.folders) {
+      try {
+        const folderDetailsResult = await fetchSharedFolderDetails(folder.id);
+        if (folderDetailsResult.success && folderDetailsResult.data) {
+          const { prompts } = folderDetailsResult.data;
+
+          // Add each prompt to the flattened cache
+          for (const prompt of prompts) {
+            if (prompt.shortcut) {
+              flattenedPrompts[prompt.shortcut] = {
+                id: prompt.id,
+                name: prompt.name,
+                content: prompt.content,
+                contentJSON: prompt.contentJSON,
+                shortcut: prompt.shortcut,
+                // Add metadata to identify this as a shared prompt
+                isShared: true,
+                sharedFrom: folder.sharedFrom,
+                folderId: folder.id,
+                folderName: folder.name,
+              };
+            }
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch details for shared folder ${folder.id}:`, error);
+        // Continue with other folders even if one fails
+      }
+    }
+
+    // 4. Cache the flattened prompts
+    await chrome.storage.local.set({
+      sharedPromptsCache: flattenedPrompts,
+      sharedPromptsCacheTimestamp: Date.now(),
+    });
+
+    // 5. Return the requested prompt if found
+    return flattenedPrompts[shortcut] || null;
+  } catch (error) {
+    console.error('Error in getSharedPromptByShortcut:', error);
+    return null;
+  }
+}
+
 // 建立一個處理器映射物件
 const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (response?: any) => void) => void> = {
   createWindow: (message, sendResponse) =>
@@ -485,7 +561,7 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
     const { shortcut } = message as { action: 'getPromptByShortcut'; shortcut: string };
 
     try {
-      // 從本地快取中查找 prompts
+      // 1. 優先從本地快取中查找 prompts
       const { prompts } = await chrome.storage.local.get('prompts');
 
       if (prompts && typeof prompts === 'object') {
@@ -496,27 +572,47 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
         }
       }
 
-      // 如果本地沒有 prompts，觸發 fetchFolders
+      // 2. 如果本地沒有 prompts，觸發 fetchFolders
       const defaultSpaceId = await getDefaultSpaceIdFromCache();
       if (!defaultSpaceId) {
-        sendResponse({ success: false, error: 'No prompt space available' });
+        // 如果沒有默認 space，直接查找共享 prompts
+        const sharedPrompt = await getSharedPromptByShortcut(shortcut);
+        if (sharedPrompt) {
+          sendResponse({ success: true, prompt: sharedPrompt });
+          return;
+        }
+        sendResponse({ success: false, error: 'No prompt space available and no shared prompt found' });
         return;
       }
 
       const fetchResult = await fetchFolders(defaultSpaceId);
       if (!fetchResult.success) {
-        sendResponse({ success: false, error: 'Unable to fetch folders' });
+        // 如果 fetchFolders 失敗，嘗試查找共享 prompts
+        const sharedPrompt = await getSharedPromptByShortcut(shortcut);
+        if (sharedPrompt) {
+          sendResponse({ success: true, prompt: sharedPrompt });
+          return;
+        }
+        sendResponse({ success: false, error: 'Unable to fetch folders and no shared prompt found' });
         return;
       }
 
-      // 再次從本地快取中查找 prompts
+      // 3. 再次從本地快取中查找 prompts
       const { prompts: updatedPrompts } = await chrome.storage.local.get('prompts');
       const prompt = updatedPrompts?.[shortcut];
       if (prompt) {
         sendResponse({ success: true, prompt });
-      } else {
-        sendResponse({ success: false, error: 'Prompt not found' });
+        return;
       }
+
+      // 4. 最後嘗試查找共享 prompts
+      const sharedPrompt = await getSharedPromptByShortcut(shortcut);
+      if (sharedPrompt) {
+        sendResponse({ success: true, prompt: sharedPrompt });
+        return;
+      }
+
+      sendResponse({ success: false, error: 'Prompt not found in local or shared folders' });
     } catch (error) {
       sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
     }
@@ -552,6 +648,78 @@ const messageHandlers: Record<string, (message: RuntimeMessage, sendResponse: (r
       sendResponse({ success: true });
     } catch (error) {
       logger.error('❌ Error clearing prompt spaces cache:', error as Error);
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
+    }
+  },
+  getSharedFolders: async (_, sendResponse) => {
+    try {
+      const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+      if (!userLoggedIn) {
+        sendResponse({ success: false, error: 'User not logged in' });
+        return;
+      }
+
+      const result = await fetchSharedFolders();
+      if (result.success && result.data) {
+        sendResponse({ success: true, data: result.data });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
+    }
+  },
+  getSharedFolderDetails: async (message, sendResponse) => {
+    try {
+      const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+      if (!userLoggedIn) {
+        sendResponse({ success: false, error: 'User not logged in' });
+        return;
+      }
+
+      const { folderId } = message as Extract<RuntimeMessage, { action: 'getSharedFolderDetails' }>;
+      const result = await fetchSharedFolderDetails(folderId);
+      if (result.success && result.data) {
+        sendResponse({ success: true, data: result.data });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
+    }
+  },
+  refreshSharedFolders: async (_, sendResponse) => {
+    try {
+      // Clear cache first
+      await chrome.storage.local.remove([
+        'sharedFolders',
+        'sharedFoldersTimestamp',
+        'sharedPromptsCache',
+        'sharedPromptsCacheTimestamp',
+      ]);
+
+      const result = await fetchSharedFolders();
+      if (result.success && result.data) {
+        sendResponse({ success: true, data: result.data });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
+      sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
+    }
+  },
+  getPublicFolder: async (message, sendResponse) => {
+    try {
+      const { shareToken } = message as Extract<RuntimeMessage, { action: 'getPublicFolder' }>;
+
+      const result = await fetchPublicFolder(shareToken);
+
+      if (result.success && result.data) {
+        sendResponse({ success: true, data: result.data });
+      } else {
+        sendResponse({ success: false, error: result.error || 'unknown error' });
+      }
+    } catch (error) {
       sendResponse({ success: false, error: (error as Error).message || 'Unknown error' });
     }
   },
