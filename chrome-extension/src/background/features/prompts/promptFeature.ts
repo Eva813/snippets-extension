@@ -219,33 +219,47 @@ export class PromptFeature {
       // 3. Build flattened prompts cache from all shared folders
       const flattenedPrompts: Record<string, SharedPrompt> = {};
 
-      for (const folder of sharedFoldersResult.data.folders) {
+      // Fetch all folder details in parallel for better performance
+      const folderDetailPromises = sharedFoldersResult.data.folders.map(async folder => {
         try {
           const folderDetailsResult = await fetchSharedFolderDetails(folder.id);
           if (folderDetailsResult.success && folderDetailsResult.data) {
-            const { prompts } = folderDetailsResult.data;
-
-            // Add each prompt to the flattened cache
-            for (const prompt of prompts) {
-              if (prompt.shortcut) {
-                flattenedPrompts[prompt.shortcut] = {
-                  id: prompt.id,
-                  name: prompt.name,
-                  content: prompt.content,
-                  contentJSON: prompt.contentJSON,
-                  shortcut: prompt.shortcut,
-                  // Add metadata to identify this as a shared prompt
-                  isShared: true,
-                  sharedFrom: folder.sharedFrom,
-                  folderId: folder.id,
-                  folderName: folder.name,
-                };
-              }
-            }
+            return {
+              folder,
+              prompts: folderDetailsResult.data.prompts,
+            };
           }
         } catch (error) {
           console.warn(`Failed to fetch details for shared folder ${folder.id}:`, error);
-          // Continue with other folders even if one fails
+          // Return null for failed folders, continue with others
+        }
+        return null;
+      });
+
+      const folderResults = await Promise.all(folderDetailPromises);
+
+      // Process all successful results
+      for (const result of folderResults) {
+        if (result) {
+          const { folder, prompts } = result;
+
+          // Add each prompt to the flattened cache
+          for (const prompt of prompts) {
+            if (prompt.shortcut) {
+              flattenedPrompts[prompt.shortcut] = {
+                id: prompt.id,
+                name: prompt.name,
+                content: prompt.content,
+                contentJSON: prompt.contentJSON,
+                shortcut: prompt.shortcut,
+                // Add metadata to identify this as a shared prompt
+                isShared: true,
+                sharedFrom: folder.sharedFrom,
+                folderId: folder.id,
+                folderName: folder.name,
+              };
+            }
+          }
         }
       }
 

@@ -25,9 +25,9 @@ export class MessageRouter implements TypedMessageRouter {
 
     try {
       await handler(message, sendResponse);
-    } catch (error: any) {
-      logger.error(`處理訊息時發生錯誤: ${message.action}`, error);
-      sendResponse({ success: false, error: error.message || 'Unknown error' });
+    } catch (error: unknown) {
+      logger.error(`處理訊息時發生錯誤: ${message.action}`, error as Error);
+      sendResponse({ success: false, error: (error as Error)?.message || 'Unknown error' });
     }
   }
 

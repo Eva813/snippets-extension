@@ -31,7 +31,9 @@ export interface TypedMessageRouter {
 }
 
 // 工具類型：獲取處理器的參數類型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type HandlerMessage<T extends MessageHandler> = T extends MessageHandler<infer M, any> ? M : never;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type HandlerResponse<T extends MessageHandler> = T extends MessageHandler<any, infer R> ? R : never;
 
 // 工具類型：檢查 action 是否存在
