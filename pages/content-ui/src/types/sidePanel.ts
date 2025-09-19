@@ -86,3 +86,68 @@ export interface ContentAreaProps {
   onInsertPrompt: (id: string, event: React.MouseEvent) => void;
   onRetry: () => void;
 }
+
+// === 共享文件夾相關類型定義 (基於後台 API) ===
+
+export interface SharedFolderItem {
+  id: string;
+  name: string;
+  description?: string;
+  permission: 'view' | 'edit';
+  shareType: 'space' | 'additional';
+  promptCount: number;
+  sharedFrom: string;
+  shareEmail?: string;
+}
+
+export interface SharedFoldersResponse {
+  folders: SharedFolderItem[];
+  total: number;
+}
+
+export interface PromptItem {
+  id: string;
+  name: string;
+  content: string;
+  contentJSON: object | null;
+  shortcut?: string;
+}
+
+export interface SharedFolderDetailResponse {
+  id: string;
+  name: string;
+  description?: string;
+  promptCount: number;
+  sharedFrom: string;
+  shareType: 'space' | 'additional' | 'public';
+  permission: 'view' | 'edit';
+  shareEmail?: string;
+  prompts: PromptItem[];
+}
+
+export interface PublicFolderResponse {
+  available: boolean;
+  data?: {
+    folder: {
+      name: string;
+      description: string;
+    };
+    prompts: PublicPromptItem[];
+  };
+  error?: {
+    code: 'NOT_FOUND' | 'INACTIVE' | 'TEAM_ONLY' | 'FOLDER_DELETED';
+    message: string;
+    cta: {
+      text: string;
+      link: string;
+    };
+  };
+}
+
+export interface PublicPromptItem {
+  id: string;
+  name: string;
+  content: string;
+  contentJSON: object | null;
+  shortcut?: string;
+}
