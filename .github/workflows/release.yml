@@ -79,12 +79,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Chrome Web Store 自動發布
-        if: ${{ secrets.CHROME_CLIENT_ID && secrets.CHROME_CLIENT_SECRET && secrets.CHROME_REFRESH_TOKEN && secrets.CHROME_EXTENSION_ID }}
+        if: vars.ENABLE_CHROME_STORE != 'false'
+        env:
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
         run: |
           ACCESS_TOKEN=$(curl -s -X POST \
-            -d "client_id=${{ secrets.CHROME_CLIENT_ID }}" \
-            -d "client_secret=${{ secrets.CHROME_CLIENT_SECRET }}" \
-            -d "refresh_token=${{ secrets.CHROME_REFRESH_TOKEN }}" \
+            -d "client_id=$CHROME_CLIENT_ID" \
+            -d "client_secret=$CHROME_CLIENT_SECRET" \
+            -d "refresh_token=$CHROME_REFRESH_TOKEN" \
             -d "grant_type=refresh_token" \
             https://oauth2.googleapis.com/token | jq -r .access_token)
 
@@ -98,7 +103,7 @@ jobs:
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "x-goog-api-version: 2" \
             -T "${{ env.PACKAGE_NAME }}" \
-            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}")
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$CHROME_EXTENSION_ID")
 
           echo "上傳回應: $UPLOAD_RESPONSE"
 
@@ -113,7 +118,7 @@ jobs:
             -H "Authorization: Bearer $ACCESS_TOKEN" \
             -H "x-goog-api-version: 2" \
             -H "Content-Length: 0" \
-            "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.CHROME_EXTENSION_ID }}/publish")
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$CHROME_EXTENSION_ID/publish")
 
           echo "發布回應: $PUBLISH_RESPONSE"
 
