@@ -1,43 +1,35 @@
-import type { Folder } from '../types/sidePanel';
+import type { Folder, Prompt, PromptItem } from '../types/sidePanel';
 import { CHROME_ACTIONS, ERROR_MESSAGES, CSS_CLASSES } from '../constants/sidePanel';
 import { hasFormField } from '@extension/shared/lib/utils/formFieldDetector';
 
-// Import the PromptItem type from shared folder details
-interface SharedPromptItem {
-  id: string;
-  name: string;
-  content: string;
-  contentJSON: object | null;
-  shortcut?: string;
-}
-
 /**
- * Insert a prompt by ID
+ * Core function to handle prompt insertion logic
+ * Handles event processing, form field detection, and message sending
  */
-export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEvent): void => {
+const handleInsertPrompt = (promptData: Prompt | PromptItem, title: string, event: React.MouseEvent): void => {
   if (event && event.preventDefault) {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  const prompt = folders.flatMap(folder => folder.prompts).find(prompt => prompt.id === id);
-  if (!prompt) {
-    console.warn(ERROR_MESSAGES.PROMPT_NOT_FOUND);
-    return;
-  }
+  // Create a compatible object for hasFormField function
+  const formFieldCheckData = {
+    content: promptData.content,
+    contentJSON: promptData.contentJSON,
+    shortcut: promptData.shortcut || '',
+    name: promptData.name,
+  };
 
-  const title = `${prompt.shortcut} - ${prompt.name}`;
-
-  if (!hasFormField(prompt)) {
+  if (!hasFormField(formFieldCheckData)) {
     // No form fields, send message to background
     chrome.runtime.sendMessage(
       {
         action: CHROME_ACTIONS.SIDE_PANEL_INSERT_PROMPT,
         prompt: {
-          content: prompt.content,
-          contentJSON: prompt.contentJSON,
-          shortcut: prompt.shortcut,
-          name: prompt.name,
+          content: promptData.content,
+          contentJSON: promptData.contentJSON,
+          shortcut: promptData.shortcut || '',
+          name: promptData.name,
         },
       },
       () => {},
@@ -48,8 +40,8 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
       {
         action: CHROME_ACTIONS.CREATE_WINDOW,
         title,
-        content: prompt.content,
-        contentJSON: prompt.contentJSON,
+        content: promptData.content,
+        contentJSON: promptData.contentJSON,
       },
       response => {
         if (import.meta.env.MODE === 'development') {
@@ -61,14 +53,24 @@ export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEv
 };
 
 /**
- * Insert a shared prompt directly from shared folder data
+ * Insert a prompt by ID
  */
-export const insertSharedPrompt = (prompt: SharedPromptItem, event: React.MouseEvent): void => {
-  if (event && event.preventDefault) {
-    event.preventDefault();
-    event.stopPropagation();
+export const insertPrompt = (folders: Folder[], id: string, event: React.MouseEvent): void => {
+  const prompt = folders.flatMap(folder => folder.prompts).find(prompt => prompt.id === id);
+  if (!prompt) {
+    console.warn(ERROR_MESSAGES.PROMPT_NOT_FOUND);
+    return;
   }
 
+  const title = `${prompt.shortcut} - ${prompt.name}`;
+
+  handleInsertPrompt(prompt, title, event);
+};
+
+/**
+ * Insert a shared prompt directly from shared folder data
+ */
+export const insertSharedPrompt = (prompt: PromptItem, event: React.MouseEvent): void => {
   if (!prompt) {
     console.warn('No prompt provided to insertSharedPrompt');
     return;
@@ -76,45 +78,7 @@ export const insertSharedPrompt = (prompt: SharedPromptItem, event: React.MouseE
 
   const title = `${prompt.shortcut || 'Shared'} - ${prompt.name}`;
 
-  // Adapt SharedPromptItem to Prompt type for hasFormField
-  const promptForFormField = {
-    id: prompt.id,
-    name: prompt.name,
-    content: prompt.content,
-    contentJSON: prompt.contentJSON,
-    shortcut: prompt.shortcut || '',
-  };
-
-  if (!hasFormField(promptForFormField)) {
-    // No form fields, send message to background
-    chrome.runtime.sendMessage(
-      {
-        action: CHROME_ACTIONS.SIDE_PANEL_INSERT_PROMPT,
-        prompt: {
-          content: prompt.content,
-          contentJSON: prompt.contentJSON,
-          shortcut: prompt.shortcut || '',
-          name: prompt.name,
-        },
-      },
-      () => {},
-    );
-  } else {
-    // Has form fields, create popup via background
-    chrome.runtime.sendMessage(
-      {
-        action: CHROME_ACTIONS.CREATE_WINDOW,
-        title,
-        content: prompt.content,
-        contentJSON: prompt.contentJSON,
-      },
-      response => {
-        if (import.meta.env.MODE === 'development') {
-          console.log('Window creation response ,dev:', response);
-        }
-      },
-    );
-  }
+  handleInsertPrompt(prompt, title, event);
 };
 
 /**

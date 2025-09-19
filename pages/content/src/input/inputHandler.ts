@@ -151,12 +151,12 @@ async function checkPromptCandidate(candidate: string): Promise<Prompt | null> {
     });
 
     let result: Prompt | null = null;
-    if (response?.prompt) {
+    if (response?.data) {
       result = {
         shortcut: candidate,
-        content: response.prompt.content,
-        contentJSON: response.prompt.contentJSON,
-        name: response.prompt.name,
+        content: response.data.content,
+        contentJSON: response.data.contentJSON,
+        name: response.data.name,
       };
     }
 
