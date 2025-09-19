@@ -60,7 +60,7 @@ const SharedWithMeModal = memo<SharedWithMeModalProps>(({ isOpen, onClose }) => 
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
-      <div className="relative mx-2 h-[85dvh] w-full max-w-md rounded-md bg-white shadow-md dark:bg-gray-800">
+      <div className="relative mx-2 flex h-[85dvh] w-full max-w-md flex-col rounded-md bg-white shadow-md dark:bg-gray-800">
         {/* Header */}
         {currentView === 'folders' && (
           <div className="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700">
