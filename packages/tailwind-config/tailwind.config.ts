@@ -8,6 +8,8 @@ export default {
         primary: '#3d7a57', // 調深後主色 - 符合 WCAG AA (4.51:1 白字對比)
         'primary-hover': '#2d5a3f', // 調深後懸停色
         'primary-foreground': '#ffffff',
+        secondary: '#3a6f52',
+        'secondary-foreground': '#000000',
         accent: '#c9a800', // 調深後強調色 - 符合 WCAG AA (6.71:1 黑字對比)
         'accent-foreground': '#000000',
         background: '#fbf9f8',

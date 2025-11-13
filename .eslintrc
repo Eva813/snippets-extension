@@ -27,6 +27,12 @@
     "react": {
       "version": "detect",
     },
+    "tailwindcss": {
+      "callees": ["classnames", "clsx", "ctl", "cn"],
+      "config": "packages/tailwind-config/tailwind.config.ts",
+      "cssFiles": [],
+      "removeDuplicates": true,
+    },
   },
   "rules": {
     "react/react-in-jsx-scope": "off",
@@ -34,7 +40,39 @@
     "@typescript-eslint/consistent-type-imports": "error",
     "react/prop-types": "off",
     "tailwindcss/no-custom-classname": ["error", {
-      "whitelist": ["bg-primary", "bg-primary-400", "bg-primary-50", "text-primary", "text-primary-800", "bg-light"]
+      "whitelist": [
+        "bg-primary",
+        "bg-primary-400",
+        "bg-primary-50",
+        "text-primary",
+        "text-primary-800",
+        "bg-light",
+        "border-secondary",
+        "text-secondary",
+        "bg-secondary",
+        "text-secondary-foreground",
+        "text-accent",
+        "bg-accent",
+        "text-accent-foreground",
+        "bg-muted",
+        "text-muted-foreground",
+        "bg-destructive",
+        "text-destructive-foreground",
+        "bg-card",
+        "text-card-foreground",
+        "bg-third",
+        "slide-panel",
+        "content-area",
+        "sidebar-toggle-container",
+        "sidebar-tooltip",
+        "toggle-sidebar-btn",
+        "shortcut-link",
+        "sidebar-options-container",
+        "no-animation",
+        "visible",
+        "extension-container",
+        "overflow-visible"
+      ]
     }]
   },
   "globals": {

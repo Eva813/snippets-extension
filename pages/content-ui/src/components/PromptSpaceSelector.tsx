@@ -74,7 +74,7 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
     );
 
     return (
-      <div className="relative border-b bg-white p-3" ref={dropdownRef}>
+      <div className="relative border-b border-gray-300 bg-white p-3" ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
