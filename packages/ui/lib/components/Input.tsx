@@ -28,6 +28,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, erro
         'motion-safe:focus:translate-y-1',
         'motion-safe:focus:shadow-[1px_2px_0px_0px_#000]',
 
+        // 降低動畫替代方案 (motion-reduce)
+        'motion-reduce:transition-colors',
+        'motion-reduce:focus:outline-2',
+
         // 焦點狀態
         'focus:outline-none',
         'focus:ring-4',

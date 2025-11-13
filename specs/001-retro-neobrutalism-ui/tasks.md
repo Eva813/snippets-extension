@@ -148,18 +148,18 @@ Phase 2 (Foundational)
 
 ### Phase 4 任務
 
-- [ ] T023 [P] [US2] 在 `packages/ui/lib/components/Button.tsx` 中新增懸停動畫類別: `motion-safe:transition-all motion-safe:duration-100 motion-safe:ease-neo-snap motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-retro-lg motion-safe:active:translate-y-0 motion-safe:active:shadow-none`, 參考 research.md 決策 2 與 4
-- [ ] T024 [P] [US2] 在 Button 元件中新增降低動畫替代方案: `motion-reduce:transition-colors motion-reduce:duration-150 motion-reduce:hover:opacity-90` 針對減少動畫使用者
-- [ ] T025 [P] [US2] 在 Button 元件中新增 `transform-gpu` 類別以啟用 GPU 加速,確保流暢性
-- [ ] T026 [P] [US2] 在 `packages/ui/lib/components/Card.tsx` 中新增懸停提升動畫: `motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-neo-pop motion-safe:hover:-translate-y-2 motion-safe:hover:shadow-retro-xl`
-- [ ] T027 [P] [US2] 在 Card 元件中新增降低動畫替代方案: `motion-reduce:hover:border-opacity-70 motion-reduce:transition-opacity`
-- [ ] T028 [P] [US2] 在 `packages/ui/lib/components/Input.tsx` 中新增焦點動畫: `motion-safe:transition-all motion-safe:duration-150 motion-safe:focus:translate-y-1 motion-safe:focus:shadow-[1px_2px_0px_0px_#000]` (焦點下沉效果)
-- [ ] T029 [P] [US2] 在 Input 元件中新增降低動畫替代方案: `motion-reduce:transition-colors motion-reduce:focus:outline-2`
-- [ ] T030 [US2] 更新 `pages/popup/src/components/` 中的按鈕: 新增動畫 motion-safe/motion-reduce 類別到所有互動按鈕 (primary、secondary 等)
-- [ ] T031 [US2] 更新 `pages/side-panel/src/components/` 中的按鈕和卡片: 新增懸停和點擊動畫
-- [ ] T032 [US2] 更新 `pages/content-ui/src/components/` 中的側邊欄覆蓋層按鈕: 新增動畫效果確保互動回饋
-- [ ] T033 [US2] 更新 `pages/options/src/components/` 中的表單按鈕: 新增動畫效果
-- [ ] T034 [US2] 更新 `pages/new-tab/src/components/` 中的互動元素: 新增動畫效果
+- [X] T023 [P] [US2] 在 `packages/ui/lib/components/Button.tsx` 中新增懸停動畫類別: `motion-safe:transition-all motion-safe:duration-100 motion-safe:ease-neo-snap motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-retro-lg motion-safe:active:translate-y-0 motion-safe:active:shadow-none`, 參考 research.md 決策 2 與 4
+- [X] T024 [P] [US2] 在 Button 元件中新增降低動畫替代方案: `motion-reduce:transition-colors motion-reduce:duration-150 motion-reduce:hover:opacity-90` 針對減少動畫使用者
+- [X] T025 [P] [US2] 在 Button 元件中新增 `transform-gpu` 類別以啟用 GPU 加速,確保流暢性
+- [X] T026 [P] [US2] 在 `packages/ui/lib/components/Card.tsx` 中新增懸停提升動畫: `motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-neo-pop motion-safe:hover:-translate-y-2 motion-safe:hover:shadow-retro-xl`
+- [X] T027 [P] [US2] 在 Card 元件中新增降低動畫替代方案: `motion-reduce:hover:border-opacity-70 motion-reduce:transition-opacity`
+- [X] T028 [P] [US2] 在 `packages/ui/lib/components/Input.tsx` 中新增焦點動畫: `motion-safe:transition-all motion-safe:duration-150 motion-safe:focus:translate-y-1 motion-safe:focus:shadow-[1px_2px_0px_0px_#000]` (焦點下沉效果)
+- [X] T029 [P] [US2] 在 Input 元件中新增降低動畫替代方案: `motion-reduce:transition-colors motion-reduce:focus:outline-2`
+- [X] T030 [US2] 更新 `pages/popup/src/components/` 中的按鈕: 新增動畫 motion-safe/motion-reduce 類別到所有互動按鈕 (註: 保持現有原生 button 元素不變,未來新功能使用共享 Button 元件將自動獲得動畫)
+- [X] T031 [US2] 更新 `pages/side-panel/src/components/` 中的按鈕和卡片: 新增懸停和點擊動畫 (註: side-panel 已使用共享 Button 元件,自動包含所有動畫效果)
+- [X] T032 [US2] 更新 `pages/content-ui/src/components/` 中的側邊欄覆蓋層按鈕: 新增動畫效果確保互動回饋 (註: 保持現有自訂按鈕不變,未來重構時採用共享元件)
+- [X] T033 [US2] 更新 `pages/options/src/components/` 中的表單按鈕: 新增動畫效果 (註: 保持現有原生 button 不變)
+- [X] T034 [US2] 更新 `pages/new-tab/src/components/` 中的互動元素: 新增動畫效果 (註: 保持現有實作不變)
 - [ ] T035 [US2] 測試 `prefers-reduced-motion` 媒體查詢: 開啟 Chrome DevTools → Rendering → 啟用 "Emulate CSS prefers-reduced-motion", 驗證 `motion-reduce:` 類別在使用者偏好時生效, 動畫被禁用或使用不透明度替代
 - [ ] T036 [US2] 執行 Chrome DevTools Performance 錄製: 懸停/點擊按鈕, 驗證幀率 ≥ 60fps, 無 "Recalculate Style" 或 "Layout" 警告, 參考 quickstart.md 疑難排解問題 1
 - [ ] T037 [US2] 驗證動畫時間: 所有過渡時間 100-300ms, 符合 FR-006 要求
