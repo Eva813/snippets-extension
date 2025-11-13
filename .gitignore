@@ -18,6 +18,9 @@
 .idea
 **/.turbo
 
+# local settings
+.claude/settings.local.json
+
 # compiled
 chrome-extension/public/manifest.json
 **/tailwind-output.css
