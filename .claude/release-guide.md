@@ -1,6 +1,11 @@
 # Chrome 擴充功能上架流程指南
 
 此文件說明如何為 Chrome 擴充功能創建乾淨的上架版本，確保沒有開發用代碼（如 HMR WebSocket 連接）。
+## 前置條件
+- Node.js 版本 >= 20（推薦使用 v22.12.0）
+- pnpm 已安裝並更新至最新版本
+- 位於專案根目錄 `/Users/black-star-point-frontend/snippets-extension
+nvm use  v22.12.0 , 並遵循 /Users/black-star-point-frontend/snippets-extension/.claude/release-guide.md 產出打包文件
 
 ## 🚀 完整上架流程
 

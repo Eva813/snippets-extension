@@ -7,7 +7,7 @@ interface ToggleSidebarButtonProps {
   onToggle: () => void;
 }
 
-const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ visible, onToggle }) => {
+const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, visible, onToggle }) => {
   const handleToggle = () => {
     // 呼叫 onToggle 函式
     onToggle();
@@ -21,7 +21,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ visible, onTo
   return (
     <button
       data-testid="sidebar-toggle-btn"
-      className={`toggle-sidebar-btn right flex h-8 w-5 items-center justify-center rounded-l-md bg-primary ${
+      className={`toggle-sidebar-btn flex h-8 w-5 items-center justify-center ${alignment === 'left' ? 'rounded-r-md' : 'rounded-l-md'} bg-primary ${
         visible ? 'visible' : ''
       }`}
       onClick={handleToggle}>

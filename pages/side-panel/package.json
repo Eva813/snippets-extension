@@ -21,6 +21,7 @@
   "dependencies": {
     "@extension/shared": "workspace:*",
     "@extension/storage": "workspace:*",
+    "@extension/ui": "workspace:*",
     "@tiptap/core": "^2.26.1",
     "@tiptap/extension-text-align": "^2.26.1",
     "@tiptap/extension-text-style": "^2.26.1",

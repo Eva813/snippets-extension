@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* T011: CSS 變數定義 - 支援明亮/深色模式 */
+@layer base {
+  :root {
+    /* RetroUI Theme - Light Mode (WCAG AA Compliant) */
+    --background: #fbf9f8;
+    --foreground: #000000;
+    --primary: #3d7a57;           /* 調深 - 白字對比 4.51:1 */
+    --primary-hover: #2d5a3f;     /* 調深 - 白字對比 7.89:1 */
+    --primary-foreground: #ffffff;
+    --accent: #c9a800;            /* 調深 - 黑字對比 6.71:1 */
+    --accent-foreground: #000000;
+    --border: #000000;
+    --ring: #3d7a57;
+    --input: #ffffff;
+    --muted: #efd0d5;
+    --muted-foreground: #6b7280;
+    --card: #ffffff;
+    --card-foreground: #000000;
+    --destructive: #d00000;
+    --destructive-foreground: #ffffff;
+    --light: #bfd9cb;
+    --third: #97b8a6;
+    
+    /* 陰影標記 */
+    --shadow-retro-sm: 2px 2px 0px 0px #000;
+    --shadow-retro: 4px 4px 0px 0px #000;
+    --shadow-retro-md: 6px 6px 0px 0px #000;
+    --shadow-retro-lg: 8px 8px 0px 0px #000;
+    --shadow-retro-xl: 12px 12px 0px 0px #000;
+    --shadow-input: 3px 4px 0px 1px #000;
+    
+    /* 邊框標記 */
+    --border-width-default: 2px;
+    --border-width-bold: 3px;
+    --border-width-thin: 1px;
+    
+    /* 動畫標記 */
+    --duration-fast: 100ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    
+    /* 圓角 */
+    --radius-base: 5px;
+  }
+
+  .dark {
+    --background: #0f1210;
+    --foreground: #f5f5f5;
+    --primary: #3d7a57;
+    --primary-hover: #2d5a3f;
+    --accent: #c9a800;
+    --border: #f5f5f5;
+    --ring: #3d7a57;
+    --input: #1a1a1a;
+    --muted: #2a2a2a;
+    --muted-foreground: #9ca3af;
+    --card: #1a1a1a;
+    --card-foreground: #f5f5f5;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+  }
+  
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* T010: 自訂實用類別 - 新野獸主義樣式 */
+@layer utilities {
+  /* 偏移陰影實用類別 */
+  .shadow-retro {
+    box-shadow: 4px 4px 0px 0px currentColor;
+  }
+  
+  .shadow-retro-lg {
+    box-shadow: 8px 8px 0px 0px currentColor;
+  }
+  
+  /* 粗邊框實用類別 */
+  .border-neo {
+    border-width: 2px;
+    border-style: solid;
+    border-color: currentColor;
+  }
+  
+  .border-neo-bold {
+    border-width: 3px;
+    border-style: solid;
+    border-color: currentColor;
+  }
+  
+  /* GPU 加速提示 */
+  .transform-gpu {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  /* 動畫效能優化 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

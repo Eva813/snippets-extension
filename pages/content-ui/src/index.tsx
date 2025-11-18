@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import App from '@src/App';
-import tailwindcssOutput from '../dist/tailwind-output.css?inline';
+import tailwindcssOutput from './tailwind-output.css?inline';
 import globalStyles from './global-styles.css?inline';
 import { getInitializationDelay, idleInitialize } from '@extension/shared/lib/utils/pageUtils';
 

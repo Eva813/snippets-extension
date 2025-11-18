@@ -10,7 +10,7 @@ const SharedWithMeIndicator = memo<SharedWithMeIndicatorProps>(({ onClick }) => 
   const { count, loading } = useSharedFoldersCount();
 
   return (
-    <div className="rounded-lg bg-primary-400 p-1">
+    <div className="bg-primary-400 rounded-lg p-1">
       <div className="group relative">
         <button
           onClick={onClick}
