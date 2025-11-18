@@ -1,5 +1,5 @@
-import { RuntimeMessage, ExtractMessage } from './messages';
-import { AnyResponse } from './responses';
+import type { RuntimeMessage, ExtractMessage } from './messages';
+import type { AnyResponse } from './responses';
 
 // 通用訊息處理器類型
 export type MessageHandler<T extends RuntimeMessage = RuntimeMessage, R extends AnyResponse = AnyResponse> = (

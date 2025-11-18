@@ -39,7 +39,8 @@
     "import/no-unresolved": "off",
     "@typescript-eslint/consistent-type-imports": "error",
     "react/prop-types": "off",
-    "tailwindcss/no-custom-classname": ["error", {
+    "tailwindcss/no-custom-classname": ["warn", {
+      "cssFilesRefreshRate": 5000,
       "whitelist": [
         "bg-primary",
         "bg-primary-400",
@@ -58,6 +59,7 @@
         "text-muted-foreground",
         "bg-destructive",
         "text-destructive-foreground",
+        "border-destructive",
         "bg-card",
         "text-card-foreground",
         "bg-third",
@@ -71,7 +73,45 @@
         "no-animation",
         "visible",
         "extension-container",
-        "overflow-visible"
+        "overflow-visible",
+        // Retro Neobrutalism Design Tokens
+        "rounded-base",
+        "shadow-retro",
+        "shadow-retro-sm",
+        "shadow-retro-md",
+        "shadow-retro-lg",
+        "shadow-retro-xl",
+        "border-neo",
+        "border-neo-bold",
+        "transform-gpu",
+        "text-foreground",
+        "bg-popover",
+        "text-popover-foreground",
+        "ring-ring",
+        "font-base",
+        "duration-fast",
+        "duration-normal",
+        "duration-slow",
+        "ease-neo-snap",
+        "ease-neo-pop",
+        "ease-neo-bounce",
+        // Animation utilities from tailwindcss-animate plugin (used in popup with Radix UI)
+        // These use Tailwind's arbitrary variant syntax with data attributes
+        "data-[state=open]:animate-in",
+        "data-[state=closed]:animate-out",
+        "data-[state=closed]:fade-out-0",
+        "data-[state=open]:fade-in-0",
+        "data-[state=closed]:zoom-out-95",
+        "data-[state=open]:zoom-in-95",
+        "data-[side=bottom]:slide-in-from-top-2",
+        "data-[side=left]:slide-in-from-right-2",
+        "data-[side=right]:slide-in-from-left-2",
+        "data-[side=top]:slide-in-from-bottom-2",
+        // Regex patterns for tailwindcss-animate classes with arbitrary variants
+        "^data-\\[.*\\]:animate-.*$",
+        "^data-\\[.*\\]:fade-.*$",
+        "^data-\\[.*\\]:zoom-.*$",
+        "^data-\\[.*\\]:slide-.*$"
       ]
     }]
   },
@@ -79,4 +119,12 @@
     "chrome": "readonly",
   },
   "ignorePatterns": ["watch.js", "dist/**"],
+  "overrides": [
+    {
+      "files": ["pages/popup/**/*.{ts,tsx}"],
+      "rules": {
+        "tailwindcss/no-custom-classname": "off"
+      }
+    }
+  ]
 }

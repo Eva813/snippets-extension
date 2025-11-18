@@ -13,9 +13,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, erro
       className={cn(
         // 基礎樣式
         'w-full px-4 py-3',
-        'bg-white text-foreground',
-        'border-2 rounded-base',
-        'text-base font-base',
+        'text-foreground bg-white',
+        'rounded-base border-2',
+        'font-base text-base',
         'placeholder:text-muted-foreground',
 
         // 邊框和陰影

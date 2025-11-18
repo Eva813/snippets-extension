@@ -14,16 +14,18 @@ const NewTab = () => {
 
   console.log(t('hello', 'World'));
   return (
-    <div className={`App ${isLight ? 'bg-slate-50' : 'bg-gray-800'}`}>
-      <header className={`App-header ${isLight ? 'text-gray-900' : 'text-gray-100'}`}>
+    <div className={`text-center ${isLight ? 'bg-slate-50' : 'bg-gray-800'}`}>
+      <header
+        className={`flex min-h-screen flex-col items-center justify-center ${isLight ? 'text-gray-900' : 'text-gray-100'}`}
+        style={{ fontSize: 'calc(10px + 2vmin)' }}>
         <button onClick={goGithubSite}>
-          <img src={chrome.runtime.getURL(logo)} className="App-logo" alt="logo" />
+          <img src={chrome.runtime.getURL(logo)} className="h-[40vmin]" alt="logo" />
         </button>
         <p>
           Edit <code>pages/new-tab/src/NewTab.tsx</code>
         </p>
         <h6>The color of this paragraph is defined using SASS.</h6>
-        <Button className="mt-4" onClick={exampleThemeStorage.toggle} theme={theme}>
+        <Button className="mt-4" onClick={exampleThemeStorage.toggle}>
           {t('toggleTheme')}
         </Button>
       </header>

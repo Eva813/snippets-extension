@@ -200,19 +200,27 @@ const FormRoot = () => {
 
   return (
     <>
-      <div className="form-root-container" onKeyDown={handleKeyDown} role="presentation" aria-label="表單區域">
+      <div
+        className="flex h-screen max-h-screen flex-col justify-between"
+        onKeyDown={handleKeyDown}
+        role="presentation"
+        aria-label="表單區域">
         <div style={{ overflowY: 'auto', height: '100%', padding: '1rem' }}>
           {/* 預覽區塊 */}
           <div className="flex-1 overflow-y-auto">{parsedHtmlTree}</div>
         </div>
         {/* 顯示表單資料的偵錯資訊 */}
         {/* <div>{JSON.stringify(formData)}</div> */}
-        <div className="bottom-controls">
-          <div className="right-content">
-            <button className="cancel-button" onClick={handleCancel}>
+        <div className="flex items-center justify-end gap-2.5 rounded bg-white p-5 text-black/[0.87] shadow-md">
+          <div className="flex shrink-0 items-center gap-5">
+            <button
+              className="cursor-pointer border-0 bg-transparent p-0 text-sm hover:cursor-pointer"
+              onClick={handleCancel}>
               Cancel
             </button>
-            <button className="insert-button" onClick={handleSubmit}>
+            <button
+              className="cursor-pointer rounded border-0 bg-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-600"
+              onClick={handleSubmit}>
               Insert
             </button>
           </div>

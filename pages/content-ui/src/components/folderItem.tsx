@@ -72,7 +72,7 @@ export default function FolderItem({
                       <FaArrowAltCircleDown size={20} className="text-primary" />
                     </div>
                   </div>
-                  <span className="inline-flex h-6 max-w-[110px] items-center rounded-full border border-secondary px-3 py-1 text-sm font-medium">
+                  <span className="border-secondary inline-flex h-6 max-w-[110px] items-center rounded-full border px-3 py-1 text-sm font-medium">
                     <HighlightText text={prompt.shortcut} searchQuery={searchQuery || ''} className="block truncate" />
                   </span>
                 </button>

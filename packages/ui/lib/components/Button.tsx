@@ -14,7 +14,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={cn(
           // 基礎樣式
-          'font-bold rounded-base',
+          'rounded-base font-bold',
           'border-2 border-black',
           'transform-gpu', // GPU 加速
 
@@ -24,9 +24,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           size === 'lg' && 'px-8 py-4 text-lg',
 
           // 色彩變體
-          variant === 'primary' && 'bg-primary text-white shadow-retro',
-          variant === 'accent' && 'bg-accent text-black shadow-retro',
-          variant === 'outline' && 'bg-transparent text-black shadow-retro-sm',
+          variant === 'primary' && 'bg-primary shadow-retro text-white',
+          variant === 'accent' && 'bg-accent shadow-retro text-black',
+          variant === 'outline' && 'shadow-retro-sm bg-transparent text-black',
 
           // 互動動畫 (motion-safe)
           'motion-safe:transition-all',

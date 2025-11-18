@@ -105,7 +105,7 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
                       handleSelect(space.id);
                     }}
                     className={`block w-full px-3 py-2 text-left text-sm  hover:bg-gray-100 ${
-                      selectedSpaceId === space.id ? 'bg-light font-bold text-primary' : 'text-gray-900'
+                      selectedSpaceId === space.id ? 'bg-light text-primary font-bold' : 'text-gray-900'
                     }`}>
                     {space.name}
                   </button>
@@ -128,7 +128,7 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
                       handleSelect(space.id);
                     }}
                     className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-100 ${
-                      selectedSpaceId === space.id ? 'bg-light font-bold text-primary' : 'text-gray-900'
+                      selectedSpaceId === space.id ? 'bg-light text-primary font-bold' : 'text-gray-900'
                     }`}>
                     <span>{space.name}</span>
                     {space.isReadOnly && <span className="text-xs text-gray-400">{SECTION_TITLES.VIEW_ONLY}</span>}
