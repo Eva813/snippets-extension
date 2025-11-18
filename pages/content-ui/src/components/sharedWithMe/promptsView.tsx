@@ -113,7 +113,7 @@ const PromptsView = memo<PromptsViewProps>(({ promptsLoading, promptsError, sele
                       </div>
                     </div>
                     {prompt.shortcut && (
-                      <span className="inline-flex h-5 max-w-[80px] items-center rounded-full border border-blue-300 px-2 py-0.5 text-xs font-medium text-black dark:text-white">
+                      <span className="border-secondary inline-flex h-5 max-w-[80px] items-center rounded-full border px-2 py-0.5 text-xs font-medium text-black dark:text-white">
                         <span className="block truncate">{prompt.shortcut}</span>
                       </span>
                     )}

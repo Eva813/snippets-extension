@@ -302,7 +302,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
       </div>
 
       {/* Content Area */}
-      <div role="main" aria-label="Snippets content">
+      <div className="content-area" role="main" aria-label="Snippets content">
         <ContentArea
           folders={filteredFolders}
           isLoading={isLoading}

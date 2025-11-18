@@ -11,10 +11,13 @@ const Panel = () => {
     chrome.tabs.create({ url: 'https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite' });
 
   return (
-    <div className={`App ${isLight ? 'bg-slate-50' : 'bg-gray-800'}`}>
-      <header className={`App-header ${isLight ? 'text-gray-900' : 'text-gray-100'}`}>
+    <div
+      className={`flex h-screen w-full items-center justify-center p-8 text-center ${isLight ? 'bg-slate-50' : 'bg-gray-800'}`}>
+      <header
+        className={`flex h-full flex-col items-center justify-center ${isLight ? 'text-gray-900' : 'text-gray-100'}`}
+        style={{ fontSize: 'calc(10px + 2vmin)' }}>
         <button onClick={goGithubSite}>
-          <img src={chrome.runtime.getURL(logo)} className="App-logo" alt="logo" />
+          <img src={chrome.runtime.getURL(logo)} className="h-[40vmin]" alt="logo" />
         </button>
         <p>
           Edit <code>pages/devtools-panel/src/Panel.tsx</code>

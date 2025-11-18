@@ -17,7 +17,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
   onRetry,
 }) => {
   return (
-    <div className="content-area overflow-y-auto bg-white p-2">
+    <div className="bg-white p-2">
       {isLoading && folders.length === 0 ? (
         <LoadingState />
       ) : loadError ? (

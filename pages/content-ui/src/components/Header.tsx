@@ -94,7 +94,7 @@ const Header = memo<HeaderProps>(
     return (
       <header className="bg-primary px-4 py-2 text-white">
         <div className="flex w-full items-center">
-          <div className="flex w-full items-center rounded-md bg-primary-400 px-4 py-2">
+          <div className="bg-third flex w-full items-center rounded-md px-4 py-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="mr-2 size-5 text-white"
@@ -120,7 +120,7 @@ const Header = memo<HeaderProps>(
         {/* Action Buttons */}
         <div className="flex items-center justify-between sm:mt-0 md:mt-2">
           <div className="flex items-center space-x-2">
-            <div className="rounded-lg bg-primary-400 p-1">
+            <div className="bg-primary-400 rounded-lg p-1">
               <div className="group relative">
                 <button
                   onClick={handleReload}
@@ -144,7 +144,7 @@ const Header = memo<HeaderProps>(
             <SharedWithMeIndicator onClick={onSharedWithMeClick} />
 
             {/* Display Mode Buttons - Grouped */}
-            <div className="flex items-center space-x-2 rounded-lg bg-primary-400 p-1">
+            <div className="bg-primary-400 flex items-center space-x-2 rounded-lg p-1">
               <div className="group relative">
                 <button
                   onClick={() => displayMode !== 'push' && toggleDisplayMode()}
