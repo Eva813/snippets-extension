@@ -5,6 +5,9 @@ import { initializeCursorTracker } from '@src/cursor/cursorTracker';
 import { initializeInputHandler, clearInputHandler } from '@src/input/inputHandler';
 import { safetyManager } from '@src/utils/safetyManager';
 
+// 無條件確認 content script 已載入（用於診斷和測試）
+console.log('[Content Script] Loaded (v' + chrome.runtime.getManifest().version + ')');
+
 const isDev = import.meta.env.MODE === 'development';
 
 async function initialize() {
@@ -115,4 +118,37 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
       }
     }
   }
+});
+
+// 監聽來自 Background 的版本不符訊息
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.action === 'versionMismatchLogout') {
+    const { currentVersion, requiredVersion } = message.data;
+
+    if (isDev) {
+      console.log('[Content Script] Received version mismatch notification:', {
+        currentVersion,
+        requiredVersion,
+      });
+    }
+
+    // 使用 postMessage 通知網頁登出
+    // 這個訊息會被後台的 ExtensionListener.tsx 接收
+    window.postMessage(
+      {
+        type: 'FROM_EXTENSION',
+        action: 'VERSION_MISMATCH_LOGOUT',
+        data: {
+          currentVersion,
+          requiredVersion,
+        },
+      },
+      window.location.origin,
+    );
+
+    sendResponse({ success: true });
+    return true; // 保持 sendResponse 通道開啟
+  }
+
+  return false;
 });
