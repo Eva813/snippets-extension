@@ -162,9 +162,9 @@ export class VersionFeature {
   }
 
   /**
-   * 透過後端 API 登出（當沒有後台 tab 可通知時使用）
-   * 使用 NextAuth 的 signout endpoint 來清除 session
-   * 登出完成後，刷新所有後台 tab 以強制重新檢查認證狀態
+   * 透過後端 Extension 專用登出 API 進行登出（當沒有後台 tab 可通知時使用）
+   * 使用 Extension 專用的 `/api/v1/extension/logout` endpoint
+   * 該 API 會清除 NextAuth session 並回傳 clearExtensionStorage 旗標
    */
   private static async logoutViaAPI(): Promise<void> {
     try {
@@ -176,8 +176,8 @@ export class VersionFeature {
         return;
       }
 
-      // 使用 NextAuth 的 signout endpoint
-      const response = await fetch(`${apiDomain}/api/auth/signout`, {
+      // 🆕 使用 Extension 專用的登出 API
+      const response = await fetch(`${apiDomain}/api/v1/extension/logout`, {
         method: 'POST',
         credentials: 'include', // 重要：攜帶 session cookie
         mode: 'cors',
@@ -185,13 +185,18 @@ export class VersionFeature {
           'Content-Type': 'application/json',
           'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS || '',
         },
-        body: JSON.stringify({
-          callbackUrl: '/login', // NextAuth 參數
-        }),
       });
 
       if (response.ok) {
-        logger.log('[VersionFeature] Backend logout successful via NextAuth');
+        const data = (await response.json()) as { clearExtensionStorage?: boolean };
+
+        logger.log('[VersionFeature] Backend logout successful via Extension API');
+
+        // 根據 API 回應清除 Extension storage
+        if (data.clearExtensionStorage) {
+          await StorageService.clear();
+          logger.log('[VersionFeature] Extension storage cleared by API response');
+        }
 
         // 登出完成後，刷新所有後台 tab 以強制重新檢查認證狀態
         try {
@@ -216,9 +221,23 @@ export class VersionFeature {
         }
       } else {
         logger.warn('[VersionFeature] Backend logout failed:', response.status);
+        // 即使 API 失敗，也要清除 Extension storage 以確保安全
+        await StorageService.clear();
+        logger.warn('[VersionFeature] Extension storage cleared due to API failure');
       }
     } catch (error) {
       logger.error('[VersionFeature] Logout API error:', error instanceof Error ? error.message : String(error));
+      // 錯誤處理：即使 API 呼叫失敗，也要清除 Extension storage
+      try {
+        const { StorageService } = await import('../../services/storageService');
+        await StorageService.clear();
+        logger.warn('[VersionFeature] Extension storage cleared due to API error');
+      } catch (storageError) {
+        logger.error(
+          '[VersionFeature] Failed to clear storage on error:',
+          storageError instanceof Error ? storageError.message : String(storageError),
+        );
+      }
     }
   }
 
