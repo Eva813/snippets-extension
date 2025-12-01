@@ -10,6 +10,10 @@ console.log('[Content Script] Loaded (v' + chrome.runtime.getManifest().version 
 
 const isDev = import.meta.env.MODE === 'development';
 
+// 🔒 登出狀態標記 - 防止 MutationObserver 在登出期間誤判重新登入
+let isLoggingOut = false;
+let logoutTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
 async function initialize() {
   try {
     // 初始化安全管理器，並檢查操作安全性
@@ -25,8 +29,37 @@ async function initialize() {
     // 檢查使用者是否已登入
     const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
 
+    // 🆕 主動檢查 NextAuth session（比 DOM 偵測更可靠）
+    if (!userLoggedIn) {
+      if (isDev) console.log('[Content Script] Storage empty, checking NextAuth session...');
+
+      try {
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const session = await response.json();
+          if (session && session.user) {
+            if (isDev) console.log('[Content Script] Found active NextAuth session, setting storage');
+
+            await chrome.storage.local.set({
+              userLoggedIn: true,
+              apiDomain: window.location.origin,
+            });
+          }
+        }
+      } catch (error) {
+        if (isDev) console.log('[Content Script] Session check failed:', error);
+      }
+    }
+
+    // 重新檢查儲存
+    const { userLoggedIn: updatedUserLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+
     // 只有在使用者已登入時才初始化相關功能
-    if (userLoggedIn) {
+    if (updatedUserLoggedIn) {
       initializeInputHandler();
       initializeCursorTracker();
       await initializePromptManager();
@@ -78,17 +111,21 @@ window.addEventListener('message', event => {
   }
 
   if (event.data && event.data.type === 'FROM_SITE_HEADER' && event.data.action === 'USER_LOGGED_OUT') {
+    // 🔒 立即標記登出狀態，防止 MutationObserver 誤判
+    isLoggingOut = true;
+    if (isDev) console.log('[Content Script] 收到網站登出通知，標記登出狀態');
+
     // 將登出訊息傳遞給背景腳本 (Background Script)
     chrome.runtime.sendMessage(
       {
         action: 'userLoggedOut',
       },
-      response => {
+      () => {
         if (chrome.runtime.lastError) {
           if (isDev)
             console.error('Failed to send logout message to background script:', chrome.runtime.lastError.message);
         } else {
-          if (isDev) console.log('Background script response:', response);
+          if (isDev) console.log('Background script logout response received');
         }
       },
     );
@@ -103,6 +140,17 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
       if (isDev) console.log('[Content Script] 使用者登出，清理快取');
       clearPromptCache();
       clearInputHandler();
+
+      // 🔒 設置 fallback timeout - 2 秒後自動重置登出狀態
+      // 以防網站無法發送 LOGOUT_COMPLETED 訊息
+      if (logoutTimeoutId !== null) {
+        clearTimeout(logoutTimeoutId);
+      }
+      logoutTimeoutId = setTimeout(() => {
+        isLoggingOut = false;
+        logoutTimeoutId = null;
+        if (isDev) console.log('[Content Script] 登出超時，自動重置登出狀態');
+      }, 2000);
     }
     // 使用者登入
     if (changes.userLoggedIn?.newValue === true) {
@@ -118,6 +166,76 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
       }
     }
   }
+});
+
+// 🆕 監聽頁面內容變化（用於偵測登入狀態變化）
+// 當使用者登出後重新登入，需要重新檢查儲存
+let lastSessionCheck = 0;
+const SESSION_CHECK_INTERVAL = 2000; // 2 秒檢查一次
+
+const observer = new MutationObserver(async () => {
+  // 節流器：防止 MutationObserver 過度檢查
+  const now = Date.now();
+  if (now - lastSessionCheck < SESSION_CHECK_INTERVAL) {
+    return;
+  }
+  lastSessionCheck = now;
+
+  const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+
+  // 🔒 如果正在登出，跳過 session 檢查
+  if (isLoggingOut) {
+    if (isDev) console.log('[Content Script] 登出中，跳過 session 檢查');
+    return;
+  }
+
+  // 如果儲存中沒有登入狀態，但頁面有效，嘗試重新檢查 session
+  if (!userLoggedIn) {
+    if (isDev) console.log('[Content Script] 偵測到頁面變化，重新檢查 NextAuth session...');
+
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const session = await response.json();
+        if (session && session.user) {
+          if (isDev) console.log('[Content Script] 偵測到重新登入，更新儲存');
+
+          await chrome.storage.local.set({
+            userLoggedIn: true,
+            apiDomain: window.location.origin,
+          });
+
+          // 通知 Background 更新 icon
+          try {
+            chrome.runtime.sendMessage({ action: 'updateIcon' }, () => {
+              if (chrome.runtime.lastError) {
+                if (isDev)
+                  console.error('[Content Script] Failed to send updateIcon:', chrome.runtime.lastError.message);
+              } else if (isDev) {
+                console.log('[Content Script] updateIcon sent successfully');
+              }
+            });
+          } catch (error) {
+            if (isDev) console.error('[Content Script] Failed to send updateIcon message:', error);
+          }
+        }
+      }
+    } catch (error) {
+      if (isDev) console.log('[Content Script] 重新檢查 session 失敗:', error);
+    }
+  }
+});
+
+// 監聽 body 的變化（用於偵測登入/登出後的頁面重新導向）
+observer.observe(document.body, {
+  subtree: true,
+  childList: true,
+  attributes: true,
+  attributeFilter: ['class', 'data-state'],
 });
 
 // 監聽來自 Background 的版本不符訊息
@@ -150,5 +268,54 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true; // 保持 sendResponse 通道開啟
   }
 
+  // 🆕 處理 Extension 主動請求登出
+  if (message.action === 'extensionRequestLogout') {
+    const { reason } = message.data;
+
+    // 🔒 立即標記登出狀態
+    isLoggingOut = true;
+    if (isDev) {
+      console.log('[Content Script] Extension logout request received:', reason);
+    }
+
+    // 使用 postMessage 通知網頁執行登出
+    // 這個訊息會被後台的 ExtensionListener.tsx 接收
+    window.postMessage(
+      {
+        type: 'FROM_EXTENSION',
+        action: 'REQUEST_LOGOUT',
+        data: { reason },
+      },
+      window.location.origin,
+    );
+
+    sendResponse({ success: true });
+    return true; // 保持 sendResponse 通道開啟
+  }
+
   return false;
+});
+
+// 🆕 監聽來自網站的登出完成確認訊息
+window.addEventListener('message', event => {
+  // 驗證訊息來源
+  if (event.origin !== window.location.origin) {
+    return;
+  }
+
+  // 網站確認登出流程完成
+  if (event.data && event.data.type === 'FROM_LOGIN_PAGE' && event.data.action === 'LOGOUT_COMPLETED') {
+    if (isDev) {
+      console.log('[Content Script] 收到網站登出完成確認，重置登出狀態');
+    }
+
+    // 🔒 立即重置登出標記，恢復正常監聽
+    isLoggingOut = false;
+
+    // 清除任何未完成的 timeout
+    if (logoutTimeoutId !== null) {
+      clearTimeout(logoutTimeoutId);
+      logoutTimeoutId = null;
+    }
+  }
 });

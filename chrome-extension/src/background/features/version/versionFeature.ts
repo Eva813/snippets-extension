@@ -98,6 +98,7 @@ export class VersionFeature {
 
   /**
    * 通知所有符合條件的 Tab 登出
+   * 如果沒有後台 tab 開啟，或所有通知都失敗，則直接呼叫 API 登出以確保狀態同步
    */
   private static async notifyAllTabsLogout(mismatchInfo: VersionMismatchInfo): Promise<void> {
     try {
@@ -106,11 +107,19 @@ export class VersionFeature {
         url: ['https://linxly-nextjs.vercel.app/*', 'http://localhost:3000/*'],
       });
 
+      if (tabs.length === 0) {
+        // 沒有後台 tab 開啟 → 直接呼叫後端登出 API
+        logger.log('[VersionFeature] No backend tabs open, calling logout API directly');
+        await this.logoutViaAPI();
+        return;
+      }
+
+      // 有後台 tab → 向每個 tab 發送訊息
       logger.log(`[VersionFeature] Notifying ${tabs.length} tabs about version mismatch`);
 
-      // 向每個 tab 發送訊息
+      let successCount = 0;
       const promises = tabs.map(async tab => {
-        if (tab.id === undefined) return;
+        if (tab.id === undefined) return false;
 
         try {
           await chrome.tabs.sendMessage(tab.id, {
@@ -120,21 +129,96 @@ export class VersionFeature {
               requiredVersion: mismatchInfo.requiredVersion,
             },
           });
+          return true;
         } catch (error) {
           // 某些 tab 可能無法接收訊息（例如尚未載入 content script）
           logger.warn(
             `[VersionFeature] Failed to notify tab ${tab.id}:`,
             error instanceof Error ? error.message : String(error),
           );
+          return false;
         }
       });
 
-      await Promise.allSettled(promises);
+      const results = await Promise.allSettled(promises);
+      successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
+
+      logger.log(`[VersionFeature] Tab notification results: ${successCount}/${tabs.length} succeeded`);
+
+      // 如果沒有任何 tab 成功接收訊息，呼叫後端登出 API 作為備案
+      if (successCount === 0) {
+        logger.log('[VersionFeature] All tab notifications failed, calling logout API as fallback');
+        await this.logoutViaAPI();
+      }
     } catch (error) {
       logger.error(
         '[VersionFeature] notifyAllTabsLogout error:',
         error instanceof Error ? error.message : String(error),
       );
+      // 若 tabs.query 本身失敗，也嘗試後端登出以確保用戶被登出
+      logger.log('[VersionFeature] Attempting fallback logout due to tabs.query error');
+      await this.logoutViaAPI();
+    }
+  }
+
+  /**
+   * 透過後端 API 登出（當沒有後台 tab 可通知時使用）
+   * 使用 NextAuth 的 signout endpoint 來清除 session
+   * 登出完成後，刷新所有後台 tab 以強制重新檢查認證狀態
+   */
+  private static async logoutViaAPI(): Promise<void> {
+    try {
+      const { StorageService } = await import('../../services/storageService');
+      const apiDomain = await StorageService.getApiDomain();
+
+      if (!apiDomain) {
+        logger.warn('[VersionFeature] No API domain found, skipping backend logout');
+        return;
+      }
+
+      // 使用 NextAuth 的 signout endpoint
+      const response = await fetch(`${apiDomain}/api/auth/signout`, {
+        method: 'POST',
+        credentials: 'include', // 重要：攜帶 session cookie
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-vercel-protection-bypass': import.meta.env.VITE_VERCEL_PREVIEW_BYPASS || '',
+        },
+        body: JSON.stringify({
+          callbackUrl: '/login', // NextAuth 參數
+        }),
+      });
+
+      if (response.ok) {
+        logger.log('[VersionFeature] Backend logout successful via NextAuth');
+
+        // 登出完成後，刷新所有後台 tab 以強制重新檢查認證狀態
+        try {
+          const tabs = await chrome.tabs.query({
+            url: ['https://linxly-nextjs.vercel.app/*', 'http://localhost:3000/*'],
+          });
+
+          tabs.forEach(tab => {
+            if (tab.id !== undefined) {
+              chrome.tabs.reload(tab.id);
+            }
+          });
+
+          if (tabs.length > 0) {
+            logger.log(`[VersionFeature] Refreshed ${tabs.length} backend tabs after logout`);
+          }
+        } catch (refreshError) {
+          logger.warn(
+            '[VersionFeature] Failed to refresh tabs:',
+            refreshError instanceof Error ? refreshError.message : String(refreshError),
+          );
+        }
+      } else {
+        logger.warn('[VersionFeature] Backend logout failed:', response.status);
+      }
+    } catch (error) {
+      logger.error('[VersionFeature] Logout API error:', error instanceof Error ? error.message : String(error));
     }
   }
 

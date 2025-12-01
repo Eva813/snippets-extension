@@ -50,6 +50,7 @@ function registerMessageHandlers(): void {
   messageRouter.register('updateUserStatusFromClient', AuthFeature.updateUserStatusFromClient);
   messageRouter.register('userLoggedOut', AuthFeature.userLoggedOut);
   messageRouter.register('updateIcon', AuthFeature.updateIcon);
+  messageRouter.register('requestLogout', AuthFeature.requestLogout);
 
   // 版本檢查相關
   messageRouter.register('checkExtensionVersion', VersionFeature.checkExtensionVersion);
@@ -76,14 +77,15 @@ async function initialize(): Promise<void> {
   try {
     logger.log('🚀 Starting background script initialization...');
 
+    // 🔧 最優先：立即設置訊息監聽器（確保即使初始化失敗也能接收訊息）
+    messageRouter.setupMessageListener();
+    logger.log('✅ Message listener setup complete');
+
     // 初始化圖示
     await AuthFeature.initializeIcon();
 
     // 註冊訊息處理器
     registerMessageHandlers();
-
-    // 設置訊息路由
-    messageRouter.setupMessageListener();
 
     // 設置事件管理
     eventManager.init();
@@ -98,3 +100,25 @@ async function initialize(): Promise<void> {
 
 // 啟動應用程式
 initialize();
+
+// 🔧 開發工具：診斷訊息處理
+if (import.meta.env.MODE === 'development') {
+  (globalThis as any).__extensionDebug = {
+    testMessage: () => {
+      chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false }, (response: any) => {
+        console.log('[Debug] updateIcon response:', response);
+      });
+    },
+    listHandlers: () => {
+      const handlers = (messageRouter as any).handlers;
+      console.log('[Debug] Registered handlers:', Array.from(handlers.keys()));
+    },
+    testLogout: () => {
+      chrome.runtime.sendMessage({ action: 'requestLogout', reason: 'debug_test' }, (response: any) => {
+        console.log('[Debug] requestLogout response:', response);
+      });
+    },
+  };
+
+  console.log('[Background Script] 🔧 Debug tools available: window.__extensionDebug');
+}

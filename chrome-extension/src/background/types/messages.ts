@@ -39,6 +39,7 @@ export type RuntimeMessage =
   | { action: 'updateIcon'; hasFolders: boolean }
   | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
   | { action: 'userLoggedOut' }
+  | { action: 'requestLogout'; reason?: string }
 
   // 版本檢查相關
   | { action: 'checkExtensionVersion' }
@@ -71,6 +72,7 @@ export type InvalidatePromptSpacesCacheMessage = ExtractMessage<RuntimeMessage, 
 export type UpdateIconMessage = ExtractMessage<RuntimeMessage, 'updateIcon'>;
 export type UpdateUserStatusFromClientMessage = ExtractMessage<RuntimeMessage, 'updateUserStatusFromClient'>;
 export type UserLoggedOutMessage = ExtractMessage<RuntimeMessage, 'userLoggedOut'>;
+export type RequestLogoutMessage = ExtractMessage<RuntimeMessage, 'requestLogout'>;
 
 export type CheckExtensionVersionMessage = ExtractMessage<RuntimeMessage, 'checkExtensionVersion'>;
 export type NotifyVersionMismatchMessage = ExtractMessage<RuntimeMessage, 'notifyVersionMismatch'>;
