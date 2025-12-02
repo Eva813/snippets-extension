@@ -6,6 +6,9 @@ export interface PromptData {
   name: string;
 }
 
+// 版本檢查相關介面
+import type { VersionMismatchInfo } from './version';
+
 // 統一的 Runtime 訊息類型定義
 export type RuntimeMessage =
   // UI 相關
@@ -35,7 +38,12 @@ export type RuntimeMessage =
   // 認證相關
   | { action: 'updateIcon'; hasFolders: boolean }
   | { action: 'updateUserStatusFromClient'; data: { status: 'loggedIn' | 'loggedOut' }; domain: string }
-  | { action: 'userLoggedOut' };
+  | { action: 'userLoggedOut' }
+  | { action: 'requestLogout'; reason?: string }
+
+  // 版本檢查相關
+  | { action: 'checkExtensionVersion' }
+  | { action: 'notifyVersionMismatch'; versionInfo: VersionMismatchInfo };
 
 // 提取特定 action 的訊息類型工具類型
 export type ExtractMessage<T extends RuntimeMessage, A extends T['action']> = Extract<T, { action: A }>;
@@ -64,3 +72,7 @@ export type InvalidatePromptSpacesCacheMessage = ExtractMessage<RuntimeMessage, 
 export type UpdateIconMessage = ExtractMessage<RuntimeMessage, 'updateIcon'>;
 export type UpdateUserStatusFromClientMessage = ExtractMessage<RuntimeMessage, 'updateUserStatusFromClient'>;
 export type UserLoggedOutMessage = ExtractMessage<RuntimeMessage, 'userLoggedOut'>;
+export type RequestLogoutMessage = ExtractMessage<RuntimeMessage, 'requestLogout'>;
+
+export type CheckExtensionVersionMessage = ExtractMessage<RuntimeMessage, 'checkExtensionVersion'>;
+export type NotifyVersionMismatchMessage = ExtractMessage<RuntimeMessage, 'notifyVersionMismatch'>;
