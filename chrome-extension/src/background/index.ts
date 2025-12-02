@@ -11,6 +11,7 @@ import { FolderFeature } from './features/folders/folderFeature';
 import { SpaceFeature } from './features/spaces/spaceFeature';
 import { AuthFeature } from './features/auth/authFeature';
 import { UIFeature } from './features/ui/uiFeature';
+import { VersionFeature } from './features/version/versionFeature';
 
 // 工具層
 import { sanitizePageTitle } from './utils/pageUtils';
@@ -49,6 +50,11 @@ function registerMessageHandlers(): void {
   messageRouter.register('updateUserStatusFromClient', AuthFeature.updateUserStatusFromClient);
   messageRouter.register('userLoggedOut', AuthFeature.userLoggedOut);
   messageRouter.register('updateIcon', AuthFeature.updateIcon);
+  messageRouter.register('requestLogout', AuthFeature.requestLogout);
+
+  // 版本檢查相關
+  messageRouter.register('checkExtensionVersion', VersionFeature.checkExtensionVersion);
+  messageRouter.register('notifyVersionMismatch', VersionFeature.notifyVersionMismatch);
 }
 
 // Context Menu 處理器
@@ -69,24 +75,50 @@ async function handleContextMenuClick(info: chrome.contextMenus.OnClickData, tab
 // 初始化應用程式
 async function initialize(): Promise<void> {
   try {
+    logger.log('🚀 Starting background script initialization...');
+
+    // 🔧 最優先：立即設置訊息監聽器（確保即使初始化失敗也能接收訊息）
+    messageRouter.setupMessageListener();
+    logger.log('✅ Message listener setup complete');
+
     // 初始化圖示
     await AuthFeature.initializeIcon();
 
     // 註冊訊息處理器
     registerMessageHandlers();
 
-    // 設置訊息路由
-    messageRouter.setupMessageListener();
-
     // 設置事件管理
     eventManager.init();
     eventManager.setupContextMenuHandler(handleContextMenuClick);
 
-    logger.log('🚀 Background script initialized successfully');
+    logger.log('✅ Background script initialized successfully');
   } catch (error) {
-    logger.error('❌ Failed to initialize background script:', error instanceof Error ? error.message : String(error));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('❌ Background script initialization failed:', errorMessage);
   }
 }
 
 // 啟動應用程式
 initialize();
+
+// 🔧 開發工具：診斷訊息處理
+if (import.meta.env.MODE === 'development') {
+  (globalThis as any).__extensionDebug = {
+    testMessage: () => {
+      chrome.runtime.sendMessage({ action: 'updateIcon', hasFolders: false }, (response: any) => {
+        console.log('[Debug] updateIcon response:', response);
+      });
+    },
+    listHandlers: () => {
+      const handlers = (messageRouter as any).handlers;
+      console.log('[Debug] Registered handlers:', Array.from(handlers.keys()));
+    },
+    testLogout: () => {
+      chrome.runtime.sendMessage({ action: 'requestLogout', reason: 'debug_test' }, (response: any) => {
+        console.log('[Debug] requestLogout response:', response);
+      });
+    },
+  };
+
+  console.log('[Background Script] 🔧 Debug tools available: window.__extensionDebug');
+}
