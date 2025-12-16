@@ -59,9 +59,13 @@ export const UI_TEXT = {
   SHARE_TYPE_PUBLIC: 'Public Share',
 } as const;
 
-// External URLs
+// External URLs - 根據環境動態設定
+const isDev = import.meta.env.MODE === 'development';
+const DEVELOPMENT_DOMAIN = 'http://localhost:3003';
+const PRODUCTION_DOMAIN = 'https://promptbear.ai';
+
 export const EXTERNAL_URLS = {
-  DASHBOARD: 'https://promptbear.ai/',
+  DASHBOARD: isDev ? `${DEVELOPMENT_DOMAIN}/` : `${PRODUCTION_DOMAIN}/`,
 } as const;
 
 // CSS classes
