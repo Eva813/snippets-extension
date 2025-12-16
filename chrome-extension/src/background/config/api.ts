@@ -8,8 +8,8 @@
 const isDev = process.env.NODE_ENV === 'development';
 
 // 定義域名常量（避免重複）
-const DEVELOPMENT_DOMAIN = 'http://localhost:3000';
-const PRODUCTION_DOMAIN = 'https://linxly-nextjs.vercel.app';
+const DEVELOPMENT_DOMAIN = 'http://localhost:3003';
+const PRODUCTION_DOMAIN = 'https://promptbear.ai';
 
 export const API_CONFIG = {
   // 根據環境動態設定預設域名

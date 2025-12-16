@@ -29,11 +29,13 @@ export class EventManager {
   }
 
   setupContextMenu(): void {
-    // 創建 Context Menu（Chrome 會自動使用 manifest 中的 16px icon）
-    chrome.contextMenus.create({
-      id: 'addToPromptBear',
-      title: 'Add to PromptBear',
-      contexts: ['selection'],
+    // 只在安裝或更新時創建 Context Menu，避免重複創建
+    chrome.runtime.onInstalled.addListener(() => {
+      chrome.contextMenus.create({
+        id: 'addToPromptBear',
+        title: 'Add to PromptBear',
+        contexts: ['selection'],
+      });
     });
   }
 

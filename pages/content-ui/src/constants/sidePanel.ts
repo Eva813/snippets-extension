@@ -61,7 +61,7 @@ export const UI_TEXT = {
 
 // External URLs
 export const EXTERNAL_URLS = {
-  DASHBOARD: 'https://linxly-nextjs.vercel.app/',
+  DASHBOARD: 'https://promptbear.ai/',
 } as const;
 
 // CSS classes

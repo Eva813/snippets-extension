@@ -190,7 +190,7 @@ pnpm clean:install         # 重新安裝依賴
 
 ## API 整合
 
-本擴展程式與 PromptBear 平台 (`https://linxly-nextjs.vercel.app`) 整合：
+本擴展程式與 PromptBear 平台 (`https://promptbear.ai`) 整合：
 
 ### 主要 API 端點
 - **用戶認證**: `/api/auth/*`
@@ -201,7 +201,7 @@ pnpm clean:install         # 重新安裝依賴
 ### 環境配置
 創建 `.env` 檔案設定環境變數：
 ```bash
-VITE_API_DOMAIN=https://linxly-nextjs.vercel.app
+VITE_API_DOMAIN=https://promptbear.ai
 VITE_VERCEL_PREVIEW_BYPASS=your_bypass_token
 ```
 
