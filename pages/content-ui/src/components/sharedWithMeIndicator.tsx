@@ -6,7 +6,7 @@ interface SharedWithMeIndicatorProps {
   onClick: () => void;
 }
 
-const SharedWithMeIndicator = memo<SharedWithMeIndicatorProps>(({ onClick }) => {
+const SharedWithMeIndicator = memo<SharedWithMeIndicatorProps>(() => {
   const { count, loading } = useSharedFoldersCount();
 
   return (
