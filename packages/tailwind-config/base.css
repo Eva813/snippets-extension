@@ -48,20 +48,29 @@
   }
 
   .dark {
-    --background: #0f1210;
-    --foreground: #f5f5f5;
-    --primary: #3d7a57;
-    --primary-hover: #2d5a3f;
-    --accent: #c9a800;
-    --border: #f5f5f5;
-    --ring: #3d7a57;
-    --input: #1a1a1a;
-    --muted: #2a2a2a;
-    --muted-foreground: #9ca3af;
-    --card: #1a1a1a;
-    --card-foreground: #f5f5f5;
+    /* 灰色底、白字、黃色反白 */
+    --background: #374151;           /* gray-700 灰色背景 */
+    --foreground: #ffffff;           /* 白色文字 */
+    --primary: #4ade80;              /* 綠色主色（較亮以配合深色背景） */
+    --primary-hover: #22c55e;
+    --primary-foreground: #000000;
+    --accent: #facc15;               /* 黃色反白/強調色 */
+    --accent-foreground: #000000;
+    --border: #6b7280;               /* gray-500 邊框 */
+    --ring: #facc15;                 /* 黃色 focus ring */
+    --input: #4b5563;                /* gray-600 輸入框背景 */
+    --muted: #4b5563;                /* gray-600 */
+    --muted-foreground: #d1d5db;     /* gray-300 */
+    --card: #4b5563;                 /* gray-600 卡片背景 */
+    --card-foreground: #ffffff;      /* 白色文字 */
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
+    --light: #6b7280;                /* gray-500 */
+    --third: #4b5563;                /* gray-600 */
+
+    /* 黃色選取/反白樣式 */
+    --selection-bg: #facc15;         /* 黃色選取背景 */
+    --selection-fg: #000000;         /* 黑色選取文字 */
   }
   
   * {
@@ -73,6 +82,17 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 黃色選取/反白樣式 (深色模式) */
+  .dark ::selection {
+    background-color: #facc15;
+    color: #000000;
+  }
+
+  .dark ::-moz-selection {
+    background-color: #facc15;
+    color: #000000;
   }
 }
 

@@ -13,6 +13,12 @@
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
+/* 深色模式容器樣式 */
+.extension-container.dark {
+  background: #374151;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
 /* 左側對齊 */
 .extension-container.left {
   right: auto;

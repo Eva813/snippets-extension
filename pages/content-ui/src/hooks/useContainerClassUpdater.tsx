@@ -59,6 +59,9 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
       // 清除 host body 的 extension 類別
       hostBody.classList.remove('extension-push-active', 'extension-push-right', 'extension-push-left');
 
+      // 添加深色模式類別
+      container.classList.add('dark');
+
       if (isAnimating) {
         if (displayMode === 'push') {
           // 確保注入 push 樣式

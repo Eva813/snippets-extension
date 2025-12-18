@@ -98,7 +98,7 @@ export const generatePanelClasses = (
   ];
 
   if (visible && isAnimating) {
-    classes.push('visible', 'bg-white');
+    classes.push('visible', 'dark');
   }
 
   if (noAnimation) {

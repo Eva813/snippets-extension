@@ -74,7 +74,7 @@ export function renderFormMenu(
       id={attrs.name ? `field_renderer_${attrs.name}_${key}` : `field_renderer_${key}`}
       defaultValue={defaultValue[0] || ''}
       onChange={onChange}
-      className="bg-light rounded border border-gray-400 px-2 py-1">
+      className="rounded border border-gray-500 bg-gray-600 px-2 py-1 text-white focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400">
       {options.map((opt, i) => (
         <option key={`${opt}-${i}`} value={opt}>
           {opt}
