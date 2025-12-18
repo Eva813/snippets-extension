@@ -33,10 +33,22 @@ export class MessageRouter implements TypedMessageRouter {
 
   setupMessageListener(): void {
     chrome.runtime.onMessage.addListener((message: RuntimeMessage, sender, sendResponse) => {
-      (async () => {
-        await this.route(message, sender, sendResponse);
-      })();
-      return true; // 保持 sendResponse 通道開啟
+      logger.log(`📨 Message received: action=${message.action}`);
+
+      // 立即執行異步路由
+      this.route(message, sender, sendResponse).catch(error => {
+        logger.error('🔴 Unhandled error in message route:', error);
+        try {
+          sendResponse({ success: false, error: 'Unhandled error in message route' });
+        } catch (e) {
+          logger.warn('⚠️ sendResponse already called or connection closed');
+        }
+      });
+
+      // 返回 true 以保持通道開啟（用於異步 sendResponse）
+      return true;
     });
+
+    logger.log('✅ chrome.runtime.onMessage listener setup complete');
   }
 }

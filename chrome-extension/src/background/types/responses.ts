@@ -77,6 +77,15 @@ export interface SharedFolderDetailsResponse
 // 公開資料夾回應
 export interface PublicFolderResponse extends DataResponse<unknown> {}
 
+// 版本檢查回應
+export interface VersionCheckResponse extends BaseResponse {
+  versionMatched?: boolean;
+  extensionVersion?: string;
+  requiredVersion?: string;
+  updateUrl?: string;
+  message?: string;
+}
+
 // === 聯合回應類型 ===
 export type AnyResponse =
   | BaseResponse
@@ -88,4 +97,5 @@ export type AnyResponse =
   | SetDefaultSpaceResponse
   | IconUpdateResponse
   | UserStatusUpdateResponse
-  | CacheClearResponse;
+  | CacheClearResponse
+  | VersionCheckResponse;
