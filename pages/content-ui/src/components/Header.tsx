@@ -195,7 +195,7 @@ const Header = memo<HeaderProps>(
             </div>
           </div>
 
-          <button onClick={goToDashboard} className="flex items-center text-sm text-white">
+          <button onClick={goToDashboard} className="flex items-center text-xs text-white">
             To Dashboard
             <FaArrowRightLong className="ml-1 text-sm" />
           </button>

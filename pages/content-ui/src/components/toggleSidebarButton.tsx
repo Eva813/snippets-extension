@@ -21,7 +21,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, vi
   return (
     <button
       data-testid="sidebar-toggle-btn"
-      className={`toggle-sidebar-btn flex h-8 w-5 items-center justify-center ${alignment === 'left' ? 'rounded-r-md' : 'rounded-l-md'} bg-yellow-400 ${
+      className={`toggle-sidebar-btn flex h-6 w-4 items-center justify-center ${alignment === 'left' ? 'rounded-r-md' : 'rounded-l-md'} bg-yellow-400 ${
         visible ? 'visible' : ''
       }`}
       onClick={handleToggle}>
@@ -37,7 +37,7 @@ const ToggleSidebarButton: React.FC<ToggleSidebarButtonProps> = ({ alignment, vi
           </a>
         </div>
       </div>
-      <FaAngleRight className="text-white" />
+      <FaAngleRight className="text-white" size={12} />
     </button>
   );
 };

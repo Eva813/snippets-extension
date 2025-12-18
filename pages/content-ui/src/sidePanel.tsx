@@ -317,6 +317,11 @@ const SidePanel: React.FC<SidePanelProps> = ({
         />
       </div>
 
+      {/* Footer */}
+      <div className="border-t border-gray-300 bg-white px-3 py-2 text-center text-xs text-gray-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+        PromptBear.ai
+      </div>
+
       {/* Shared with me Modal */}
       <SharedWithMeModal isOpen={isSharedWithMeModalOpen} onClose={handleSharedWithMeModalClose} />
     </div>
