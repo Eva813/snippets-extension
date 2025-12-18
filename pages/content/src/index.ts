@@ -14,6 +14,47 @@ const isDev = import.meta.env.MODE === 'development';
 let isLoggingOut = false;
 let logoutTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+// 🔒 Extension context validation - prevent errors when extension is reloaded
+let isContextValid = true;
+let observer: MutationObserver | null = null;
+
+function checkExtensionContext(): boolean {
+  try {
+    // chrome.runtime.id is undefined when context is invalidated
+    if (!chrome.runtime?.id) {
+      if (isContextValid) {
+        isContextValid = false;
+        console.warn('[Content Script] Extension context invalidated, cleaning up...');
+        cleanupOnContextInvalidation();
+      }
+      return false;
+    }
+    return true;
+  } catch {
+    if (isContextValid) {
+      isContextValid = false;
+      console.warn('[Content Script] Extension context invalidated, cleaning up...');
+      cleanupOnContextInvalidation();
+    }
+    return false;
+  }
+}
+
+function cleanupOnContextInvalidation(): void {
+  // Disconnect observer to stop triggering callbacks
+  if (observer) {
+    observer.disconnect();
+  }
+  // Clear any pending timeouts
+  if (logoutTimeoutId !== null) {
+    clearTimeout(logoutTimeoutId);
+    logoutTimeoutId = null;
+  }
+  // Clear input handlers
+  clearInputHandler();
+  clearPromptCache();
+}
+
 async function initialize() {
   try {
     // 初始化安全管理器，並檢查操作安全性
@@ -44,9 +85,10 @@ async function initialize() {
           if (session && session.user) {
             if (isDev) console.log('[Content Script] Found active NextAuth session, setting storage');
 
+            // 注意：不設定 apiDomain，讓它使用 config 中的預設值
+            // 避免在非 PromptBear 網站上錯誤覆蓋 apiDomain
             await chrome.storage.local.set({
               userLoggedIn: true,
-              apiDomain: window.location.origin,
             });
           }
         }
@@ -134,6 +176,11 @@ window.addEventListener('message', event => {
 
 // 動態監聽 local storage 變化
 chrome.storage.onChanged.addListener(async (changes, area) => {
+  // 🔒 Check if extension context is still valid
+  if (!checkExtensionContext()) {
+    return;
+  }
+
   // 用來檢查變更是否發生在本地儲存區（local storage）
   if (area === 'local') {
     if (changes.userLoggedIn?.newValue === false) {
@@ -157,12 +204,18 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
       if (isDev) console.log('[Content Script] 使用者登入，重新初始化');
 
       try {
+        if (!checkExtensionContext()) return;
         initializeInputHandler();
         initializeCursorTracker();
         chrome.runtime.sendMessage({ action: 'updateIcon' });
         await initializePromptManager();
       } catch (error) {
-        console.error('[Content Script] 重新初始化失敗:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Extension context invalidated')) {
+          checkExtensionContext();
+        } else {
+          console.error('[Content Script] 重新初始化失敗:', error);
+        }
       }
     }
   }
@@ -173,7 +226,12 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 let lastSessionCheck = 0;
 const SESSION_CHECK_INTERVAL = 2000; // 2 秒檢查一次
 
-const observer = new MutationObserver(async () => {
+observer = new MutationObserver(async () => {
+  // 🔒 Check if extension context is still valid
+  if (!checkExtensionContext()) {
+    return;
+  }
+
   // 節流器：防止 MutationObserver 過度檢查
   const now = Date.now();
   if (now - lastSessionCheck < SESSION_CHECK_INTERVAL) {
@@ -181,51 +239,62 @@ const observer = new MutationObserver(async () => {
   }
   lastSessionCheck = now;
 
-  const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
+  try {
+    const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
 
-  // 🔒 如果正在登出，跳過 session 檢查
-  if (isLoggingOut) {
-    if (isDev) console.log('[Content Script] 登出中，跳過 session 檢查');
-    return;
-  }
+    // 🔒 如果正在登出，跳過 session 檢查
+    if (isLoggingOut) {
+      if (isDev) console.log('[Content Script] 登出中，跳過 session 檢查');
+      return;
+    }
 
-  // 如果儲存中沒有登入狀態，但頁面有效，嘗試重新檢查 session
-  if (!userLoggedIn) {
-    if (isDev) console.log('[Content Script] 偵測到頁面變化，重新檢查 NextAuth session...');
+    // 如果儲存中沒有登入狀態，但頁面有效，嘗試重新檢查 session
+    if (!userLoggedIn) {
+      if (isDev) console.log('[Content Script] 偵測到頁面變化，重新檢查 NextAuth session...');
 
-    try {
-      const response = await fetch('/api/auth/session', {
-        method: 'GET',
-        credentials: 'include',
-      });
+      try {
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include',
+        });
 
-      if (response.ok) {
-        const session = await response.json();
-        if (session && session.user) {
-          if (isDev) console.log('[Content Script] 偵測到重新登入，更新儲存');
+        if (response.ok) {
+          const session = await response.json();
+          if (session && session.user) {
+            if (isDev) console.log('[Content Script] 偵測到重新登入，更新儲存');
 
-          await chrome.storage.local.set({
-            userLoggedIn: true,
-            apiDomain: window.location.origin,
-          });
-
-          // 通知 Background 更新 icon
-          try {
-            chrome.runtime.sendMessage({ action: 'updateIcon' }, () => {
-              if (chrome.runtime.lastError) {
-                if (isDev)
-                  console.error('[Content Script] Failed to send updateIcon:', chrome.runtime.lastError.message);
-              } else if (isDev) {
-                console.log('[Content Script] updateIcon sent successfully');
-              }
+            // 注意：不設定 apiDomain，讓它使用 config 中的預設值
+            // 避免在非 PromptBear 網站上錯誤覆蓋 apiDomain
+            await chrome.storage.local.set({
+              userLoggedIn: true,
             });
-          } catch (error) {
-            if (isDev) console.error('[Content Script] Failed to send updateIcon message:', error);
+
+            // 通知 Background 更新 icon
+            try {
+              chrome.runtime.sendMessage({ action: 'updateIcon' }, () => {
+                if (chrome.runtime.lastError) {
+                  if (isDev)
+                    console.error('[Content Script] Failed to send updateIcon:', chrome.runtime.lastError.message);
+                } else if (isDev) {
+                  console.log('[Content Script] updateIcon sent successfully');
+                }
+              });
+            } catch (error) {
+              if (isDev) console.error('[Content Script] Failed to send updateIcon message:', error);
+            }
           }
         }
+      } catch (error) {
+        if (isDev) console.log('[Content Script] 重新檢查 session 失敗:', error);
       }
-    } catch (error) {
-      if (isDev) console.log('[Content Script] 重新檢查 session 失敗:', error);
+    }
+  } catch (error) {
+    // Handle extension context invalidated error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Extension context invalidated')) {
+      checkExtensionContext(); // This will trigger cleanup
+    } else if (isDev) {
+      console.error('[Content Script] MutationObserver error:', error);
     }
   }
 });
