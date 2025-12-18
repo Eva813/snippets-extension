@@ -15,7 +15,7 @@
 
 /* 深色模式容器樣式 */
 .extension-container.dark {
-  background: #374151;
+  background: var(--sidebar-content, #1f2937);
   box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
 

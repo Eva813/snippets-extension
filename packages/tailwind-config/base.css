@@ -48,29 +48,49 @@
   }
 
   .dark {
-    /* 灰色底、白字、黃色反白 */
-    --background: #374151;           /* gray-700 灰色背景 */
-    --foreground: #ffffff;           /* 白色文字 */
-    --primary: #4ade80;              /* 綠色主色（較亮以配合深色背景） */
-    --primary-hover: #22c55e;
-    --primary-foreground: #000000;
-    --accent: #facc15;               /* 黃色反白/強調色 */
-    --accent-foreground: #000000;
-    --border: #6b7280;               /* gray-500 邊框 */
-    --ring: #facc15;                 /* 黃色 focus ring */
-    --input: #4b5563;                /* gray-600 輸入框背景 */
-    --muted: #4b5563;                /* gray-600 */
-    --muted-foreground: #d1d5db;     /* gray-300 */
-    --card: #4b5563;                 /* gray-600 卡片背景 */
-    --card-foreground: #ffffff;      /* 白色文字 */
-    --destructive: #ef4444;
-    --destructive-foreground: #ffffff;
-    --light: #6b7280;                /* gray-500 */
-    --third: #4b5563;                /* gray-600 */
+    /* ===== 黑暗模式配色系統 (Neutral 灰階) ===== */
 
-    /* 黃色選取/反白樣式 */
-    --selection-bg: #facc15;         /* 黃色選取背景 */
-    --selection-fg: #000000;         /* 黑色選取文字 */
+    /* 基礎背景色 - 較淺的中性灰 */
+    --dark-bg: #404040;              /* 主背景 (neutral-700) */
+    --dark-surface: #525252;         /* 卡片/表面 (neutral-600) */
+    --dark-surface-hover: #5c5c5c;   /* 表面 hover */
+    --dark-elevated: #666666;        /* 提升元素/邊框 */
+
+    /* 文字色 */
+    --dark-text-primary: #f5f5f5;    /* 主要文字 (neutral-100) */
+    --dark-text-secondary: #a3a3a3;  /* 次要文字 (neutral-400) */
+
+    /* 強調色 */
+    --dark-accent: #facc15;          /* 黃色強調 */
+    --dark-accent-bg: rgba(250, 204, 21, 0.2); /* 黃色背景 */
+
+    /* ===== 映射到標準變數 ===== */
+    --background: var(--dark-bg);
+    --foreground: var(--dark-text-primary);
+    --primary: var(--dark-accent);
+    --primary-hover: #fde047;
+    --primary-foreground: #000000;
+    --accent: var(--dark-accent);
+    --accent-foreground: #000000;
+    --border: var(--dark-elevated);
+    --ring: var(--dark-accent);
+    --input: var(--dark-surface);
+    --muted: var(--dark-surface);
+    --muted-foreground: var(--dark-text-secondary);
+    --card: var(--dark-surface);
+    --card-foreground: var(--dark-text-primary);
+    --destructive: #f28b82;
+    --destructive-foreground: var(--dark-bg);
+    --light: var(--dark-elevated);
+    --third: var(--dark-surface);
+
+    /* Sidebar 專用 */
+    --sidebar-header: #333333;           /* Header 深灰 */
+    --sidebar-content: var(--dark-bg);
+
+    /* 選取樣式 */
+    --selection-bg: var(--dark-accent);
+    --selection-fg: #000000;
   }
   
   * {

@@ -33,13 +33,13 @@ export default function FolderItem({
     <li className="mb-2">
       <button
         type="button"
-        className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-gray-600"
+        className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-neutral-700"
         onClick={() => toggleCollapse(folder.id)}>
         <strong className="flex items-center text-lg">
           <FaFolder className="mr-2" size={18} />
           <HighlightText text={folder.name} searchQuery={searchQuery || ''} className="max-w-[180px] truncate" />
         </strong>
-        <div className="rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-gray-500">
+        <div className="rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-neutral-600">
           {isCollapsed ? <FaCaretRight size={16} /> : <FaCaretDown size={16} />}
         </div>
       </button>
@@ -47,7 +47,7 @@ export default function FolderItem({
       {!isCollapsed && (
         <ul className="ml-4 mt-1">
           {folder.prompts.length === 0 ? (
-            <span className="ml-2 text-gray-500 dark:text-gray-400">No prompts in the folder</span>
+            <span className="ml-2 text-gray-500 dark:text-neutral-400">No prompts in the folder</span>
           ) : (
             folder.prompts.map((prompt: Prompt) => (
               <li
@@ -57,7 +57,7 @@ export default function FolderItem({
                 onMouseLeave={() => setHoveredPromptId(null)}>
                 <button
                   type="button"
-                  className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-gray-600"
+                  className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-neutral-700"
                   onMouseDown={e => handlePromptInsert(prompt.id, e)}>
                   <HighlightText
                     text={prompt.name}
