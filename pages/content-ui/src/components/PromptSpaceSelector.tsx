@@ -75,7 +75,7 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
 
     return (
       <div
-        className="relative border-b border-gray-300 bg-white p-3 dark:border-dark-elevated dark:bg-sidebar-content"
+        className="dark:border-dark-elevated dark:bg-sidebar-content relative border-b border-gray-300 bg-white p-3"
         ref={dropdownRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -94,7 +94,7 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
             className="absolute inset-x-0 top-full z-50 mt-1 max-h-[200px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-neutral-600 dark:bg-neutral-700">
             {mySpaces.length > 0 && (
               <div>
-                <div className="bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500 dark:bg-neutral-700 dark:text-dark-text-secondary">
+                <div className="dark:text-dark-text-secondary bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500 dark:bg-neutral-700">
                   {SECTION_TITLES.MY_WORKSPACES}
                 </div>
                 {mySpaces.map(space => (
@@ -108,7 +108,7 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
                     }}
                     className={`block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700 ${
                       selectedSpaceId === space.id
-                        ? 'bg-light font-bold text-primary dark:bg-neutral-700 dark:text-yellow-400'
+                        ? 'bg-light text-primary font-bold dark:bg-neutral-700 dark:text-yellow-400'
                         : 'text-gray-900 dark:text-white'
                     }`}>
                     {space.name}
@@ -118,8 +118,8 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
             )}
 
             {sharedSpaces.length > 0 && (
-              <div className={mySpaces.length > 0 ? 'border-t border-gray-100 dark:border-dark-elevated' : ''}>
-                <div className="bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500 dark:bg-neutral-700 dark:text-dark-text-secondary">
+              <div className={mySpaces.length > 0 ? 'dark:border-dark-elevated border-t border-gray-100' : ''}>
+                <div className="dark:text-dark-text-secondary bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500 dark:bg-neutral-700">
                   {SECTION_TITLES.SHARED_WITH_ME}
                 </div>
                 {sharedSpaces.map(space => (
@@ -133,12 +133,12 @@ const PromptSpaceSelector = memo<PromptSpaceSelectorProps>(
                     }}
                     className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-700 ${
                       selectedSpaceId === space.id
-                        ? 'bg-light font-bold text-primary dark:bg-neutral-700 dark:text-yellow-400'
+                        ? 'bg-light text-primary font-bold dark:bg-neutral-700 dark:text-yellow-400'
                         : 'text-gray-900 dark:text-white'
                     }`}>
                     <span>{space.name}</span>
                     {space.isReadOnly && (
-                      <span className="text-xs text-gray-400 dark:text-dark-text-secondary">
+                      <span className="dark:text-dark-text-secondary text-xs text-gray-400">
                         {SECTION_TITLES.VIEW_ONLY}
                       </span>
                     )}
