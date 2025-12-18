@@ -201,7 +201,7 @@ const FormRoot = () => {
   return (
     <>
       <div
-        className="bg-sidebar-content dark flex h-screen max-h-screen flex-col justify-between text-white"
+        className="dark flex h-screen max-h-screen flex-col justify-between bg-neutral-700 text-white"
         onKeyDown={handleKeyDown}
         role="presentation"
         aria-label="表單區域">
@@ -211,7 +211,7 @@ const FormRoot = () => {
         </div>
         {/* 顯示表單資料的偵錯資訊 */}
         {/* <div>{JSON.stringify(formData)}</div> */}
-        <div className="bg-sidebar-header flex items-center justify-end gap-2.5 rounded p-5 text-white shadow-md">
+        <div className="flex items-center justify-end gap-2.5 rounded bg-neutral-700 p-5 text-white shadow-md">
           <div className="flex shrink-0 items-center gap-5">
             <button
               className="cursor-pointer border-0 bg-transparent p-0 text-sm text-gray-300 hover:cursor-pointer hover:text-white"
