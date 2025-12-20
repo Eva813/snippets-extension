@@ -1,13 +1,84 @@
 # Chrome 擴充功能上架流程指南
 
 此文件說明如何為 Chrome 擴充功能創建乾淨的上架版本，確保沒有開發用代碼（如 HMR WebSocket 連接）。
+
 ## 前置條件
 - Node.js 版本 >= 20（推薦使用 v22.12.0）
 - pnpm 已安裝並更新至最新版本
-- 位於專案根目錄 `/Users/black-star-point-frontend/snippets-extension
-nvm use  v22.12.0 , 並遵循 /Users/black-star-point-frontend/snippets-extension/.claude/release-guide.md 產出打包文件
+- 位於專案根目錄 `/Users/Eva/snippets-extension`
 
-## 🚀 完整上架流程
+---
+
+## 🤖 Claude Code 自動化執行流程
+
+**當用戶要求「建立 ZIP 檔案」或「打包上架」時，請依序執行以下命令：**
+
+### 步驟 1: 清理舊文件和快取
+```bash
+pnpm clean
+```
+**預期結果：** 清除 dist/, .turbo/, node_modules/
+
+---
+
+### 步驟 2: 安裝依賴（必須執行）
+```bash
+pnpm install
+```
+**預期結果：** 所有依賴安裝完成，顯示 "Done in Xs"
+
+---
+
+### 步驟 3: 生產構建（重要：不要使用 pnpm dev）
+```bash
+pnpm build
+```
+**預期結果：** 構建成功，dist 目錄包含所有編譯後的文件
+
+---
+
+### 步驟 4: 驗證生產構建
+```bash
+node scripts/verify-production-build.js
+```
+**必須通過驗證，期望輸出：**
+```
+🔍 驗證生產構建...
+✅ 生產構建驗證通過！沒有發現開發用的代碼。
+🚀 可以安全地用於生產環境或上架。
+```
+
+---
+
+### 步驟 5: 檢查版本號
+```bash
+grep '"version"' dist/manifest.json
+```
+**預期輸出範例：** `"version": "1.4.2",` （這是會變更的）
+
+---
+
+### 步驟 6: 創建帶版本號的 ZIP 檔案
+```bash
+# 取得版本號
+VERSION=$(grep '"version"' dist/manifest.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
+
+# 創建 ZIP（檔名包含版本號）
+cd dist && zip -r "../extension-v${VERSION}.zip" * && cd ..
+```
+**預期結果：** 生成 `extension-v1.4.2.zip` (版本號會自動從 manifest.json 讀取)
+
+---
+
+### 步驟 7: 確認 ZIP 檔案已創建
+```bash
+ls -lh extension-v*.zip
+```
+**預期輸出：** 顯示檔案名稱和大小，例如 `extension-v1.4.2.zip`
+
+---
+
+## 🚀 手動執行流程
 
 ### 1️⃣ 準備階段
 
@@ -17,7 +88,7 @@ cd /Users/Eva/snippets-extension
 
 # 更新版本號
 # 手動編輯 package.json 中的 "version" 欄位
-# 例如：從 "0.4.1" 改為 "0.4.2"
+# 例如：從 "1.4.1" 改為 "1.4.2"
 ```
 
 ### 2️⃣ 清理與構建
@@ -26,7 +97,7 @@ cd /Users/Eva/snippets-extension
 # 完全清理舊文件和快取
 pnpm clean
 
-# 安裝依賴（如果需要）
+# 安裝依賴（必須執行）
 pnpm install
 
 # 生產構建（重要：不要使用 pnpm dev）
@@ -54,30 +125,24 @@ node scripts/verify-production-build.js
 grep '"version"' dist/manifest.json
 ```
 
-**期望輸出：**
+**期望輸出範例：**
 ```
-"version": "0.4.2",
+"version": "1.4.2",
 ```
 
-### 5️⃣ 創建上架 ZIP
+### 5️⃣ 創建上架 ZIP（帶版本號）
 
 ```bash
-# 進入 dist 目錄並打包
-cd dist
-zip -r ../extension.zip *
-
-# 回到根目錄
-cd ..
+# 取得版本號並創建 ZIP
+VERSION=$(grep '"version"' dist/manifest.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
+cd dist && zip -r "../extension-v${VERSION}.zip" * && cd ..
 ```
 
 ### 6️⃣ 最終確認
 
 ```bash
 # 檢查 zip 文件
-ls -la extension.zip
-
-# 查看 zip 內容（可選）
-unzip -l extension.zip | head -20
+ls -lh extension-v*.zip
 ```
 
 ## 🤖 一鍵自動化腳本
@@ -98,7 +163,7 @@ fi
 
 # 1. 清理並構建
 echo "📦 清理並構建..."
-pnpm clean && pnpm build
+pnpm clean && pnpm install && pnpm build
 
 if [[ $? -ne 0 ]]; then
     echo "❌ 構建失敗"
@@ -119,19 +184,19 @@ echo "📋 當前版本："
 VERSION=$(grep '"version"' dist/manifest.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
 echo "Version: $VERSION"
 
-# 4. 創建 ZIP
+# 4. 創建 ZIP（帶版本號）
 echo "📦 創建 ZIP 文件..."
 cd dist
-zip -r "../extension-$VERSION.zip" *
+zip -r "../extension-v${VERSION}.zip" *
 cd ..
 
 # 5. 完成
-if [[ -f "extension-$VERSION.zip" ]]; then
-    echo "🎉 上架文件已準備完成：extension-$VERSION.zip"
-    echo "📁 文件大小：$(ls -lh "extension-$VERSION.zip" | awk '{print $5}')"
+if [[ -f "extension-v${VERSION}.zip" ]]; then
+    echo "🎉 上架文件已準備完成：extension-v${VERSION}.zip"
+    echo "📁 文件大小：$(ls -lh "extension-v${VERSION}.zip" | awk '{print $5}')"
     echo ""
     echo "📋 接下來的步驟："
-    echo "1. 測試 extension-$VERSION.zip 在本地 Chrome"
+    echo "1. 測試 extension-v${VERSION}.zip 在本地 Chrome"
     echo "2. 上傳到 Chrome Web Store"
     echo "3. 備份此版本的 zip 文件"
 else
@@ -209,5 +274,5 @@ extension.zip
 
 ---
 
-*最後更新：2025-01-19*
+*最後更新：2025-12-20*
 *此指南確保每次上架都能創建乾淨、無錯誤的 Chrome 擴充功能。*
