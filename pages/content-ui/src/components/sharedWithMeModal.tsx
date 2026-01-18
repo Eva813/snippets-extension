@@ -18,7 +18,7 @@ const SharedWithMeModal = memo<SharedWithMeModalProps>(({ isOpen, onClose }) => 
   const [promptsError, setPromptsError] = useState<string | null>(null);
 
   const { sharedFolders, loading, error, totalCount, refreshSharedFolders, getSharedFolderDetails, clearError } =
-    useSharedFolders();
+    useSharedFolders({ enabled: isOpen });
 
   const handleRefresh = useCallback(async () => {
     clearError();

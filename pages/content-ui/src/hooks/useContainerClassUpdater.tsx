@@ -16,9 +16,7 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
 
     const container = containerRef.current;
     if (!container) {
-      if (import.meta.env.MODE === 'development') {
-        console.warn('dev mode: 找不到 extension container，請確保已正確注入到 Shadow DOM 中');
-      }
+      // 容器可能還沒準備好，靜默返回
       return;
     }
 
