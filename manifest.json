@@ -11,7 +11,7 @@
       "description": "Toggle the side panel."
     }
   },
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "__MSG_extensionDescription__",
   "host_permissions": ["https://promptbear.ai/*", "http://localhost:3003/*"],
   "permissions": ["storage", "windows", "activeTab", "contextMenus", "tabs", "notifications"],
