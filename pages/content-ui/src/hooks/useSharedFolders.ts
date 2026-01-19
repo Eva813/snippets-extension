@@ -19,7 +19,13 @@ interface UseSharedFoldersReturn {
   clearError: () => void;
 }
 
-export const useSharedFolders = (): UseSharedFoldersReturn => {
+interface UseSharedFoldersOptions {
+  /** 是否啟用自動載入，預設為 true */
+  enabled?: boolean;
+}
+
+export const useSharedFolders = (options: UseSharedFoldersOptions = {}): UseSharedFoldersReturn => {
+  const { enabled = true } = options;
   const [sharedFolders, setSharedFolders] = useState<SharedFolderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,10 +148,12 @@ export const useSharedFolders = (): UseSharedFoldersReturn => {
     }
   }, []);
 
-  // 初始載入
+  // 初始載入 - 只在 enabled 為 true 時執行
   useEffect(() => {
-    fetchSharedFolders();
-  }, [fetchSharedFolders]);
+    if (enabled) {
+      fetchSharedFolders();
+    }
+  }, [enabled, fetchSharedFolders]);
 
   return {
     sharedFolders,
@@ -161,38 +169,7 @@ export const useSharedFolders = (): UseSharedFoldersReturn => {
 };
 
 // Hook for getting shared folders count only (lightweight)
+// 目前功能已停用，直接返回 0
 export const useSharedFoldersCount = () => {
-  const [count, setCount] = useState<number>(0);
-  const [loading, setLoading] = useState(false);
-
-  const fetchCount = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await new Promise<{
-        success: boolean;
-        data?: SharedFoldersResponse;
-        error?: string;
-      }>(resolve => {
-        chrome.runtime.sendMessage({ action: CHROME_ACTIONS.GET_SHARED_FOLDERS }, res => resolve(res));
-      });
-
-      if (chrome.runtime.lastError) {
-        return;
-      }
-
-      if (response.success && response.data) {
-        setCount(response.data.total);
-      }
-    } catch (err) {
-      console.error('Error fetching shared folders count:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchCount();
-  }, [fetchCount]);
-
-  return { count, loading, refetch: fetchCount };
+  return { count: 0, loading: false, refetch: () => Promise.resolve() };
 };

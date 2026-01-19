@@ -16,9 +16,7 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
 
     const container = containerRef.current;
     if (!container) {
-      if (import.meta.env.MODE === 'development') {
-        console.warn('dev mode: 找不到 extension container，請確保已正確注入到 Shadow DOM 中');
-      }
+      // 容器可能還沒準備好，靜默返回
       return;
     }
 
@@ -58,6 +56,9 @@ function useContainerClassUpdater(isAnimating: boolean, displayMode: 'overlay' |
       container.classList.remove('push-mode', 'push-mode-right', 'push-mode-left', 'overlay-mode');
       // 清除 host body 的 extension 類別
       hostBody.classList.remove('extension-push-active', 'extension-push-right', 'extension-push-left');
+
+      // 添加深色模式類別
+      container.classList.add('dark');
 
       if (isAnimating) {
         if (displayMode === 'push') {

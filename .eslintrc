@@ -63,6 +63,15 @@
         "bg-card",
         "text-card-foreground",
         "bg-third",
+        // Sidebar colors
+        "bg-sidebar-header",
+        "bg-sidebar-content",
+        // Dark mode colors
+        "bg-dark-elevated",
+        "border-dark-elevated",
+        "text-dark-text-secondary",
+        "text-dark-text-primary",
+        "bg-dark-accent-bg",
         "slide-panel",
         "content-area",
         "sidebar-toggle-container",

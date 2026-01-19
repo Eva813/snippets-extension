@@ -33,13 +33,13 @@ export default function FolderItem({
     <li className="mb-2">
       <button
         type="button"
-        className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 hover:bg-gray-100 focus:outline-none dark:hover:text-black"
+        className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-neutral-700"
         onClick={() => toggleCollapse(folder.id)}>
         <strong className="flex items-center text-lg">
           <FaFolder className="mr-2" size={18} />
           <HighlightText text={folder.name} searchQuery={searchQuery || ''} className="max-w-[180px] truncate" />
         </strong>
-        <div className="rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-gray-800">
+        <div className="rounded p-1 hover:bg-gray-200 focus:outline-none dark:hover:bg-neutral-600">
           {isCollapsed ? <FaCaretRight size={16} /> : <FaCaretDown size={16} />}
         </div>
       </button>
@@ -47,7 +47,7 @@ export default function FolderItem({
       {!isCollapsed && (
         <ul className="ml-4 mt-1">
           {folder.prompts.length === 0 ? (
-            <span className="ml-2 text-gray-500">No prompts in the folder</span>
+            <span className="ml-2 text-gray-500 dark:text-neutral-400">No prompts in the folder</span>
           ) : (
             folder.prompts.map((prompt: Prompt) => (
               <li
@@ -57,7 +57,7 @@ export default function FolderItem({
                 onMouseLeave={() => setHoveredPromptId(null)}>
                 <button
                   type="button"
-                  className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 hover:bg-gray-100 focus:outline-none dark:hover:text-black"
+                  className="flex w-full cursor-pointer items-center justify-between rounded px-2 py-1 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-neutral-700"
                   onMouseDown={e => handlePromptInsert(prompt.id, e)}>
                   <HighlightText
                     text={prompt.name}
@@ -69,10 +69,10 @@ export default function FolderItem({
                       className={`flex items-center justify-center transition-opacity duration-200 ${
                         hoveredPromptId === prompt.id ? 'visible opacity-100' : 'invisible opacity-0'
                       }`}>
-                      <FaArrowAltCircleDown size={20} className="text-primary" />
+                      <FaArrowAltCircleDown size={20} className="text-primary dark:text-yellow-400" />
                     </div>
                   </div>
-                  <span className="border-secondary inline-flex h-6 max-w-[110px] items-center rounded-full border px-3 py-1 text-sm font-medium">
+                  <span className="border-secondary inline-flex h-6 max-w-[110px] items-center rounded-full border px-3 py-1 text-sm font-medium dark:border-gray-500 dark:text-white">
                     <HighlightText text={prompt.shortcut} searchQuery={searchQuery || ''} className="block truncate" />
                   </span>
                 </button>

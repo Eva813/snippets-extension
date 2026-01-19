@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss/types/config';
 
 export default {
+  darkMode: 'class',
   theme: {
     extend: {
       // T006: Retro Neobrutalism 色彩標記
@@ -25,6 +26,20 @@ export default {
         'card-foreground': '#000000',
         light: '#bfd9cb',
         third: '#97b8a6',
+        // Sidebar 專用顏色
+        'sidebar-header': 'var(--sidebar-header)',
+        'sidebar-content': 'var(--sidebar-content)',
+        // Dark mode 專用顏色（Chrome 風格）
+        dark: {
+          bg: 'var(--dark-bg)',
+          surface: 'var(--dark-surface)',
+          'surface-hover': 'var(--dark-surface-hover)',
+          elevated: 'var(--dark-elevated)',
+          'text-primary': 'var(--dark-text-primary)',
+          'text-secondary': 'var(--dark-text-secondary)',
+          accent: 'var(--dark-accent)',
+          'accent-bg': 'var(--dark-accent-bg)',
+        },
       },
 
       // T007: 偏移陰影 (無模糊,新野獸主義特徵)

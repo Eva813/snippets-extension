@@ -17,7 +17,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
   onRetry,
 }) => {
   return (
-    <div className="bg-white p-2">
+    <div className="dark:bg-sidebar-content bg-white p-2 dark:text-white">
       {isLoading && folders.length === 0 ? (
         <LoadingState />
       ) : loadError ? (

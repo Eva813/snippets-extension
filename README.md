@@ -190,7 +190,7 @@ pnpm clean:install         # Reinstall dependencies
 
 ## API Integration
 
-This extension integrates with the PromptBear platform (`https://linxly-nextjs.vercel.app`):
+This extension integrates with the PromptBear platform (`https://promptbear.ai`):
 
 ### Main API Endpoints
 - **User Authentication**: `/api/auth/*`
@@ -201,7 +201,7 @@ This extension integrates with the PromptBear platform (`https://linxly-nextjs.v
 ### Environment Configuration
 Create a `.env` file to set environment variables:
 ```bash
-VITE_API_DOMAIN=https://linxly-nextjs.vercel.app
+VITE_API_DOMAIN=https://promptbear.ai
 VITE_VERCEL_PREVIEW_BYPASS=your_bypass_token
 ```
 

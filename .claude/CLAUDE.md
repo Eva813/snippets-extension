@@ -76,7 +76,7 @@ This is a Chrome/Firefox extension built with React, TypeScript, and Vite using 
 ### Extension Structure
 - Uses Manifest V3 with service worker background script
 - Content scripts inject on all websites (`*://*/*`)
-- Communicates with remote API at `https://linxly-nextjs.vercel.app`
+- Communicates with remote API at `https://promptbear.ai`
 - Supports both Chrome and Firefox with conditional builds
 
 ### Authentication Flow

@@ -35,8 +35,8 @@ const manifest = {
   host_permissions: [
     // 'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
     // 'https://linxly-nextjs-git-feat-firebase-eva813s-projects.vercel.app/*',
-    'https://linxly-nextjs.vercel.app/*',
-    'http://localhost:3000/*',
+    'https://promptbear.ai/*',
+    'http://localhost:3003/*',
   ],
   permissions: ['storage', 'windows', 'activeTab', 'contextMenus', 'tabs', 'notifications'],
   // optional_permissions: ['notifications', 'cookies', 'sidePanel'],
@@ -76,9 +76,9 @@ const manifest = {
   externally_connectable: {
     matches: [
       // 'https://linxly-nextjs-git-feat-promptspace-v3-s-80d4ea-eva813s-projects.vercel.app/*',
-      'https://linxly-nextjs.vercel.app/*',
+      'https://promptbear.ai/*',
       // 如果您在本地開發後台，也加入本地位址，例如:
-      'http://localhost:3000/*',
+      'http://localhost:3003/*',
     ],
   },
 };

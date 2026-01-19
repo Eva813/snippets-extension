@@ -150,6 +150,8 @@ function parseHtmlToText(html: string): string {
         }
         case 'br':
           return '\n';
+        case 'pre':
+        case 'code':
         case 'strong':
         case 'b':
         case 'em':

@@ -51,7 +51,12 @@ const initializeContentUI = (): void => {
     // 安全地建立 Shadow Root
     let shadowRoot: ShadowRoot;
     try {
-      shadowRoot = root.attachShadow({ mode: 'open' });
+      // 檢查是否已存在 shadow root（避免重複初始化時報錯）
+      if (root.shadowRoot) {
+        shadowRoot = root.shadowRoot;
+      } else {
+        shadowRoot = root.attachShadow({ mode: 'open' });
+      }
     } catch (shadowError) {
       console.error('建立 Shadow DOM 失敗:', shadowError);
       // Fallback: 直接使用普通 DOM

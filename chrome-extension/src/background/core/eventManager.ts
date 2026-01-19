@@ -4,6 +4,14 @@ import { logger } from '../../../../packages/shared/lib/logging/logger';
 import { VersionService } from '../services/versionService';
 import { VersionFeature } from '../features/version/versionFeature';
 
+/**
+ * 檢查 URL 是否支援 Content Script
+ * Content Script 只能在 http:// 和 https:// 頁面執行
+ */
+const isContentScriptSupported = (url?: string): boolean => {
+  return !!url && (url.startsWith('http://') || url.startsWith('https://'));
+};
+
 export class EventManager {
   setupExtensionControls(): void {
     // 監聽 extension icon 點擊事件
@@ -93,6 +101,12 @@ export class EventManager {
 
       // 發送訊息給 Content Script 打開 Side Panel
       if (tab.id) {
+        // 先檢查 URL 是否支援 Content Script
+        if (!isContentScriptSupported(tab.url)) {
+          logger.warn('⚠️ 此頁面不支援 Content Script:', tab.url);
+          return;
+        }
+
         chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' }, () => {
           if (chrome.runtime.lastError) {
             logger.error('❌ Failed to send toggleSlidePanel:', chrome.runtime.lastError.message);
@@ -107,19 +121,35 @@ export class EventManager {
     chrome.commands.onCommand.addListener(async command => {
       if (command === 'toggle_side_panel') {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (tab?.id !== undefined) {
-          chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' });
+
+        // 檢查 tab 是否有效且 URL 支援 Content Script
+        if (tab?.id === undefined) {
+          logger.warn('⚠️ 快捷鍵觸發但找不到有效的分頁');
+          return;
         }
+
+        if (!isContentScriptSupported(tab.url)) {
+          logger.warn('⚠️ 快捷鍵觸發但此頁面不支援 Content Script:', tab.url);
+          return;
+        }
+
+        chrome.tabs.sendMessage(tab.id, { action: 'toggleSlidePanel' }, () => {
+          if (chrome.runtime.lastError) {
+            logger.warn('⚠️ 快捷鍵 toggleSlidePanel 失敗:', chrome.runtime.lastError.message);
+          }
+        });
       }
     });
   }
 
   setupContextMenu(): void {
-    // 創建 Context Menu（Chrome 會自動使用 manifest 中的 16px icon）
-    chrome.contextMenus.create({
-      id: 'addToPromptBear',
-      title: 'Add to PromptBear',
-      contexts: ['selection'],
+    // 只在安裝或更新時創建 Context Menu，避免重複創建
+    chrome.runtime.onInstalled.addListener(() => {
+      chrome.contextMenus.create({
+        id: 'addToPromptBear',
+        title: 'Add to PromptBear',
+        contexts: ['selection'],
+      });
     });
   }
 

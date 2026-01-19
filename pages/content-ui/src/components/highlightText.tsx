@@ -21,7 +21,9 @@ const HighlightText = memo<HighlightTextProps>(({ text, searchQuery, className =
         // Check if this part matches the search query (case insensitive)
         if (part.toLowerCase() === searchQuery.toLowerCase()) {
           return (
-            <mark key={index} className="rounded-sm bg-yellow-200 px-1 py-0.5 font-medium text-yellow-900">
+            <mark
+              key={index}
+              className="rounded-sm bg-yellow-200 px-1 py-0.5 font-medium text-yellow-900 dark:bg-yellow-400 dark:text-black">
               {part}
             </mark>
           );

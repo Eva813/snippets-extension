@@ -201,7 +201,7 @@ const FormRoot = () => {
   return (
     <>
       <div
-        className="flex h-screen max-h-screen flex-col justify-between"
+        className="dark flex h-screen max-h-screen flex-col justify-between bg-neutral-700 text-white"
         onKeyDown={handleKeyDown}
         role="presentation"
         aria-label="表單區域">
@@ -211,15 +211,15 @@ const FormRoot = () => {
         </div>
         {/* 顯示表單資料的偵錯資訊 */}
         {/* <div>{JSON.stringify(formData)}</div> */}
-        <div className="flex items-center justify-end gap-2.5 rounded bg-white p-5 text-black/[0.87] shadow-md">
+        <div className="flex items-center justify-end gap-2.5 rounded bg-neutral-700 p-5 text-white shadow-md">
           <div className="flex shrink-0 items-center gap-5">
             <button
-              className="cursor-pointer border-0 bg-transparent p-0 text-sm hover:cursor-pointer"
+              className="cursor-pointer border-0 bg-transparent p-0 text-sm text-gray-300 hover:cursor-pointer hover:text-white"
               onClick={handleCancel}>
               Cancel
             </button>
             <button
-              className="cursor-pointer rounded border-0 bg-slate-700 px-4 py-2 text-sm text-white hover:bg-slate-600"
+              className="cursor-pointer rounded border-0 bg-yellow-500 px-4 py-2 text-sm text-black hover:bg-yellow-400"
               onClick={handleSubmit}>
               Insert
             </button>

@@ -10,9 +10,45 @@ console.log('[Content Script] Loaded (v' + chrome.runtime.getManifest().version 
 
 const isDev = import.meta.env.MODE === 'development';
 
-// 🔒 登出狀態標記 - 防止 MutationObserver 在登出期間誤判重新登入
+// 🔒 登出狀態標記
 let isLoggingOut = false;
 let logoutTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+// 🔒 Extension context validation - prevent errors when extension is reloaded
+let isContextValid = true;
+
+function checkExtensionContext(): boolean {
+  try {
+    // chrome.runtime.id is undefined when context is invalidated
+    if (!chrome.runtime?.id) {
+      if (isContextValid) {
+        isContextValid = false;
+        console.warn('[Content Script] Extension context invalidated, cleaning up...');
+        cleanupOnContextInvalidation();
+      }
+      return false;
+    }
+    return true;
+  } catch {
+    if (isContextValid) {
+      isContextValid = false;
+      console.warn('[Content Script] Extension context invalidated, cleaning up...');
+      cleanupOnContextInvalidation();
+    }
+    return false;
+  }
+}
+
+function cleanupOnContextInvalidation(): void {
+  // Clear any pending timeouts
+  if (logoutTimeoutId !== null) {
+    clearTimeout(logoutTimeoutId);
+    logoutTimeoutId = null;
+  }
+  // Clear input handlers
+  clearInputHandler();
+  clearPromptCache();
+}
 
 async function initialize() {
   try {
@@ -44,9 +80,10 @@ async function initialize() {
           if (session && session.user) {
             if (isDev) console.log('[Content Script] Found active NextAuth session, setting storage');
 
+            // 注意：不設定 apiDomain，讓它使用 config 中的預設值
+            // 避免在非 PromptBear 網站上錯誤覆蓋 apiDomain
             await chrome.storage.local.set({
               userLoggedIn: true,
-              apiDomain: window.location.origin,
             });
           }
         }
@@ -111,7 +148,7 @@ window.addEventListener('message', event => {
   }
 
   if (event.data && event.data.type === 'FROM_SITE_HEADER' && event.data.action === 'USER_LOGGED_OUT') {
-    // 🔒 立即標記登出狀態，防止 MutationObserver 誤判
+    // 🔒 立即標記登出狀態
     isLoggingOut = true;
     if (isDev) console.log('[Content Script] 收到網站登出通知，標記登出狀態');
 
@@ -134,6 +171,11 @@ window.addEventListener('message', event => {
 
 // 動態監聽 local storage 變化
 chrome.storage.onChanged.addListener(async (changes, area) => {
+  // 🔒 Check if extension context is still valid
+  if (!checkExtensionContext()) {
+    return;
+  }
+
   // 用來檢查變更是否發生在本地儲存區（local storage）
   if (area === 'local') {
     if (changes.userLoggedIn?.newValue === false) {
@@ -157,31 +199,29 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
       if (isDev) console.log('[Content Script] 使用者登入，重新初始化');
 
       try {
+        if (!checkExtensionContext()) return;
         initializeInputHandler();
         initializeCursorTracker();
         chrome.runtime.sendMessage({ action: 'updateIcon' });
         await initializePromptManager();
       } catch (error) {
-        console.error('[Content Script] 重新初始化失敗:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('Extension context invalidated')) {
+          checkExtensionContext();
+        } else {
+          console.error('[Content Script] 重新初始化失敗:', error);
+        }
       }
     }
   }
 });
 
-// 🆕 監聽頁面內容變化（用於偵測登入狀態變化）
-// 當使用者登出後重新登入，需要重新檢查儲存
-let lastSessionCheck = 0;
-const SESSION_CHECK_INTERVAL = 2000; // 2 秒檢查一次
-
-const observer = new MutationObserver(async () => {
-  // 節流器：防止 MutationObserver 過度檢查
-  const now = Date.now();
-  if (now - lastSessionCheck < SESSION_CHECK_INTERVAL) {
+// 🆕 檢查 session 的共用函式
+async function checkSession() {
+  // 🔒 Check if extension context is still valid
+  if (!checkExtensionContext()) {
     return;
   }
-  lastSessionCheck = now;
-
-  const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
 
   // 🔒 如果正在登出，跳過 session 檢查
   if (isLoggingOut) {
@@ -189,53 +229,63 @@ const observer = new MutationObserver(async () => {
     return;
   }
 
-  // 如果儲存中沒有登入狀態，但頁面有效，嘗試重新檢查 session
-  if (!userLoggedIn) {
-    if (isDev) console.log('[Content Script] 偵測到頁面變化，重新檢查 NextAuth session...');
+  try {
+    const { userLoggedIn } = await chrome.storage.local.get('userLoggedIn');
 
-    try {
-      const response = await fetch('/api/auth/session', {
-        method: 'GET',
-        credentials: 'include',
-      });
+    // 如果儲存中沒有登入狀態，嘗試檢查 session
+    if (!userLoggedIn) {
+      if (isDev) console.log('[Content Script] 檢查 NextAuth session...');
 
-      if (response.ok) {
-        const session = await response.json();
-        if (session && session.user) {
-          if (isDev) console.log('[Content Script] 偵測到重新登入，更新儲存');
+      try {
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'include',
+        });
 
-          await chrome.storage.local.set({
-            userLoggedIn: true,
-            apiDomain: window.location.origin,
-          });
+        if (response.ok) {
+          const session = await response.json();
+          if (session && session.user) {
+            if (isDev) console.log('[Content Script] 偵測到登入狀態，更新儲存');
 
-          // 通知 Background 更新 icon
-          try {
-            chrome.runtime.sendMessage({ action: 'updateIcon' }, () => {
-              if (chrome.runtime.lastError) {
-                if (isDev)
-                  console.error('[Content Script] Failed to send updateIcon:', chrome.runtime.lastError.message);
-              } else if (isDev) {
-                console.log('[Content Script] updateIcon sent successfully');
-              }
+            await chrome.storage.local.set({
+              userLoggedIn: true,
             });
-          } catch (error) {
-            if (isDev) console.error('[Content Script] Failed to send updateIcon message:', error);
+
+            // 通知 Background 更新 icon
+            try {
+              chrome.runtime.sendMessage({ action: 'updateIcon' }, () => {
+                if (chrome.runtime.lastError) {
+                  if (isDev)
+                    console.error('[Content Script] Failed to send updateIcon:', chrome.runtime.lastError.message);
+                } else if (isDev) {
+                  console.log('[Content Script] updateIcon sent successfully');
+                }
+              });
+            } catch (error) {
+              if (isDev) console.error('[Content Script] Failed to send updateIcon message:', error);
+            }
           }
         }
+      } catch (error) {
+        if (isDev) console.log('[Content Script] 檢查 session 失敗:', error);
       }
-    } catch (error) {
-      if (isDev) console.log('[Content Script] 重新檢查 session 失敗:', error);
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Extension context invalidated')) {
+      checkExtensionContext();
+    } else if (isDev) {
+      console.error('[Content Script] checkSession error:', error);
     }
   }
-});
+}
 
-// 監聽 body 的變化（用於偵測登入/登出後的頁面重新導向）
-observer.observe(document.body, {
-  subtree: true,
-  childList: true,
-  attributes: true,
-  attributeFilter: ['class', 'data-state'],
+// 🆕 監聯 tab 可見性變化（用戶從其他 tab 切換回來時檢查）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (isDev) console.log('[Content Script] Tab 變為可見，檢查 session');
+    checkSession();
+  }
 });
 
 // 監聽來自 Background 的版本不符訊息

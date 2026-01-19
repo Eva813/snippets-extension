@@ -95,7 +95,7 @@ const PromptsView = memo<PromptsViewProps>(({ promptsLoading, promptsError, sele
                 onMouseLeave={() => setHoveredPromptId(null)}>
                 <button
                   type="button"
-                  className="flex w-full cursor-pointer items-center justify-between rounded p-2 hover:bg-gray-100 focus:outline-none dark:hover:bg-gray-700 dark:hover:text-black"
+                  className="flex w-full cursor-pointer items-center justify-between rounded p-2 text-gray-900 hover:bg-gray-100 focus:outline-none dark:text-white dark:hover:bg-gray-600"
                   onMouseDown={e => handlePromptInsert(prompt, e)}>
                   {/* Left side: Prompt name */}
                   <div className="flex min-w-0 flex-1 items-center space-x-2">
@@ -109,11 +109,11 @@ const PromptsView = memo<PromptsViewProps>(({ promptsLoading, promptsError, sele
                         className={`flex items-center justify-center transition-opacity duration-200 ${
                           hoveredPromptId === prompt.id ? 'visible opacity-100' : 'invisible opacity-0'
                         }`}>
-                        <FaArrowAltCircleDown size={16} className="text-primary" />
+                        <FaArrowAltCircleDown size={16} className="text-primary dark:text-yellow-400" />
                       </div>
                     </div>
                     {prompt.shortcut && (
-                      <span className="border-secondary inline-flex h-5 max-w-[80px] items-center rounded-full border px-2 py-0.5 text-xs font-medium text-black dark:text-white">
+                      <span className="border-secondary inline-flex h-5 max-w-[80px] items-center rounded-full border px-2 py-0.5 text-xs font-medium text-black dark:border-gray-500 dark:text-white">
                         <span className="block truncate">{prompt.shortcut}</span>
                       </span>
                     )}

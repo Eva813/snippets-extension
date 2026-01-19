@@ -8,8 +8,8 @@
 const isDev = process.env.NODE_ENV === 'development';
 
 // 定義域名常量（避免重複）
-const DEVELOPMENT_DOMAIN = 'http://localhost:3000';
-const PRODUCTION_DOMAIN = 'https://linxly-nextjs.vercel.app';
+const DEVELOPMENT_DOMAIN = 'http://localhost:3003';
+const PRODUCTION_DOMAIN = 'https://promptbear.ai';
 
 export const API_CONFIG = {
   // 根據環境動態設定預設域名
@@ -19,12 +19,45 @@ export const API_CONFIG = {
 } as const;
 
 /**
+ * 驗證 API domain 是否為有效的 PromptBear 網域
+ */
+function isValidApiDomain(domain: string): boolean {
+  if (!domain) return false;
+  try {
+    const url = new URL(domain);
+    // 只允許 PromptBear 網域或本地開發環境
+    return (
+      url.hostname === 'promptbear.ai' ||
+      url.hostname === 'www.promptbear.ai' ||
+      url.hostname.endsWith('.promptbear.ai') ||
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1'
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * 取得當前使用的 API domain
- * 優先級：chrome.storage.local.apiDomain > DEFAULT_DOMAIN
+ * 優先級：chrome.storage.local.apiDomain（需驗證） > DEFAULT_DOMAIN
+ * 如果儲存的 domain 無效，會自動清除並使用預設值
  */
 export async function getApiDomain(): Promise<string> {
   const { apiDomain } = await chrome.storage.local.get(['apiDomain']);
-  return apiDomain || API_CONFIG.DEFAULT_DOMAIN;
+
+  // 驗證儲存的 domain 是否有效
+  if (apiDomain && isValidApiDomain(apiDomain)) {
+    return apiDomain;
+  }
+
+  // 如果有無效的 domain，清除它
+  if (apiDomain) {
+    console.warn(`[API Config] 清除無效的 apiDomain: ${apiDomain}`);
+    await chrome.storage.local.remove(['apiDomain']);
+  }
+
+  return API_CONFIG.DEFAULT_DOMAIN;
 }
 
 /**

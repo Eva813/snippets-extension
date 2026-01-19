@@ -1,6 +1,6 @@
 {
   "name": "promptbear-chrome-extension",
-  "version": "1.3.2",
+  "version": "1.4.3",
   "description": "PromptBear - A productivity Chrome extension for managing and inserting text snippets with custom shortcuts",
   "license": "MIT",
   "repository": {

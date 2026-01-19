@@ -6,19 +6,16 @@ interface SharedWithMeIndicatorProps {
   onClick: () => void;
 }
 
-const SharedWithMeIndicator = memo<SharedWithMeIndicatorProps>(({ onClick }) => {
+const SharedWithMeIndicator = memo<SharedWithMeIndicatorProps>(() => {
   const { count, loading } = useSharedFoldersCount();
 
   return (
     <div className="bg-primary-400 rounded-lg p-1">
       <div className="group relative">
         <button
-          onClick={onClick}
-          disabled={loading}
-          className={`flex items-center justify-center rounded-md p-1 text-base text-slate-300 transition-all duration-200 hover:bg-slate-600/50 hover:text-white hover:opacity-80 ${
-            loading ? 'cursor-not-allowed opacity-70' : ''
-          }`}
-          title={loading ? 'Loading shared folders...' : 'View Shared Folders'}>
+          disabled
+          className="flex cursor-not-allowed items-center justify-center rounded-md p-1 text-base text-slate-300 opacity-50"
+          title="Coming soon">
           <div className="relative">
             <FaUsers size={16} />
             {count > 0 && (

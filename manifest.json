@@ -11,9 +11,9 @@
       "description": "Toggle the side panel."
     }
   },
-  "version": "1.3.2",
+  "version": "1.4.3",
   "description": "__MSG_extensionDescription__",
-  "host_permissions": ["https://linxly-nextjs.vercel.app/*", "http://localhost:3000/*"],
+  "host_permissions": ["https://promptbear.ai/*", "http://localhost:3003/*"],
   "permissions": ["storage", "windows", "activeTab", "contextMenus", "tabs", "notifications"],
   "options_page": "options/index.html",
   "background": {
@@ -48,6 +48,6 @@
     }
   ],
   "externally_connectable": {
-    "matches": ["https://linxly-nextjs.vercel.app/*", "http://localhost:3000/*"]
+    "matches": ["https://promptbear.ai/*", "http://localhost:3003/*"]
   }
 }
