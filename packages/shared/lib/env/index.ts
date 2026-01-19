@@ -7,9 +7,6 @@
  * 因為 Vite 會在 build time 替換該值
  */
 
-// 宣告 process 型別以避免 TypeScript 錯誤
-declare const process: { env: Record<string, string | undefined> } | undefined;
-
 /**
  * 安全的跨環境開發模式檢測
  * 支援 Chrome Extension 和瀏覽器環境
