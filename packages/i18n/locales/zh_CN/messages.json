@@ -1,21 +1,21 @@
 {
   "extensionName": {
     "description": "Extension name",
-    "message": "PromptBear: Prompt Manager & Text Expander"
+    "message": "PromptBear: AI提示词管理工具 (Prompt Manager)"
   },
   "extensionDescription": {
     "description": "Extension description",
-    "message": "The best Prompt Management tool and Prompt Library. Save time with AI shortcuts (Text Expander) for ChatGPT, Claude, and Gemini."
+    "message": "AI提示词管理工具与指令库。通过自定义快捷键（Text Expander）快速输入，完美提升 ChatGPT、Claude 与 Gemini 的工作效率。"
   },
   "toggleTheme": {
-    "message": "Toggle theme"
+    "message": "切换主题"
   },
   "loading": {
-    "message": "Loading..."
+    "message": "加载中..."
   },
   "greeting": {
     "description": "Greeting message",
-    "message": "Hello, My name is $NAME$",
+    "message": "您好，$NAME$",
     "placeholders": {
       "name": {
         "content": "$1",
@@ -25,6 +25,6 @@
   },
   "hello": {
     "description": "Placeholder example",
-    "message": "Hello $1"
+    "message": "你好 $1"
   }
 }
