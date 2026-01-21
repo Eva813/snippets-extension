@@ -1,30 +1,30 @@
 {
-  "extensionDescription": {
-    "description": "Extension description",
-    "message": "React, Typescript, Vite를 사용한 크롬 익스텐션 보일러플레이트입니다."
-  },
   "extensionName": {
     "description": "Extension name",
-    "message": "크롬 익스텐션 보일러플레이트"
+    "message": "PromptBear: AI 프롬프트 관리자 (Prompt Manager)"
+  },
+  "extensionDescription": {
+    "description": "Extension description",
+    "message": "최고의 AI 프롬프트 관리 및 프롬프트 라이브러리 도구입니다. 단축키 기능을 통해 ChatGPT, Claude, Gemini에서 반복되는 프롬프트를 즉시 입력하고 업무 효율을 높이세요."
   },
   "toggleTheme": {
-    "message": "테마 변경"
+    "message": "테마 전환"
   },
   "loading": {
     "message": "로딩 중..."
   },
   "greeting": {
-    "description": "인사 메시지",
-    "message": "안녕하세요, 제 이름은 $NAME$입니다.",
+    "description": "Greeting message",
+    "message": "안녕하세요, $NAME$님",
     "placeholders": {
       "name": {
         "content": "$1",
-        "example": "서종학"
+        "example": "John Doe"
       }
     }
   },
   "hello": {
-    "description": "Placeholder 예시",
-    "message": "안녕 $1"
+    "description": "Placeholder example",
+    "message": "안녕하세요 $1"
   }
 }

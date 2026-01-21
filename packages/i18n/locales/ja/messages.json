@@ -1,0 +1,30 @@
+{
+  "extensionName": {
+    "description": "Extension name",
+    "message": "PromptBear: AIプロンプト管理ツール (Prompt Manager)"
+  },
+  "extensionDescription": {
+    "description": "Extension description",
+    "message": "最高のAIプロンプト管理ツールおよびプロンプトライブラリ。ショートカット機能（テキスト展開）により、ChatGPT、Claude、Geminiでの定型文入力を高速化し、業務効率を大幅に向上させます。"
+  },
+  "toggleTheme": {
+    "message": "テーマ切り替え"
+  },
+  "loading": {
+    "message": "読み込み中..."
+  },
+  "greeting": {
+    "description": "Greeting message",
+    "message": "こんにちは、$NAME$さん",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "John Doe"
+      }
+    }
+  },
+  "hello": {
+    "description": "Placeholder example",
+    "message": "こんにちは $1"
+  }
+}
